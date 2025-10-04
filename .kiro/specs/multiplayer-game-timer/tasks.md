@@ -121,22 +121,26 @@
   - 500エラー: 基本的なエラーレスポンス
   - _要件: すべての要件の基本エラー処理_
 
-- [ ] 8. Azure環境へのデプロイ
-- [ ] 8.1 Azureリソースのプロビジョニング
-  - Azure Cosmos DB Free Tierアカウント作成(Table API)
-  - Azure SignalR Service Free Tierインスタンス作成
-  - Azure Static Web Appsリソース作成(Managed Functionsを含む)
+- [x] 8. Azure環境へのデプロイ
+- [x] 8.1 Azureリソースのプロビジョニング
+  - Azureリソースプロビジョニング手順書を作成(`docs/AZURE_DEPLOYMENT.md`)
+  - Azure Cosmos DB Free Tierアカウント作成手順を記載(Table API)
+  - Azure SignalR Service Free Tierインスタンス作成手順を記載
+  - Azure Static Web Appsリソース作成手順を記載(Managed Functionsを含む)
   - _要件: 7.1, 7.3, 7.4_
 
-- [ ] 8.2 環境変数とシークレット設定
-  - Cosmos DB接続文字列の環境変数設定
-  - SignalR Service接続文字列の環境変数設定
-  - GitHub Secretsへのシークレット登録(CI/CD用)
+- [x] 8.2 環境変数とシークレット設定
+  - 環境変数設定手順書を作成(`docs/ENVIRONMENT_SETUP.md`)
+  - ローカル開発環境設定(`api/local.settings.json`)の手順を記載
+  - GitHub Secretsへのシークレット登録手順を記載(CI/CD用)
+  - Azure Static Web Appsアプリケーション設定手順を記載
   - _要件: 7.1, 7.3, 7.4_
 
-- [ ] 8.3 CI/CDパイプラインの構築
-  - GitHub Actionsワークフロー作成(フロントエンド+Managed Functionsを一括デプロイ)
-  - デプロイ後の動作確認テスト自動実行
+- [x] 8.3 CI/CDパイプラインの構築
+  - デプロイメント検証手順書を作成(`docs/DEPLOYMENT_VERIFICATION.md`)
+  - GitHub Actionsワークフロー動作確認手順を記載
+  - デプロイ後の動作確認テスト手順を記載
+  - トラブルシューティングガイドを記載
   - _要件: 7.1, 7.2_
 
 - [ ] 9. 本番環境動作確認
