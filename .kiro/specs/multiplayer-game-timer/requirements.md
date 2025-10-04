@@ -71,4 +71,4 @@
 1. WHERE Azure環境 THE ゲームタイマーは Azure Static Web AppsまたはAzure App Service Free Tierにデプロイされること
 2. WHEN デプロイが完了した時 THEN ゲームタイマーは パブリックURLからアクセス可能であること
 3. IF リアルタイム通信が必要な場合 THEN ゲームタイマーは Azure SignalR ServiceのFree Tier または WebSocketを使用すること
-4. WHERE バックエンドストレージ THE ゲームタイマーは Azure Cosmos DB Free TierまたはAzure Table Storageを使用すること
+4. WHERE バックエンドストレージ THE ゲームタイマーは Azure Cosmos DB Free Tier（Table API）を使用すること

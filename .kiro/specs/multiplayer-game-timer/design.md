@@ -33,7 +33,7 @@ graph TB
     Client[Webブラウザ<br/>React SPA]
     CDN[Azure Static Web Apps<br/>CDN + ホスティング]
     SignalR[Azure SignalR Service<br/>Free Tier]
-    Storage[Azure Table Storage<br/>ゲーム状態管理]
+    Storage[Azure Cosmos DB<br/>Free Tier - Table API]
     Functions[Azure Functions<br/>API Layer]
 
     Client -->|静的コンテンツ| CDN
@@ -48,7 +48,7 @@ graph TB
 **Azure無料層の活用**:
 - Azure Static Web Apps Free Tier: 静的コンテンツ配信（250MB）
 - Azure SignalR Service Free Tier: リアルタイム通信（同時接続20、メッセージ2万/日）
-- Azure Table Storage: ゲーム状態の永続化（低コスト）
+- Azure Cosmos DB Free Tier: ゲーム状態の永続化（1000 RU/s + 25GB、完全無料）
 - Azure Functions Consumption Plan: サーバーレスAPI（月100万リクエスト無料）
 
 **アーキテクチャパターン**: イベント駆動アーキテクチャ + CQRSライト
@@ -89,20 +89,22 @@ graph TB
 - **根拠**:
   - サーバーレスで運用コスト最小化
   - 無料枠が大きい（月100万リクエスト）
-  - Web PubSubとのバインディング対応
+  - SignalRとのバインディング対応
 - **代替案検討**:
   - Azure App Service: 無料層でも常時起動コストあり
   - コンテナ: 無料枠なし
 
 ### データストア
-- **選択**: Azure Table Storage
+- **選択**: Azure Cosmos DB Free Tier (Table API)
 - **根拠**:
-  - 単純なKey-Valueストアで十分（ゲーム状態のみ）
-  - Cosmos DBより低コスト（従量課金がほぼ0円レベル）
-  - TTL機能で古いゲームの自動削除可能
+  - 完全無料運用が可能（1000 RU/s + 25GB無料枠、本用途は約2.5 RU/s使用）
+  - SLA付き低レイテンシ（読み取り<10ms、書き込み<15ms）
+  - 全プロパティの自動インデックス化（Table Storageは PartitionKey/RowKey のみ）
+  - バックアップ機能内蔵
+  - Table Storage互換SDK（`@azure/data-tables`）でコード変更最小
 - **代替案検討**:
-  - Azure Cosmos DB Free Tier: 1000 RU/s + 25GBだが本用途にオーバースペック
-  - Azure SQL Database: 無料層なし
+  - Azure Table Storage: コスト優位性なし（Cosmos DB Free Tierで完全無料実現可能）
+  - Azure SQL Database: 無料層なし、リレーショナルDBは本用途に過剰
 
 ### ホスティング
 - **選択**: Azure Static Web Apps
@@ -164,7 +166,7 @@ sequenceDiagram
     participant U as ユーザー
     participant C as Reactクライアント
     participant F as Azure Functions
-    participant S as Table Storage
+    participant S as Cosmos DB
     participant SR as SignalR Service
     participant O as 他のクライアント
 
@@ -193,7 +195,7 @@ flowchart TD
     D -->|No| E[UIのみ更新]
     D -->|Yes| F[POST /api/syncTimer<br/>現在の経過時間]
     F --> G[Azure Functions<br/>状態検証]
-    G --> H[Table Storage<br/>状態保存]
+    G --> H[Cosmos DB<br/>状態保存]
     H --> I[SignalR Service<br/>ブロードキャスト]
     I --> J[全クライアント<br/>状態同期]
     E --> K[次のTick待機]
@@ -224,9 +226,9 @@ flowchart TD
 | 3.3 | ターン切り替え | TurnManager | `POST /api/switchTurn` | ターン切り替えフロー |
 | 3.4 | 循環ロジック | TurnManager | ビジネスロジック内 | ターン切り替えフロー |
 | 4.1-4.4 | ゲーム制御 | GameController | `POST /api/{reset,pause,resume,newGame}` | - |
-| 5.1-5.4 | リアルタイム同期 | Web PubSub + Event Broadcasting | WebSocket接続 | 全フロー |
+| 5.1-5.4 | リアルタイム同期 | SignalR Service + Event Broadcasting | SignalR接続 | 全フロー |
 | 6.1-6.4 | レスポンシブUI | CSS Grid + Media Queries | - | - |
-| 7.1-7.4 | Azure無料ホスティング | Azure Static Web Apps + Web PubSub + Table Storage | - | - |
+| 7.1-7.4 | Azure無料ホスティング | Azure Static Web Apps + Azure SignalR Service + Cosmos DB | - | - |
 
 ## コンポーネントとインターフェース
 
@@ -331,13 +333,13 @@ interface PlayerListProps {
 **責任と境界**
 - **主要責任**: ゲーム状態の一貫性を保証し、ビジネスルールを適用
 - **ドメイン境界**: ゲーム状態管理ドメイン
-- **データ所有**: Table Storageのゲーム状態（PartitionKey: "game", RowKey: "current"）
+- **データ所有**: Cosmos DBのゲーム状態（PartitionKey: "game", RowKey: "current"）
 - **トランザクション境界**: 単一ゲーム状態の更新
 
 **依存関係**
 - **インバウンド**: HTTP Trigger Functions
-- **アウトバウンド**: TableStorageRepository, SignalROutputBinding
-- **外部**: Azure Table Storage, Azure SignalR Service
+- **アウトバウンド**: CosmosDbRepository, SignalROutputBinding
+- **外部**: Azure Cosmos DB (Table API), Azure SignalR Service
 
 **外部依存調査**
 
@@ -373,16 +375,17 @@ interface PlayerListProps {
   await connection.start();
   ```
 
-**Azure Table Storage SDK**:
-- 公式SDK: `@azure/data-tables`（npm）
-- 認証: Connection String経由
+**Azure Cosmos DB Table API SDK**:
+- 公式SDK: `@azure/data-tables`（npm、Table Storage互換）
+- 認証: Connection String経由（Cosmos DB専用接続文字列）
 - 主要API:
   ```typescript
   await client.createEntity({ partitionKey, rowKey, ...data });
   await client.updateEntity({ partitionKey, rowKey, ...data }, "Merge");
   ```
 - トランザクション: Entity Group Transaction（同一PartitionKey内のみ）
-- 価格: ストレージ$0.045/GB、トランザクション$0.00036/10K
+- 価格: Free Tierで1000 RU/s + 25GB無料、超過分は従量課金（本用途では完全無料）
+- 特徴: 全プロパティ自動インデックス、SLA付き（<10ms読み取り、<15ms書き込み）
 
 **契約定義**
 
@@ -399,12 +402,12 @@ type Result<T, E> = { success: true; data: T } | { success: false; error: E };
 ```
 
 **前提条件**:
-- ゲーム状態がTable Storageに存在すること
+- ゲーム状態がCosmos DBに存在すること
 - プレイヤーIDが有効であること
 
 **事後条件**:
-- 状態変更時に必ずWeb PubSubへイベント送信
-- Table Storageへの永続化が成功すること
+- 状態変更時に必ずSignalRへイベント送信
+- Cosmos DBへの永続化が成功すること
 
 **不変条件**:
 - アクティブプレイヤーは常に0人または1人
@@ -437,22 +440,22 @@ type Result<T, E> = { success: true; data: T } | { success: false; error: E };
 - **順序保証**: 同一接続内で保証
 - **トランスポート**: WebSocket優先、フォールバックでServer-Sent Events、Long Polling
 
-#### TableStorageRepository
+#### CosmosDbRepository
 
 **責任と境界**
 - **主要責任**: ゲーム状態の永続化とCRUD操作
 - **ドメイン境界**: データ永続化層
-- **データ所有**: Table Storage `GameStates` テーブル
+- **データ所有**: Cosmos DB (Table API) `GameStates` テーブル
 
 **依存関係**
 - **インバウンド**: GameStateService
 - **アウトバウンド**: なし
-- **外部**: Azure Table Storage
+- **外部**: Azure Cosmos DB (Table API)
 
 **契約定義**
 
 ```typescript
-interface TableStorageRepository {
+interface CosmosDbRepository {
   getGameState(): Promise<GameStateEntity | null>;
   saveGameState(state: GameStateEntity): Promise<void>;
   deleteGameState(): Promise<void>;
@@ -466,7 +469,7 @@ interface GameStateEntity {
 }
 ```
 
-**並行制御**: ETag による楽観的ロック（Table Storage標準機能）
+**並行制御**: ETag による楽観的ロック（Cosmos DB Table API標準機能）
 
 ## データモデル
 
@@ -512,7 +515,7 @@ interface Player {
 
 ### 物理データモデル
 
-**Azure Table Storage**
+**Azure Cosmos DB (Table API)**
 
 **テーブル名**: `GameStates`
 
@@ -520,14 +523,20 @@ interface Player {
 |----------|----|----|------|
 | PartitionKey | String | 固定値 `"game"` | 必須 |
 | RowKey | String | 固定値 `"current"` | 必須 |
-| StateJson | String | GameStateのJSON文字列 | 最大64KB |
+| StateJson | String | GameStateのJSON文字列 | 最大2MB（Cosmos DB制限） |
 | Timestamp | DateTime | 最終更新日時（自動） | 自動設定 |
+| _etag | String | 楽観的ロック用（Cosmos DB自動管理） | 自動設定 |
 
-**インデックス**: PartitionKey + RowKey（自動）
+**インデックス**: 全プロパティ自動インデックス（Cosmos DB Table API特徴）
 
 **パーティショニング戦略**: 単一パーティション（ゲーム状態は1つのみ）
 
 **TTL戦略**: 設定なし（継続的に1つの状態を上書き）
+
+**RU消費見積もり**:
+- 1回の読み取り（1KB）: 約1 RU
+- 1回の書き込み（1KB）: 約6 RU
+- タイマー同期（5秒ごと）: 12回/分 × 6 RU = 72 RU/分 = 約1.2 RU/秒
 
 ### データ契約とインテグレーション
 
@@ -586,7 +595,7 @@ interface GameHubClient {
 - **認可エラー**: 本アプリケーションでは認証なしのため該当なし
 
 **システムエラー (5xx)**
-- **Table Storage接続失敗**: ネットワークエラー、サービス障害
+- **Cosmos DB接続失敗**: ネットワークエラー、サービス障害
   - リトライ戦略: 3回まで指数バックオフ（1秒、2秒、4秒）
   - 失敗時: 「サービスが一時的に利用できません。しばらくしてから再試行してください」
 - **SignalR接続失敗**: 接続切断
@@ -617,7 +626,7 @@ interface GameHubClient {
 
 **ヘルスモニタリング**:
 - Azure Functions標準のヘルスチェックエンドポイント
-- Web PubSub接続状態の定期確認（60秒ごと）
+- SignalR接続状態の定期確認（60秒ごと）
 
 ## テストストラテジー
 
@@ -638,10 +647,10 @@ interface GameHubClient {
 1. **GameStateService**:
    - `switchTurn()` のビジネスルール検証（不正なプレイヤーID、既にアクティブなプレイヤー存在時）
    - `updatePlayers()` のプレイヤー数バリデーション
-2. **TableStorageRepository**:
+2. **CosmosDbRepository**:
    - モックを使用したCRUD操作の検証
    - ETagによる楽観的ロック処理
-3. **WebPubSubPublisher**:
+3. **SignalRPublisher**:
    - イベントペイロードの正確性
    - 送信エラー時のリトライロジック
 
@@ -649,14 +658,14 @@ interface GameHubClient {
 
 **API統合テスト**:
 1. **ターン切り替えフロー**:
-   - POST /api/switchTurn → Table Storage更新 → Web PubSubイベント送信
+   - POST /api/switchTurn → Cosmos DB更新 → SignalRイベント送信
 2. **ゲームリセットフロー**:
    - POST /api/resetGame → 全プレイヤーのタイマー0:00初期化
-3. **WebSocket接続テスト**:
+3. **SignalR接続テスト**:
    - クライアント接続 → サーバーイベント受信 → 状態同期
 
 **エラーハンドリングテスト**:
-1. Table Storage障害シミュレーション（モック）→ リトライ動作確認
+1. Cosmos DB障害シミュレーション（モック）→ リトライ動作確認
 2. 無効なペイロード送信 → 400エラーレスポンス確認
 
 ### E2E/UIテスト
@@ -675,7 +684,7 @@ interface GameHubClient {
 
 **負荷テスト（k6使用）**:
 1. **同時接続テスト**:
-   - 20クライアント同時接続（Web PubSub Free Tier上限）
+   - 20クライアント同時接続（SignalR Service Free Tier上限）
    - 接続安定性と切断エラー率測定
 2. **メッセージ数テスト**:
    - 1日のメッセージ数上限（2万）到達時の挙動確認
@@ -696,12 +705,12 @@ interface GameHubClient {
 **DoS攻撃**:
 - 脅威: 大量リクエストによるサービス停止
 - 対策: Azure Front DoorのDDoS保護（Standard無料提供）
-- 対策: Web PubSub接続数上限（20）による自然な制限
+- 対策: SignalR Service接続数上限（20）による自然な制限
 
 **データ改ざん**:
 - 脅威: WebSocket経由での不正なイベント送信
 - 対策: クライアント→サーバーのメッセージはすべてHTTP API経由（サーバー側検証）
-- Web PubSubはサーバー→クライアントの一方向通信のみ
+- SignalRはサーバー→クライアントの一方向通信のみ
 
 ### セキュリティ制御
 
@@ -712,8 +721,8 @@ interface GameHubClient {
 
 **データ保護**:
 - HTTPS強制（Azure Static Web Apps標準）
-- Web PubSub接続はTLS 1.2以上
-- Table Storageは保存時暗号化（Azure標準）
+- SignalR接続はTLS 1.2以上
+- Cosmos DBは保存時暗号化（Azure標準）
 
 **コンプライアンス**:
 - 個人情報非収集（GDPR対象外）
@@ -727,15 +736,15 @@ interface GameHubClient {
 |----------|-------|---------|
 | ページ初回表示時間 | < 2秒 | Lighthouse CI |
 | API応答時間（P95） | < 500ms | Application Insights |
-| WebSocket遅延 | < 1秒 | カスタムロギング |
-| 同時接続数 | 20（上限） | Web PubSub監視 |
+| SignalR遅延 | < 1秒 | カスタムロギング |
+| 同時接続数 | 20（上限） | SignalR Service監視 |
 | 1日のメッセージ数 | < 20,000 | Application Insights |
 
 ### スケーリング戦略
 
 **水平スケーリング**:
 - Azure Functionsは自動スケール（Consumption Plan）
-- Web PubSubは単一ユニット（Free Tier制約）
+- SignalR Serviceは単一ユニット（Free Tier制約）
 
 **制約への対応**:
 - 同時接続数20超過時: 新規接続を拒否、「現在満員です」メッセージ表示
@@ -756,11 +765,11 @@ interface GameHubClient {
 **フロントエンド**:
 - Code Splitting（React.lazy）でバンドルサイズ削減
 - Memoization（React.memo）で不要な再レンダリング防止
-- WebSocket接続の再利用
+- SignalR接続の再利用
 
 **バックエンド**:
-- Table Storageクエリの最小化（PartitionKey + RowKey直接指定）
-- Web PubSubへのバッチ送信（複数イベントを1メッセージに集約）
+- Cosmos DBクエリの最小化（PartitionKey + RowKey直接指定）
+- SignalRへのバッチ送信（複数イベントを1メッセージに集約）
 
 ## 移行戦略
 
