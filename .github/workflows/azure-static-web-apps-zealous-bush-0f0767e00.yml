@@ -26,7 +26,8 @@ jobs:
       - name: Install and build frontend
         run: |
           cd frontend
-          npm ci --legacy-peer-deps
+          rm -rf node_modules package-lock.json
+          npm install
           npm run build
       - name: Install API dependencies
         run: |
