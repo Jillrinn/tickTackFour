@@ -4,14 +4,14 @@
 
 本機能は、4〜6人のプレイヤーの経過時間を個別に計測する、ボードゲーム用のマルチプレイヤー対応タイマーアプリケーションを提供する。Azure無料層サービスを活用し、認証不要でブラウザから誰でもアクセス可能な共有タイマーとして動作する。
 
-**目的**: ボードゲーム（囲碁、将棋など）のプレイヤーに対し、公平な時間管理と複数デバイス間でのリアルタイム同期を実現する。
+**目的**: ボードゲームのプレイヤーに対し、公平な時間管理と複数デバイス間でのリアルタイム同期を実現する。
 
 **ユーザー**: ボードゲームをプレイする4〜6人のプレイヤーおよび観戦者。ローカル対戦およびリモート対戦の両方に対応。
 
 **影響**: 新規アプリケーションとしてゼロから構築。既存システムへの影響なし。
 
 ### ゴール
-- 4〜6人のプレイヤーの経過時間を正確に計測（カウントアップ方式）
+- 4〜6人のプレイヤーの時間を正確に計測（カウントアップ/カウントダウン両対応、デフォルトはカウントアップ）
 - 複数デバイス間でのリアルタイムな状態同期（1秒以内の遅延）
 - Azure無料層での完全な運用（コスト0円）
 - レスポンシブデザインによる全デバイス対応
@@ -32,32 +32,32 @@
 graph TB
     Client[Webブラウザ<br/>React SPA]
     CDN[Azure Static Web Apps<br/>CDN + ホスティング]
-    PubSub[Azure Web PubSub<br/>Free Tier]
+    SignalR[Azure SignalR Service<br/>Free Tier]
     Storage[Azure Table Storage<br/>ゲーム状態管理]
     Functions[Azure Functions<br/>API Layer]
 
     Client -->|静的コンテンツ| CDN
-    Client <-->|WebSocket接続| PubSub
+    Client <-->|SignalR接続| SignalR
     Client -->|HTTP API| Functions
     Functions -->|状態読み書き| Storage
-    Functions -->|状態変更通知| PubSub
+    Functions -->|状態変更通知| SignalR
 ```
 
 ### アーキテクチャの特徴
 
 **Azure無料層の活用**:
 - Azure Static Web Apps Free Tier: 静的コンテンツ配信（250MB）
-- Azure Web PubSub Free Tier: WebSocket通信（同時接続20、メッセージ2万/日）
+- Azure SignalR Service Free Tier: リアルタイム通信（同時接続20、メッセージ2万/日）
 - Azure Table Storage: ゲーム状態の永続化（低コスト）
 - Azure Functions Consumption Plan: サーバーレスAPI（月100万リクエスト無料）
 
 **アーキテクチャパターン**: イベント駆動アーキテクチャ + CQRSライト
 - コマンド（タイマー操作）: REST API経由でFunctionsに送信
-- クエリ（状態取得）: WebSocket経由でリアルタイム配信
-- 状態変更時にPubSubを通じて全クライアントへブロードキャスト
+- クエリ（状態取得）: SignalR経由でリアルタイム配信
+- 状態変更時にSignalRを通じて全クライアントへブロードキャスト
 
 **技術的制約**:
-- 同時接続数上限20（Web PubSub Free Tier制約）
+- 同時接続数上限20（SignalR Service Free Tier制約）
 - メッセージ数上限2万/日（1秒更新で約5.5時間分）
 - 認証レイヤーなし（無料層でのシンプル運用）
 
@@ -74,13 +74,14 @@ graph TB
   - Vanilla JS: 開発速度が遅く保守性が低い
 
 ### リアルタイム通信
-- **選択**: Azure Web PubSub（WebSocket）
+- **選択**: Azure SignalR Service
 - **根拠**:
-  - Azure SignalR ServiceよりもWebSocket接続数が多い（20 vs 20だが、SignalRは抽象レイヤーのオーバーヘッドあり）
-  - 標準WebSocket APIでシンプル
-  - Functionsとのネイティブ統合
+  - 高レベルAPI（ハブ抽象化、自動再接続、トランスポートフォールバック）
+  - SignalR SDKの成熟したエコシステムと豊富なドキュメント
+  - Azure Functionsとのネイティブバインディング（SignalR Output Binding）
+  - 学習目的としてSignalRの実践的な理解を深められる
 - **代替案検討**:
-  - Azure SignalR Service: 同時接続数20と制約が同等で追加メリット少ない
+  - Azure Web PubSub: 低レベルWebSocket APIでプロトコル制御は柔軟だが、SignalR学習には不向き
   - ポーリング: リアルタイム性が低くメッセージ数消費が多い
 
 ### バックエンド
@@ -115,19 +116,28 @@ graph TB
 
 ### 主要な設計判断
 
-#### 判断1: カウントアップタイマー方式
+#### 判断1: ハイブリッドタイマー方式（カウントアップ/カウントダウン切り替え）
 
-- **決定**: 各プレイヤーの経過時間を0:00から加算計測する
-- **背景**: 要件変更により、残り時間の減算（カウントダウン）から経過時間の加算（カウントアップ）に変更
+- **決定**: カウントアップモードとカウントダウンモードの両方を実装し、ゲーム開始時にモードを選択可能にする
+- **背景**:
+  - カウントアップ: 「誰が一番早く考えたか」を測定（囲碁、将棋の考慮時間計測）
+  - カウントダウン: 時間制限のあるゲームに対応（持ち時間制）
+  - プレイスタイルに応じてモードを切り替えられる柔軟性が重要
 - **代替案**:
-  - カウントダウン方式: 初期時間設定が必要で柔軟性が低い
-  - ハイブリッド方式（両対応）: 実装複雑度が高い
-- **選択理由**: ボードゲームでは「誰が一番早く考えたか」を測りたい場合が多く、カウントアップが直感的
-- **トレードオフ**: 時間制限のあるゲームには不向きだが、要件範囲外
+  - カウントアップのみ: 実装はシンプルだが時間制限ゲームに非対応
+  - カウントダウンのみ: 初期時間設定が必須で柔軟性が低い
+- **選択理由**:
+  - 実装複雑度の増加は限定的（タイマーロジックの条件分岐のみ）
+  - 幅広いゲームタイプに対応できる汎用性
+  - デフォルトはカウントアップモードで、学習曲線を緩やか
+- **トレードオフ**:
+  - UI要素が増える（モード切り替えボタン、カウントダウン時の初期値設定）
+  - テストケースが2倍になる
+  - ただし、ユーザー価値が明確に向上するため許容範囲
 
 #### 判断2: 楽観的更新 + イベントソーシング
 
-- **決定**: クライアント側で即座にUI更新し、サーバーで状態を確定後にWebSocketで全体同期
+- **決定**: クライアント側で即座にUI更新し、サーバーで状態を確定後にSignalRで全体同期
 - **背景**: リアルタイム性を確保しつつ、無料層のメッセージ数制約に対応
 - **代替案**:
   - サーバー確定後にUI更新: レスポンスが遅く感じる
@@ -155,7 +165,7 @@ sequenceDiagram
     participant C as Reactクライアント
     participant F as Azure Functions
     participant S as Table Storage
-    participant P as Web PubSub
+    participant SR as SignalR Service
     participant O as 他のクライアント
 
     U->>C: ターン切り替えボタンクリック
@@ -165,9 +175,9 @@ sequenceDiagram
     S-->>F: 現在の状態
     F->>F: ビジネスロジック検証<br/>（タイマー値更新、アクティブプレイヤー変更）
     F->>S: 新状態を保存
-    F->>P: 状態変更イベント送信<br/>{ type: 'TURN_SWITCHED', payload: {...} }
-    P-->>C: WebSocketで状態受信
-    P-->>O: WebSocketで状態受信
+    F->>SR: Hub.SendAsync('TurnSwitched', payload)
+    SR-->>C: SignalR接続で状態受信
+    SR-->>O: SignalR接続で状態受信
     C->>C: サーバー状態で再レンダリング
     O->>O: 状態同期・UI更新
 ```
@@ -184,7 +194,7 @@ flowchart TD
     D -->|Yes| F[POST /api/syncTimer<br/>現在の経過時間]
     F --> G[Azure Functions<br/>状態検証]
     G --> H[Table Storage<br/>状態保存]
-    H --> I[Web PubSub<br/>ブロードキャスト]
+    H --> I[SignalR Service<br/>ブロードキャスト]
     I --> J[全クライアント<br/>状態同期]
     E --> K[次のTick待機]
     J --> K
@@ -225,15 +235,15 @@ flowchart TD
 #### GameTimer コンポーネント（ルートコンポーネント）
 
 **責任と境界**
-- **主要責任**: アプリケーション全体の状態管理とWebSocket接続のライフサイクル管理
+- **主要責任**: アプリケーション全体の状態管理とSignalR接続のライフサイクル管理
 - **ドメイン境界**: UIレイヤー全体の統括
 - **データ所有**: グローバルゲーム状態（プレイヤー情報、タイマー値、アクティブプレイヤー）
 - **トランザクション境界**: クライアント側状態更新の原子性
 
 **依存関係**
 - **インバウンド**: なし（ルートコンポーネント）
-- **アウトバウンド**: PlayerList, TimerControls, WebSocketManager
-- **外部**: Azure Web PubSub（WebSocket接続）
+- **アウトバウンド**: PlayerList, TimerControls, SignalRConnectionManager
+- **外部**: Azure SignalR Service（SignalR接続）
 
 **契約定義**
 
@@ -242,27 +252,31 @@ interface GameTimerState {
   players: Player[];
   activePlayerId: string | null;
   isPaused: boolean;
+  timerMode: 'count-up' | 'count-down'; // タイマーモード（デフォルト: 'count-up'）
   lastUpdated: Date;
 }
 
 interface Player {
   id: string;
   name: string;
-  elapsedTimeSeconds: number;
+  elapsedTimeSeconds: number; // カウントアップ: 経過時間、カウントダウン: 残り時間
+  initialTimeSeconds: number; // カウントダウンモード時の初期時間（デフォルト: 600秒=10分）
   isActive: boolean;
 }
 
-// WebSocketイベント契約
-type GameEvent =
-  | { type: 'TURN_SWITCHED'; payload: { activePlayerId: string } }
-  | { type: 'TIMER_UPDATED'; payload: { playerId: string; elapsedTimeSeconds: number } }
-  | { type: 'GAME_RESET'; payload: GameTimerState }
-  | { type: 'PLAYERS_UPDATED'; payload: { players: Player[] } };
+// SignalRハブメソッド契約
+interface SignalRHubMethods {
+  // サーバー→クライアント
+  TurnSwitched(activePlayerId: string): void;
+  TimerUpdated(playerId: string, elapsedTimeSeconds: number): void;
+  GameReset(state: GameTimerState): void;
+  PlayersUpdated(players: Player[]): void;
+}
 ```
 
 **状態管理**
 - **状態モデル**: Idle → Active → Paused → Active → Idle
-- **永続化**: WebSocketによるサーバー同期のみ（ローカルストレージなし）
+- **永続化**: SignalRによるサーバー同期のみ（ローカルストレージなし）
 - **並行制御**: Reactの状態更新キューによる楽観的更新
 
 #### PlayerList コンポーネント
@@ -290,7 +304,7 @@ interface PlayerListProps {
 #### TimerControls コンポーネント
 
 **責任と境界**
-- **主要責任**: ゲーム操作（開始、停止、リセット、ターン切り替え）のUIインターフェース
+- **主要責任**: ゲーム操作（開始、停止、リセット、ターン切り替え、モード切り替え）のUIインターフェース
 - **ドメイン境界**: 操作UI
 - **データ所有**: なし（イベントハンドラのみ）
 
@@ -308,6 +322,7 @@ interface PlayerListProps {
 | POST | /api/resumeGame | `{}` | `{ success: boolean }` | 500 |
 | POST | /api/resetGame | `{}` | `{ success: boolean, state: GameTimerState }` | 500 |
 | POST | /api/updatePlayers | `{ playerCount: number }` | `{ success: boolean, players: Player[] }` | 400, 500 |
+| POST | /api/setTimerMode | `{ mode: 'count-up' \| 'count-down', initialTimeSeconds?: number }` | `{ success: boolean, state: GameTimerState }` | 400, 500 |
 
 ### バックエンド層
 
@@ -321,21 +336,42 @@ interface PlayerListProps {
 
 **依存関係**
 - **インバウンド**: HTTP Trigger Functions
-- **アウトバウンド**: TableStorageRepository, WebPubSubPublisher
-- **外部**: Azure Table Storage, Azure Web PubSub
+- **アウトバウンド**: TableStorageRepository, SignalROutputBinding
+- **外部**: Azure Table Storage, Azure SignalR Service
 
 **外部依存調査**
 
-**Azure Web PubSub SDK**:
-- 公式SDK: `@azure/web-pubsub`（npm）
-- 認証: Connection String経由または Managed Identity
-- 主要API:
+**Azure SignalR Service (Functions統合)**:
+- 公式SDK: `@azure/functions`（SignalR Output Binding内蔵）
+- クライアントSDK: `@microsoft/signalr`（npm）
+- 認証: Connection String（環境変数 `AzureSignalRConnectionString`）
+- Functions統合API:
   ```typescript
-  // メッセージ送信
-  await client.group("game").sendToAll(message, { contentType: "application/json" });
+  // SignalR Output Binding定義
+  const signalROutput = output.generic({
+    type: 'signalR',
+    name: 'signalR',
+    hubName: 'gameHub',
+    connectionStringSetting: 'AzureSignalRConnectionString'
+  });
+
+  // メッセージ送信（Azure Functions内）
+  context.extraOutputs.set(signalROutput, {
+    target: 'TurnSwitched',
+    arguments: [{ activePlayerId: 'player-1' }]
+  });
   ```
-- レート制限: Free Tierで2万メッセージ/日
-- 接続管理: 自動再接続サポート
+- レート制限: Free Tierで2万メッセージ/日、同時接続20
+- クライアント側接続:
+  ```typescript
+  const connection = new signalR.HubConnectionBuilder()
+    .withUrl('/api') // negotiate endpoint
+    .withAutomaticReconnect()
+    .build();
+
+  connection.on('TurnSwitched', (data) => { /* 処理 */ });
+  await connection.start();
+  ```
 
 **Azure Table Storage SDK**:
 - 公式SDK: `@azure/data-tables`（npm）
@@ -378,27 +414,28 @@ type Result<T, E> = { success: true; data: T } | { success: false; error: E };
 - 新規開発のため既存システムへの統合なし
 - 将来的な拡張: 認証機能追加時にAzure Static Web Appsの認証機能を利用
 
-#### WebPubSubPublisher
+#### SignalROutputBinding (Azure Functions統合)
 
 **責任と境界**
-- **主要責任**: Web PubSubへのイベント配信
+- **主要責任**: SignalR Serviceへのイベント配信
 - **ドメイン境界**: リアルタイム通信層
 - **データ所有**: なし（イベント配信のみ）
 
 **依存関係**
-- **インバウンド**: GameStateService
-- **アウトバウンド**: なし
-- **外部**: Azure Web PubSub
+- **インバウンド**: GameStateService（Azure Functions内）
+- **アウトバウンド**: なし（Output Bindingとして自動処理）
+- **外部**: Azure SignalR Service
 
-**イベント契約**
+**ハブメソッド契約**
 
-- **発行イベント**:
-  - `TURN_SWITCHED`: ターン切り替え時（トリガー: switchTurn成功）
-  - `TIMER_UPDATED`: タイマー同期時（トリガー: updateTimer成功）
-  - `GAME_RESET`: ゲームリセット時（トリガー: resetGame成功）
-  - `PLAYERS_UPDATED`: プレイヤー数変更時（トリガー: updatePlayers成功）
-- **配信保証**: At-least-once（Web PubSub仕様）
-- **順序保証**: 同一クライアント接続内で保証
+- **発行メソッド**:
+  - `TurnSwitched(data)`: ターン切り替え時（トリガー: switchTurn成功）
+  - `TimerUpdated(data)`: タイマー同期時（トリガー: updateTimer成功）
+  - `GameReset(data)`: ゲームリセット時（トリガー: resetGame成功）
+  - `PlayersUpdated(data)`: プレイヤー数変更時（トリガー: updatePlayers成功）
+- **配信保証**: At-least-once（SignalR Service仕様）
+- **順序保証**: 同一接続内で保証
+- **トランスポート**: WebSocket優先、フォールバックでServer-Sent Events、Long Polling
 
 #### TableStorageRepository
 
@@ -444,6 +481,7 @@ interface GameState {
   players: Player[];
   activePlayerId: string | null;
   isPaused: boolean;
+  timerMode: 'count-up' | 'count-down'; // タイマーモード（デフォルト: 'count-up'）
   createdAt: Date;
   lastUpdatedAt: Date;
 }
@@ -451,7 +489,8 @@ interface GameState {
 interface Player {
   id: string; // UUID v4
   name: string; // "プレイヤー1" など
-  elapsedTimeSeconds: number; // 経過時間（秒）
+  elapsedTimeSeconds: number; // カウントアップ: 経過時間、カウントダウン: 残り時間（秒）
+  initialTimeSeconds: number; // カウントダウンモード時の初期時間（秒）
   isActive: boolean;
   createdAt: Date;
 }
@@ -462,6 +501,10 @@ interface Player {
 - `activePlayerId` がnullでない場合、対応するPlayerが存在し、`isActive = true`
 - アクティブなプレイヤーは最大1人
 - `elapsedTimeSeconds` は非負整数
+- `timerMode` のデフォルト値は `'count-up'`（ゲーム初期化時）
+- カウントアップモード時: `elapsedTimeSeconds` は0から開始
+- カウントダウンモード時: `elapsedTimeSeconds` は `initialTimeSeconds` から開始し、0以下で時間切れ
+- `initialTimeSeconds` は正の整数（デフォルト: 600秒）
 
 **整合性境界**:
 - GameState全体が単一のトランザクション境界
@@ -488,46 +531,39 @@ interface Player {
 
 ### データ契約とインテグレーション
 
-**WebSocket イベントスキーマ**
+**SignalR ハブメソッドスキーマ**
 
 ```typescript
-// サーバー → クライアント
-type ServerEvent =
-  | {
-      type: 'TURN_SWITCHED';
-      payload: {
-        activePlayerId: string;
-        previousPlayerId: string;
-        timestamp: string; // ISO 8601
-      };
-    }
-  | {
-      type: 'TIMER_UPDATED';
-      payload: {
-        playerId: string;
-        elapsedTimeSeconds: number;
-        timestamp: string;
-      };
-    }
-  | {
-      type: 'GAME_RESET';
-      payload: {
-        players: Player[];
-        timestamp: string;
-      };
-    }
-  | {
-      type: 'PLAYERS_UPDATED';
-      payload: {
-        players: Player[];
-        timestamp: string;
-      };
-    };
+// サーバー → クライアント（SignalRハブメソッド）
+interface GameHubClient {
+  TurnSwitched(data: {
+    activePlayerId: string;
+    previousPlayerId: string;
+    timestamp: string; // ISO 8601
+  }): void;
+
+  TimerUpdated(data: {
+    playerId: string;
+    elapsedTimeSeconds: number;
+    timestamp: string;
+  }): void;
+
+  GameReset(data: {
+    players: Player[];
+    timestamp: string;
+  }): void;
+
+  PlayersUpdated(data: {
+    players: Player[];
+    timestamp: string;
+  }): void;
+}
 ```
 
 **スキーマバージョニング戦略**:
-- イベント `type` フィールドで識別
-- 将来的な拡張時は新しい `type` を追加（後方互換性維持）
+- ハブメソッド名で機能を識別
+- 将来的な拡張時は新しいメソッドを追加（後方互換性維持）
+- データペイロードにバージョンフィールド追加も可能
 
 **結果整合性の扱い**:
 - クライアント側で楽観的更新後、サーバーイベントで最終状態を上書き
@@ -553,9 +589,9 @@ type ServerEvent =
 - **Table Storage接続失敗**: ネットワークエラー、サービス障害
   - リトライ戦略: 3回まで指数バックオフ（1秒、2秒、4秒）
   - 失敗時: 「サービスが一時的に利用できません。しばらくしてから再試行してください」
-- **Web PubSub接続失敗**: WebSocket切断
-  - 自動再接続機能（SDK標準）
-  - クライアントに接続状態をUI表示（接続中/切断中）
+- **SignalR接続失敗**: 接続切断
+  - 自動再接続機能（`withAutomaticReconnect()`）
+  - クライアントに接続状態をUI表示（接続中/切断中/再接続中）
 - **タイムアウト**: API応答が10秒超過
   - フロントエンドでローディング表示 → タイムアウト後にエラー通知
 - **リソース枯渇**: メッセージ数上限到達（2万/日）
