@@ -45,4 +45,4 @@ api/.funcignore
 
 # Static Web Apps
 .azure/
-.serena/
+.serena/memories/
