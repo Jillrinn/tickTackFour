@@ -1,0 +1,83 @@
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.player-card {
+  padding: 1.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-card.active {
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+  transform: scale(1.05);
+}
+
+.player-card.time-expired {
+  border-color: #f44336;
+  background-color: #ffebee;
+}
+
+.player-card.active.time-expired {
+  border-color: #f44336;
+  background-color: #ffcdd2;
+}
+
+.player-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.player-timer {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #555;
+}
+
+.player-card.active .player-timer {
+  color: #2e7d32;
+}
+
+.player-card.time-expired .player-timer {
+  color: #c62828;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .player-list {
+    grid-template-columns: 1fr;
+  }
+
+  .player-card {
+    padding: 1rem;
+  }
+
+  .player-name {
+    font-size: 1rem;
+  }
+
+  .player-timer {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .player-list {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}

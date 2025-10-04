@@ -1,0 +1,126 @@
+.game-timer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+}
+
+.game-timer.error,
+.game-timer.loading {
+  justify-content: center;
+  align-items: center;
+  color: white;
+  text-align: center;
+}
+
+.game-timer.error h1,
+.game-timer.loading h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.game-timer.error p {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.game-timer.error button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: white;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-timer.error button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.game-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.game-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.connection-status {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.connection-status span {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.status-connected {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-connecting {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status-reconnecting {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status-disconnected {
+  background-color: #f44336;
+  color: white;
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .game-timer {
+    padding: 1rem;
+  }
+
+  .game-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .connection-status {
+    font-size: 0.9rem;
+  }
+
+  .game-main {
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .game-header h1 {
+    font-size: 3rem;
+  }
+
+  .game-main {
+    gap: 3rem;
+  }
+}
