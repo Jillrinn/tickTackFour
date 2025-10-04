@@ -41,7 +41,7 @@ export function useGameTimer(
   onServerSync?: ServerSyncCallback,
   onTimeExpired?: TimeExpiredCallback
 ) {
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<number | null>(null);
   const syncCounterRef = useRef(0);
   const currentElapsedTimeRef = useRef<number>(0);
 

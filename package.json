@@ -1,0 +1,46 @@
+{
+  "name": "tick-tack-four",
+  "version": "1.0.0",
+  "description": "マルチプレイヤー・ゲームタイマー - ボードゲーム用の4〜6人対応タイマーアプリケーション",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "api"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:front\" \"npm run dev:api\"",
+    "dev:front": "npm run dev --workspace=frontend",
+    "dev:api": "npm start --workspace=api",
+    "test": "npm run test:front && npm run test:api",
+    "test:front": "npm test --workspace=frontend -- --run",
+    "test:api": "npm test --workspace=api",
+    "test:coverage": "npm run test:coverage --workspace=frontend && npm run test:coverage --workspace=api",
+    "build": "npm run build:front && npm run build:api",
+    "build:front": "npm run build --workspace=frontend",
+    "build:api": "npm run build --workspace=api",
+    "lint": "npm run lint --workspace=frontend",
+    "clean": "npm run clean --workspace=api && rm -rf frontend/dist api/dist",
+    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/tick-tack-four.git"
+  },
+  "keywords": [
+    "game-timer",
+    "multiplayer",
+    "board-game",
+    "react",
+    "azure",
+    "signalr"
+  ],
+  "author": "",
+  "license": "MIT"
+}

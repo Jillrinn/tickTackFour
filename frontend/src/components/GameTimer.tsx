@@ -18,7 +18,7 @@ export function GameTimer() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
   const [error, setError] = useState<string | null>(null);
-  const [signalRManager, setSignalRManager] = useState<SignalRConnectionManager | null>(null);
+  const [_signalRManager, setSignalRManager] = useState<SignalRConnectionManager | null>(null);
 
   // ゲーム状態をAPIから取得
   const fetchGameState = useCallback(async () => {
