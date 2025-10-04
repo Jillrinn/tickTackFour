@@ -1,6 +1,6 @@
 # 実装計画
 
-- [ ] 1. プロジェクト基盤とインフラストラクチャのセットアップ
+- [x] 1. プロジェクト基盤とインフラストラクチャのセットアップ
   - フロントエンドプロジェクトをReact 18 + TypeScript + Viteで初期化
   - Azure Functions APIプロジェクトをNode.js 20 + TypeScriptで作成
   - Azure Cosmos DB (Table API) のテーブル構造を定義・作成
@@ -8,7 +8,7 @@
   - Azure Static Web Appsのデプロイ設定(GitHub Actions CI/CD統合)
   - _要件: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 2. コアデータモデルと型定義の実装
+- [x] 2. コアデータモデルと型定義の実装
   - GameStateインターフェース(プレイヤー配列、アクティブID、一時停止状態、タイマーモード)の定義
   - Playerインターフェース(ID、名前、経過時間、初期時間、アクティブ状態)の定義
   - タイマーモード('count-up' | 'count-down')の型定義とデフォルト値設定

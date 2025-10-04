@@ -37,3 +37,11 @@ Thumbs.db
 # Temporary files
 *.tmp
 .cache/
+
+# Azure Functions
+api/local.settings.json
+api/dist/
+api/.funcignore
+
+# Static Web Apps
+.azure/
