@@ -31,25 +31,28 @@
 ```mermaid
 graph TB
     Client[Webブラウザ<br/>React SPA]
-    CDN[Azure Static Web Apps<br/>CDN + ホスティング]
+    SWA[Azure Static Web Apps<br/>CDN + ホスティング + Managed Functions]
     SignalR[Azure SignalR Service<br/>Free Tier]
     Storage[Azure Cosmos DB<br/>Free Tier - Table API]
-    Functions[Azure Functions<br/>API Layer]
 
-    Client -->|静的コンテンツ| CDN
+    Client -->|静的コンテンツ| SWA
+    Client -->|HTTP API /api/*| SWA
     Client <-->|SignalR接続| SignalR
-    Client -->|HTTP API| Functions
-    Functions -->|状態読み書き| Storage
-    Functions -->|状態変更通知| SignalR
+    SWA -->|状態読み書き| Storage
+    SWA -->|状態変更通知| SignalR
 ```
 
 ### アーキテクチャの特徴
 
 **Azure無料層の活用**:
-- Azure Static Web Apps Free Tier: 静的コンテンツ配信（250MB）
+- Azure Static Web Apps Free Tier: 静的コンテンツ配信（250MB）+ Managed Functions統合
 - Azure SignalR Service Free Tier: リアルタイム通信（同時接続20、メッセージ2万/日）
 - Azure Cosmos DB Free Tier: ゲーム状態の永続化（1000 RU/s + 25GB、完全無料）
-- Azure Functions Consumption Plan: サーバーレスAPI（月100万リクエスト無料）
+
+**Managed Functions**:
+- Azure Static Web Appsに統合されたサーバーレスAPI（別個のFunctionsリソース不要）
+- `/api`フォルダのコードが自動デプロイ
+- 月100万リクエスト無料枠を含む
 
 **アーキテクチャパターン**: イベント駆動アーキテクチャ + CQRSライト
 - コマンド（タイマー操作）: REST API経由でFunctionsに送信

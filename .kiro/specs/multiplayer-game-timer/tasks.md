@@ -125,8 +125,7 @@
 - [ ] 8.1 Azureリソースのプロビジョニング
   - Azure Cosmos DB Free Tierアカウント作成(Table API)
   - Azure SignalR Service Free Tierインスタンス作成
-  - Azure Static Web Appsリソース作成
-  - Azure Functionsリソース作成(Consumption Plan)
+  - Azure Static Web Appsリソース作成(Managed Functionsを含む)
   - _要件: 7.1, 7.3, 7.4_
 
 - [ ] 8.2 環境変数とシークレット設定
@@ -136,8 +135,7 @@
   - _要件: 7.1, 7.3, 7.4_
 
 - [ ] 8.3 CI/CDパイプラインの構築
-  - GitHub Actionsワークフロー作成(フロントエンドビルド→Static Web Appsデプロイ)
-  - GitHub Actionsワークフロー作成(バックエンドビルド→Azure Functionsデプロイ)
+  - GitHub Actionsワークフロー作成(フロントエンド+Managed Functionsを一括デプロイ)
   - デプロイ後の動作確認テスト自動実行
   - _要件: 7.1, 7.2_
 
