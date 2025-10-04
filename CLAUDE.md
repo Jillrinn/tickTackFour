@@ -20,6 +20,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 
 ## Development Guidelines
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
+- **Commit messages must be written in Japanese** (コミットメッセージは日本語で記述すること)
 
 ## Workflow
 
