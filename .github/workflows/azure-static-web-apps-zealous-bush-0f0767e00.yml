@@ -28,6 +28,7 @@ jobs:
           cd frontend
           rm -rf node_modules package-lock.json
           npm install
+          npm install --save-optional @rollup/rollup-linux-x64-gnu
           npm run build
       - name: Install API dependencies
         run: |
