@@ -30,28 +30,28 @@
   - 接続エラー時のリトライロジックテスト
   - _要件: 7.4_
 
-- [ ] 4. SignalRリアルタイム通信の実装
-- [ ] 4.1 SignalRサーバーサイド設定
+- [x] 4. SignalRリアルタイム通信の実装
+- [x] 4.1 SignalRサーバーサイド設定
   - Azure Functions SignalR Output Bindingの設定
   - SignalRハブ 'gameHub' の作成
   - イベント送信関数(TurnSwitched, TimerUpdated, GameReset, PlayersUpdated)の実装
   - _要件: 5.2, 7.3_
 
-- [ ] 4.2 SignalRクライアント接続管理
+- [x] 4.2 SignalRクライアント接続管理
   - @microsoft/signalrパッケージのインストール
   - HubConnectionBuilderによる接続初期化(自動再接続設定)
   - サーバーイベントリスナーの登録(on('TurnSwitched'), on('TimerUpdated')等)
   - 接続状態管理(接続中/切断中/再接続中)のUIインジケーター
   - _要件: 5.1, 5.2_
 
-- [ ] 5. Azure Functions APIエンドポイントの実装
-- [ ] 5.1 ゲーム状態取得API
+- [x] 5. Azure Functions APIエンドポイントの実装
+- [x] 5.1 ゲーム状態取得API
   - GET /api/gameエンドポイント実装
   - Cosmos DBから現在のゲーム状態を取得
   - 初回アクセス時のデフォルト状態(4人プレイヤー、カウントアップモード)初期化
   - _要件: 1.1, 1.4_
 
-- [ ] 5.2 ターン切り替えAPI
+- [x] 5.2 ターン切り替えAPI
   - POST /api/switchTurnエンドポイント実装
   - 現在プレイヤーのタイマー停止、次プレイヤーのタイマー開始ロジック
   - 最後のプレイヤーから最初のプレイヤーへの循環処理
@@ -59,7 +59,7 @@
   - SignalR TurnSwitchedイベントの送信
   - _要件: 3.3, 3.4_
 
-- [ ] 5.3 タイマー同期API
+- [x] 5.3 タイマー同期API
   - POST /api/syncTimerエンドポイント実装
   - クライアントから送信された経過時間の検証と保存
   - カウントアップ/カウントダウンモード別のタイマー値更新ロジック
@@ -67,7 +67,7 @@
   - SignalR TimerUpdatedイベントの送信
   - _要件: 2.2, 2.3, 2.5, 2.7_
 
-- [ ] 5.4 ゲームコントロールAPI
+- [x] 5.4 ゲームコントロールAPI
   - POST /api/resetGameエンドポイント実装(全タイマーリセット)
   - POST /api/pauseGameエンドポイント実装(アクティブタイマー一時停止)
   - POST /api/resumeGameエンドポイント実装(一時停止解除)
@@ -75,7 +75,7 @@
   - SignalR GameReset/PlayersUpdatedイベントの送信
   - _要件: 1.2, 2.6, 2.8, 4.1, 4.2, 4.3_
 
-- [ ] 5.5 タイマーモード切り替えAPI
+- [x] 5.5 タイマーモード切り替えAPI
   - POST /api/setTimerModeエンドポイント実装
   - カウントアップ/カウントダウンモードの切り替え処理
   - カウントダウンモード時の初期時間設定(デフォルト600秒)
