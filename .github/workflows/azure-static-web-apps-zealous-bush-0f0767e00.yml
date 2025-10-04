@@ -30,10 +30,6 @@ jobs:
           npm install
           npm install --save-optional @rollup/rollup-linux-x64-gnu
           npm run build
-      - name: Install API dependencies
-        run: |
-          cd api
-          npm ci --legacy-peer-deps
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -44,7 +40,7 @@ jobs:
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "/frontend" # App source code path
-          api_location: "/api" # Api source code path - optional
+          api_location: "" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
           skip_app_build: true # ビルド済みのため
           ###### End of Repository/Build Configurations ######
