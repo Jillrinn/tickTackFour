@@ -1,6 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext, output } from '@azure/functions';
 import { GameStateService } from '../services/GameStateService';
 import { GameStateRepository } from '../repositories/GameStateRepository';
+import { updatePlayersSchema } from '../validation/schemas';
+import { handleValidation, handleError, BusinessError } from '../middleware/errorHandler';
 
 /**
  * SignalR Output Binding定義
@@ -20,21 +22,15 @@ export async function updatePlayers(request: HttpRequest, context: InvocationCon
   context.log('POST /api/updatePlayers - プレイヤー数変更');
 
   try {
-    // リクエストボディの取得
-    const body = await request.json() as { playerCount: number };
+    // リクエストボディの取得とバリデーション
+    const body = await request.json();
+    const validationResult = handleValidation(updatePlayersSchema, body);
 
-    if (!body || typeof body.playerCount !== 'number') {
-      return {
-        status: 400,
-        jsonBody: {
-          success: false,
-          error: {
-            message: 'リクエストボディにplayerCountが必要です',
-            code: 'INVALID_REQUEST'
-          }
-        }
-      };
+    if (!validationResult.success) {
+      return handleError(validationResult.error);
     }
+
+    const { playerCount } = validationResult.data;
 
     // リポジトリとサービスの初期化
     const connectionString = process.env.CosmosDBConnectionString || '';
@@ -42,7 +38,7 @@ export async function updatePlayers(request: HttpRequest, context: InvocationCon
     const service = new GameStateService(repository);
 
     // プレイヤー数を更新
-    const result = await service.updatePlayers(body.playerCount);
+    const result = await service.updatePlayers(playerCount);
 
     if (result.success) {
       // SignalRイベント送信
@@ -64,37 +60,16 @@ export async function updatePlayers(request: HttpRequest, context: InvocationCon
     } else {
       context.error('プレイヤー数変更エラー:', result.error);
 
-      // バリデーションエラーは400を返す
+      // ビジネスルールエラーの場合は422を返す
       if (result.error.code === 'VALIDATION_ERROR') {
-        return {
-          status: 400,
-          jsonBody: {
-            success: false,
-            error: result.error
-          }
-        };
+        return handleError(new BusinessError(result.error.message));
       }
 
-      return {
-        status: 500,
-        jsonBody: {
-          success: false,
-          error: result.error
-        }
-      };
+      throw new Error(result.error.message);
     }
   } catch (error) {
     context.error('予期しないエラー:', error);
-    return {
-      status: 500,
-      jsonBody: {
-        success: false,
-        error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          code: 'INTERNAL_ERROR'
-        }
-      }
-    };
+    return handleError(error);
   }
 }
 

@@ -20,7 +20,8 @@
     "@azure/data-tables": "^13.3.1",
     "@azure/functions": "^4.8.0",
     "@types/node": "^24.6.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

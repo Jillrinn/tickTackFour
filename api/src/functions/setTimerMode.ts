@@ -1,6 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext, output } from '@azure/functions';
 import { GameStateService } from '../services/GameStateService';
 import { GameStateRepository } from '../repositories/GameStateRepository';
+import { setTimerModeSchema } from '../validation/schemas';
+import { handleValidation, handleError, BusinessError } from '../middleware/errorHandler';
 
 /**
  * SignalR Output Binding定義
@@ -20,21 +22,15 @@ export async function setTimerMode(request: HttpRequest, context: InvocationCont
   context.log('POST /api/setTimerMode - タイマーモード設定');
 
   try {
-    // リクエストボディの取得
-    const body = await request.json() as { mode: 'count-up' | 'count-down'; initialTimeSeconds?: number };
+    // リクエストボディの取得とバリデーション
+    const body = await request.json();
+    const validationResult = handleValidation(setTimerModeSchema, body);
 
-    if (!body || !body.mode) {
-      return {
-        status: 400,
-        jsonBody: {
-          success: false,
-          error: {
-            message: 'リクエストボディにmodeが必要です',
-            code: 'INVALID_REQUEST'
-          }
-        }
-      };
+    if (!validationResult.success) {
+      return handleError(validationResult.error);
     }
+
+    const { mode, initialTimeSeconds } = validationResult.data;
 
     // リポジトリとサービスの初期化
     const connectionString = process.env.CosmosDBConnectionString || '';
@@ -42,7 +38,7 @@ export async function setTimerMode(request: HttpRequest, context: InvocationCont
     const service = new GameStateService(repository);
 
     // タイマーモードを設定
-    const result = await service.setTimerMode(body.mode, body.initialTimeSeconds);
+    const result = await service.setTimerMode(mode, initialTimeSeconds);
 
     if (result.success) {
       // SignalRイベント送信
@@ -65,37 +61,16 @@ export async function setTimerMode(request: HttpRequest, context: InvocationCont
     } else {
       context.error('タイマーモード設定エラー:', result.error);
 
-      // バリデーションエラーは400を返す
+      // ビジネスルールエラーの場合は422を返す
       if (result.error.code === 'VALIDATION_ERROR') {
-        return {
-          status: 400,
-          jsonBody: {
-            success: false,
-            error: result.error
-          }
-        };
+        return handleError(new BusinessError(result.error.message));
       }
 
-      return {
-        status: 500,
-        jsonBody: {
-          success: false,
-          error: result.error
-        }
-      };
+      throw new Error(result.error.message);
     }
   } catch (error) {
     context.error('予期しないエラー:', error);
-    return {
-      status: 500,
-      jsonBody: {
-        success: false,
-        error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          code: 'INTERNAL_ERROR'
-        }
-      }
-    };
+    return handleError(error);
   }
 }
 

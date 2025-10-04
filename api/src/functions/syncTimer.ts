@@ -3,6 +3,8 @@ import { GameStateService } from '../services/GameStateService';
 import { GameStateRepository } from '../repositories/GameStateRepository';
 import { SignalRPublisher } from '../services/SignalRPublisher';
 import { TimerUpdatedEvent } from '../models/SignalREvents';
+import { syncTimerSchema } from '../validation/schemas';
+import { handleValidation, handleError, BusinessError } from '../middleware/errorHandler';
 
 /**
  * POST /api/syncTimer
@@ -25,22 +27,15 @@ export async function syncTimer(request: HttpRequest, context: InvocationContext
   context.log('POST /api/syncTimer - タイマー同期');
 
   try {
-    // リクエストボディの解析
-    const body = await request.json() as { playerId: string; elapsedTimeSeconds: number };
+    // リクエストボディの取得とバリデーション
+    const body = await request.json();
+    const validationResult = handleValidation(syncTimerSchema, body);
 
-    if (!body.playerId || typeof body.elapsedTimeSeconds !== 'number') {
-      return {
-        status: 400,
-        jsonBody: {
-          success: false,
-          error: {
-            message: '不正なリクエストです',
-            code: 'INVALID_REQUEST',
-            validationErrors: ['playerId と elapsedTimeSeconds は必須です']
-          }
-        }
-      };
+    if (!validationResult.success) {
+      return handleError(validationResult.error);
     }
+
+    const { playerId, elapsedTimeSeconds } = validationResult.data;
 
     // サービスの初期化
     const connectionString = process.env.CosmosDBConnectionString || '';
@@ -48,24 +43,20 @@ export async function syncTimer(request: HttpRequest, context: InvocationContext
     const service = new GameStateService(repository);
 
     // タイマー同期
-    const result = await service.syncTimer(body.playerId, body.elapsedTimeSeconds);
+    const result = await service.syncTimer(playerId, elapsedTimeSeconds);
 
     if (!result.success) {
-      const statusCode = result.error.code === 'VALIDATION_ERROR' ? 422 : 500;
-      return {
-        status: statusCode,
-        jsonBody: {
-          success: false,
-          error: result.error
-        }
-      };
+      if (result.error.code === 'VALIDATION_ERROR') {
+        return handleError(new BusinessError(result.error.message));
+      }
+      throw new Error(result.error.message);
     }
 
     // SignalRイベントの送信
     const publisher = new SignalRPublisher();
     const event: TimerUpdatedEvent = {
-      playerId: body.playerId,
-      elapsedTimeSeconds: body.elapsedTimeSeconds,
+      playerId,
+      elapsedTimeSeconds,
       timestamp: new Date().toISOString()
     };
     const signalRMessage = publisher.publishTimerUpdated(event);
@@ -82,16 +73,7 @@ export async function syncTimer(request: HttpRequest, context: InvocationContext
     };
   } catch (error) {
     context.error('予期しないエラー:', error);
-    return {
-      status: 500,
-      jsonBody: {
-        success: false,
-        error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          code: 'INTERNAL_ERROR'
-        }
-      }
-    };
+    return handleError(error);
   }
 }
 
