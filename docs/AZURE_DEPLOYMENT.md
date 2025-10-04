@@ -236,42 +236,27 @@ az staticwebapp appsettings set \
 
 ### ステップ5: CI/CDパイプラインの構築
 
-#### 5.1 GitHub Actionsワークフローの確認
+#### 5.1 自動生成されたGitHub Actionsワークフローの確認
 
-`.github/workflows/azure-static-web-apps.yml`の内容を確認します。
+Azure Static Web Apps作成時に自動生成されたワークフローファイルを確認します。
+
+**ファイル場所**: `.github/workflows/azure-static-web-apps-zealous-bush-0f0767e00.yml`
+
+**重要**: 自動生成されたワークフローの`output_location`が`build`になっている場合、`dist`に修正してください（Viteのビルド出力先）。
 
 ```yaml
-name: Azure Static Web Apps CI/CD
+# 修正前（自動生成）
+output_location: "build"  # ❌
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
+# 修正後
+output_location: "dist"   # ✅
+```
 
-jobs:
-  build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
-    runs-on: ubuntu-latest
-    name: Build and Deploy Job
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-
-      - name: Build And Deploy
-        id: builddeploy
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "/frontend"
-          api_location: "/api"
-          output_location: "dist"
+**完全な設定例**:
+```yaml
+app_location: "/frontend"
+api_location: "/api"
+output_location: "dist"
 ```
 
 #### 5.2 デプロイトリガー
