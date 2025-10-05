@@ -33,6 +33,7 @@ jobs:
           app_location: "/frontend" # フロントエンドソースコードのパス
           api_location: "/api" # Azure Functions APIのパス
           output_location: "dist" # ビルド出力ディレクトリ
+          api_build_command: "npm ci && npm run build" # Node.js 20でAPIをビルド
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
