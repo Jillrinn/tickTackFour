@@ -40,7 +40,7 @@ jobs:
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "/frontend/dist" # ビルド済みファイルのパス
-          api_location: "/api" # Azure Functions APIのパス
+          api_location: "" # APIは別途設定が必要（一旦無効化）
           output_location: "" # app_locationがビルド済みディレクトリなので空
           skip_app_build: true # ビルド済みのため
           ###### End of Repository/Build Configurations ######
