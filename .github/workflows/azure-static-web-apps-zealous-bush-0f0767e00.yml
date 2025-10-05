@@ -29,7 +29,7 @@ jobs:
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "/frontend" # フロントエンドソースコードのパス
-          api_location: "" # APIは別途Node.js 20対応が必要（一旦無効化）
+          api_location: "/api" # Azure Functions APIのパス
           output_location: "dist" # ビルド出力ディレクトリ
           ###### End of Repository/Build Configurations ######
 
