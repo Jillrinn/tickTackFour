@@ -46,3 +46,6 @@ api/.funcignore
 # Static Web Apps
 .azure/
 .serena/memories/
+
+# Playwright MCP
+.playwright-mcp/
