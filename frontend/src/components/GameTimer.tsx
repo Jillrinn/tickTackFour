@@ -27,7 +27,13 @@ export function GameTimer() {
       if (!response.ok) {
         throw new Error(`API error: ${response.statusText}`);
       }
-      const data = await response.json();
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Unknown error');
+      }
+
+      const data = result.data;
 
       // Date型に変換
       const state: GameState = {
@@ -50,7 +56,7 @@ export function GameTimer() {
 
   // SignalR接続の初期化
   useEffect(() => {
-    const manager = new SignalRConnectionManager(`${API_BASE_URL}/negotiate`);
+    const manager = new SignalRConnectionManager(`${API_BASE_URL}`);
 
     // 接続状態変化のコールバック
     manager.onConnectionStateChanged((state) => {
@@ -112,10 +118,10 @@ export function GameTimer() {
       });
     });
 
-    // 接続開始
+    // 接続開始（エラーは警告として記録するのみ）
     manager.start().catch((err) => {
       console.error('SignalR connection failed:', err);
-      setError('リアルタイム接続に失敗しました');
+      console.warn('リアルタイム更新が無効です。手動でリロードしてください。');
     });
 
     setSignalRManager(manager);

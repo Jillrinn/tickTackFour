@@ -16,6 +16,9 @@ export async function getGame(request: HttpRequest, context: InvocationContext):
     const repository = new GameStateRepository(connectionString);
     const service = new GameStateService(repository);
 
+    // テーブルが存在しない場合は作成
+    await repository.ensureTableExists();
+
     // ゲーム状態を取得
     const result = await service.getCurrentState();
 

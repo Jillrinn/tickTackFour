@@ -18,7 +18,22 @@ export class GameStateRepository {
   }
 
   /**
+   * テーブルが存在しない場合は作成する
+   */
+  async ensureTableExists(): Promise<void> {
+    try {
+      await this.tableClient.createTable();
+    } catch (error: any) {
+      // テーブルが既に存在する場合はエラーを無視
+      if (error.statusCode !== 409) {
+        throw error;
+      }
+    }
+  }
+
+  /**
    * 新規GameStateを作成してCosmos DBに保存
+   * 既に存在する場合は上書き（upsert）
    */
   async create(gameState: GameState): Promise<void> {
     const entity: GameStateEntity = {
@@ -27,7 +42,8 @@ export class GameStateRepository {
       stateJson: JSON.stringify(gameState)
     };
 
-    await this.tableClient.createEntity(entity);
+    // upsertEntityを使用して、存在しない場合は作成、存在する場合は更新
+    await this.tableClient.upsertEntity(entity, 'Replace');
   }
 
   /**

@@ -1,6 +1,7 @@
 {
   "name": "api",
   "version": "1.0.0",
+  "main": "dist/index.js",
   "engines": {
     "node": ">=20"
   },
