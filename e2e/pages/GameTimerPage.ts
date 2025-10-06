@@ -120,10 +120,16 @@ export class GameTimerPage {
    * タイマーモードをカウントダウンに設定
    */
   async setTimerModeCountDown(seconds?: number): Promise<void> {
-    if (seconds !== undefined) {
-      await this.countdownSecondsInput.fill(seconds.toString());
-    }
+    // カウントダウンボタンをクリックして入力フィールドを表示
     await this.countDownButton.click();
+
+    // 秒数が指定されている場合は入力
+    if (seconds !== undefined) {
+      await this.countdownSecondsInput.waitFor({ state: 'visible' });
+      await this.countdownSecondsInput.fill(seconds.toString());
+      // 再度カウントダウンボタンをクリックして適用
+      await this.countDownButton.click();
+    }
   }
 
   /**
