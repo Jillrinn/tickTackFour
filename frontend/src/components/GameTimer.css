@@ -91,13 +91,234 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
 
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
+.game-status {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.game-status h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #667eea;
+}
+
+.status-info {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.status-info p {
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.players-section {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.players-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  color: #667eea;
+}
+
+.players-grid {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.player-card {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.player-card.active {
+  background: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.player-info {
+  margin-bottom: 0.75rem;
+}
+
+.player-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.player-id {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.player-time {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: #555;
+}
+
+.player-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.player-actions button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: #667eea;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.player-actions button:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+.controls-section {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.controls-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  color: #667eea;
+}
+
+.controls-grid {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.controls-grid button,
+.controls-grid .countdown-control {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.controls-grid button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.countdown-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.countdown-control input {
+  width: 80px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+}
+
+.countdown-control span {
+  font-size: 1rem;
+}
+
+.test-info {
+  background: #fff3cd;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid #ffc107;
+}
+
+.test-info strong {
+  color: #856404;
+  font-size: 1.1rem;
+}
+
+.test-info ul {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.test-info li {
+  margin-bottom: 0.5rem;
+  color: #856404;
+  font-size: 0.95rem;
+}
+
+/* レスポンシブ対応: スマートフォン (375px以下) */
+@media (max-width: 375px) {
+  .game-timer {
+    padding: 0.75rem;
+  }
+
+  .game-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .game-status,
+  .players-section,
+  .controls-section,
+  .test-info {
+    padding: 1rem;
+  }
+
+  .players-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-name {
+    font-size: 1rem;
+  }
+
+  .player-actions button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .controls-grid button,
+  .controls-grid .countdown-control {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+  }
+}
+
+/* レスポンシブ対応: スマートフォン (376px-767px) */
+@media (min-width: 376px) and (max-width: 767px) {
   .game-timer {
     padding: 1rem;
   }
@@ -106,21 +327,40 @@
     font-size: 1.8rem;
   }
 
-  .connection-status {
-    font-size: 0.9rem;
-  }
-
-  .game-main {
-    gap: 1.5rem;
+  .players-grid {
+    grid-template-columns: 1fr;
   }
 }
 
+/* レスポンシブ対応: タブレット (768px-1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .game-header h1 {
+    font-size: 2.2rem;
+  }
+
+  .players-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* レスポンシブ対応: PC (1024px以上) */
 @media (min-width: 1024px) {
+  .game-header h1 {
+    font-size: 2.5rem;
+  }
+
+  .players-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* レスポンシブ対応: 大画面PC (1440px以上) */
+@media (min-width: 1440px) {
   .game-header h1 {
     font-size: 3rem;
   }
 
-  .game-main {
-    gap: 3rem;
+  .players-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
