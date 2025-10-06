@@ -1,0 +1,49 @@
+/* 主要操作セクション */
+.primary-controls {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pause-toggle-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-height: 44px; /* アクセシビリティ: タップターゲットサイズ */
+}
+
+.pause-toggle-btn:hover {
+  background-color: #0056b3;
+}
+
+.pause-toggle-btn:active {
+  background-color: #004494;
+}
+
+/* レスポンシブ対応: セクション境界の視覚的区切り */
+/* モバイル（375px〜767px）: 縦方向に積み重ね */
+@media (max-width: 767px) {
+  .primary-controls {
+    margin-bottom: 1rem;
+  }
+}
+
+/* タブレット・PC（768px以上）: 横方向に配置 */
+@media (min-width: 768px) {
+  .primary-controls {
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+}
