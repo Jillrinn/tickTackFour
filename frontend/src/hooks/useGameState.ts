@@ -349,6 +349,48 @@ export function useGameState() {
     return 'プレイヤー数は4〜6人の範囲で入力してください';
   }, [validatePlayerCount]);
 
+  /**
+   * 最も累積時間が長いプレイヤーを取得（Task 1.1）
+   * - カウントアップモード専用機能
+   * - カウントダウンモードではnullを返す
+   * - 全員の時間が0の場合はnullを返す
+   * - 同点の場合は最初に見つかったプレイヤーを返す
+   *
+   * 要件トレーサビリティ:
+   * - 要件1.1: カウントアップモードで最長プレイヤー表示
+   * - 要件1.2: プレイヤー名と累積時間を表示
+   * - 要件1.3: 同点時は1人を選択表示
+   * - 要件1.4: カウントダウンモードで非表示
+   * - 要件1.5: 全員0秒時は非表示
+   */
+  const getLongestTimePlayer = useCallback((): Player | null => {
+    // カウントアップモードでない場合は非表示
+    if (gameState.timerMode !== 'count-up') {
+      return null;
+    }
+
+    // プレイヤーが存在しない場合は非表示
+    if (gameState.players.length === 0) {
+      return null;
+    }
+
+    // 全員の時間が0の場合は非表示
+    const hasNonZeroTime = gameState.players.some(p => p.elapsedTimeSeconds > 0);
+    if (!hasNonZeroTime) {
+      return null;
+    }
+
+    // 最長時間のプレイヤーを検索（同点の場合は最初に見つかったプレイヤー）
+    let longestPlayer = gameState.players[0];
+    for (const player of gameState.players) {
+      if (player.elapsedTimeSeconds > longestPlayer.elapsedTimeSeconds) {
+        longestPlayer = player;
+      }
+    }
+
+    return longestPlayer;
+  }, [gameState.timerMode, gameState.players]);
+
   return {
     gameState,
     setPlayerCount,
@@ -363,6 +405,7 @@ export function useGameState() {
     getTimedOutPlayerId,
     isPlayerControlDisabled,
     validatePlayerCount,
-    getPlayerCountError
+    getPlayerCountError,
+    getLongestTimePlayer
   };
 }
