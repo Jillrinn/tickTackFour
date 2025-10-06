@@ -27,8 +27,8 @@
 
 ## Phase 2: Page Objectモデル基盤の実装
 
-- [ ] 2. 再利用可能なPage Objectモデル基盤を構築する
-- [ ] 2.1 ゲームタイマーページオブジェクトを実装する
+- [x] 2. 再利用可能なPage Objectモデル基盤を構築する
+- [x] 2.1 ゲームタイマーページオブジェクトを実装する
   - GameTimerPageクラスを作成し、ページ全体の操作を提供
   - ページナビゲーションメソッド（navigate, verifyPageLoaded）を実装
   - プレイヤー数操作メソッド（setPlayerCount, getPlayerCount）を実装
@@ -36,7 +36,7 @@
   - 基本ロケーター定義（gameTimer, gameHeader, playersSection, controlsSection）を作成
   - _Requirements: 9.1, 9.2_
 
-- [ ] 2.2 コンポーネントページオブジェクトを実装する
+- [x] 2.2 コンポーネントページオブジェクトを実装する
   - PlayerCardクラスを作成（プレイヤーカード操作・状態取得メソッド）
   - GameControlsクラスを作成（ゲーム制御ボタン操作メソッド）
   - GameStatusクラスを作成（ゲーム状態情報取得メソッド）
@@ -44,7 +44,7 @@
   - 各コンポーネントの状態確認メソッド（isActive, isTimedOut, isButtonDisabled等）を実装
   - _Requirements: 9.1, 9.5_
 
-- [ ] 2.3 テストヘルパーとフィクスチャを実装する
+- [x] 2.3 テストヘルパーとフィクスチャを実装する
   - assertionsヘルパーを作成（assertPlayerCount, assertTimerMode, assertTimeInRange等）
   - waitingヘルパーを作成（waitForTimerProgress, waitForPlayerCountChange等）
   - gameStateフィクスチャを作成（default, countdownMode, withActivePlayer等のテストデータ）
