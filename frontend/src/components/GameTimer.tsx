@@ -88,6 +88,9 @@ export function GameTimer() {
         <div className="controls-section">
           <h3>操作</h3>
           <div className="controls-grid">
+            <button onClick={switchToNextPlayer} className="next-player-btn">
+              次のプレイヤーへ
+            </button>
             <button onClick={() => setPlayerCount(4)}>4人</button>
             <button onClick={() => setPlayerCount(5)}>5人</button>
             <button onClick={() => setPlayerCount(6)}>6人</button>
@@ -103,9 +106,6 @@ export function GameTimer() {
               />
               <span>秒</span>
             </div>
-            <button onClick={switchToNextPlayer} className="next-player-btn">
-              次のプレイヤーへ
-            </button>
             <button onClick={() => setPaused(!gameState.isPaused)}>
               {gameState.isPaused ? '再開' : '一時停止'}
             </button>
