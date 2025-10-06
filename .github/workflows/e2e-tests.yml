@@ -1,0 +1,166 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - 'e2e/**'
+      - 'playwright.config.ts'
+      - '.github/workflows/e2e-tests.yml'
+  push:
+    branches: [main, develop]
+
+jobs:
+  e2e-phase1:
+    name: E2E Tests (Phase 1 - Frontend Only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests (Phase 1)
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: test-results/
+          retention-days: 7
+
+      - name: Upload trace files
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/**/*.zip
+          retention-days: 7
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'test-results/junit.xml';
+
+            if (fs.existsSync(reportPath)) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '❌ E2E tests failed. Please check the [test report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
+              });
+            }
+
+  # Phase 2用ワークフロー雛形（コメントアウト）
+  # e2e-phase2:
+  #   name: E2E Tests (Phase 2 - Backend Integration)
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 20
+  #   if: github.event.pull_request.labels.*.name == 'phase2' || contains(github.event.head_commit.message, '[phase2]')
+
+  #   services:
+  #     cosmos-emulator:
+  #       image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+  #       ports:
+  #         - 8081:8081
+  #         - 10251:10251
+  #         - 10252:10252
+  #         - 10253:10253
+  #         - 10254:10254
+  #       env:
+  #         AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 10
+  #         AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: false
+
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
+
+  #     - name: Install dependencies
+  #       run: npm ci
+
+  #     - name: Install Playwright browsers
+  #       run: npx playwright install --with-deps chromium
+
+  #     - name: Wait for Cosmos DB Emulator
+  #       run: |
+  #         timeout 120 bash -c 'until curl -k https://localhost:8081 > /dev/null 2>&1; do sleep 2; done'
+
+  #     - name: Setup backend services
+  #       run: |
+  #         cd backend
+  #         npm ci
+  #         npm run build
+  #         npm start &
+  #         timeout 30 bash -c 'until curl http://localhost:3000/health > /dev/null 2>&1; do sleep 1; done'
+
+  #     - name: Run E2E tests (Phase 2)
+  #       run: PHASE=2 npm run test:e2e
+  #       env:
+  #         CI: true
+  #         COSMOS_DB_CONNECTION_STRING: ${{ secrets.COSMOS_DB_CONNECTION_STRING_TEST }}
+  #         SIGNALR_CONNECTION_STRING: ${{ secrets.SIGNALR_CONNECTION_STRING_TEST }}
+
+  #     - name: Upload test results
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: playwright-report-phase2
+  #         path: playwright-report/
+  #         retention-days: 30
+
+  #     - name: Cleanup backend services
+  #       if: always()
+  #       run: |
+  #         pkill -f "node.*backend" || true
+
+  deployment-gate:
+    name: Deployment Gate
+    runs-on: ubuntu-latest
+    needs: [e2e-phase1]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check E2E test results
+        run: |
+          echo "E2E tests passed successfully"
+          echo "✅ Deployment gate: PASS"
+
+      - name: Block deployment on failure
+        if: failure()
+        run: |
+          echo "❌ E2E tests failed - blocking deployment"
+          exit 1
