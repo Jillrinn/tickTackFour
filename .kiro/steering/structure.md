@@ -9,6 +9,7 @@
 tickTackFour/
 ├── frontend/          # Reactフロントエンドアプリケーション
 ├── api/               # Azure Functionsバックエンド
+├── e2e/               # E2Eテスト（Playwright）
 ├── .kiro/             # Spec-driven development管理
 ├── .claude/           # Claude Code設定・コマンド
 ├── .github/           # GitHub Actions CI/CD設定
@@ -83,6 +84,42 @@ api/src/
 │   └── getGameState/  # ゲーム状態取得API
 └── models/            # 共有データモデル
 ```
+
+## E2Eテスト構造 (`e2e/`)
+
+### ディレクトリ構成
+```
+e2e/
+├── specs/                           # Phase 1/2統合テストスイート
+│   ├── player-management.spec.ts    # プレイヤー管理テスト
+│   ├── timer-operations.spec.ts     # タイマー動作テスト
+│   ├── active-player.spec.ts        # アクティブプレイヤー管理テスト
+│   ├── game-controls.spec.ts        # ゲーム制御テスト
+│   ├── responsive-ui.spec.ts        # レスポンシブUIテスト
+│   ├── persistence.spec.ts          # 永続化検証（Phase 2のみ実行）
+│   └── realtime-sync.spec.ts        # リアルタイム同期検証（Phase 2のみ実行）
+├── pages/                           # Page Object Model（POM）
+│   └── GameTimerPage.ts             # ゲームタイマーページオブジェクト
+├── fixtures/                        # テストフィクスチャ
+│   └── gameStates.ts                # テスト用ゲーム状態データ
+├── helpers/                         # ヘルパー関数
+│   └── timeHelpers.ts               # 時間検証ヘルパー
+├── tsconfig.json                    # E2Eテスト用TypeScript設定
+└── playwright.config.ts             # Playwright設定ファイル
+```
+
+### 主要ファイルの役割
+- **`specs/`**: Phase 1/2統合テストスイート（同じファイルで両フェーズに対応）
+- **`pages/`**: Page Object Model パターンで UI 要素とロケーターを管理
+- **`fixtures/`**: テストデータとフィクスチャ（再利用可能なテストデータ）
+- **`helpers/`**: テストヘルパー関数（時間検証、状態検証等）
+- **`playwright.config.ts`**: ブラウザ設定、ベースURL、タイムアウト等の設定
+
+### テストアーキテクチャの特徴
+- **Phase 1/2統合**: 同じテストファイルでインメモリ（Phase 1）とバックエンド統合（Phase 2）の両方に対応
+- **環境変数制御**: Phase 2専用テストは `test.skip(process.env.PHASE !== '2')` で制御
+- **data-testid**: 安定した要素選択のため `data-testid` 属性を使用
+- **Page Object Model**: UI 構造変更の影響を最小化するためのデザインパターン
 
 ## Spec-Driven Development構造 (`.kiro/`)
 
@@ -194,7 +231,7 @@ import { GameState, SignalREvent } from '@/types'
 
 ### テスト配置
 - **ユニットテスト**: 同ディレクトリ内の `__tests__/` フォルダ
-- **統合テスト**: 将来的に `tests/` ディレクトリ追加予定
+- **E2Eテスト**: プロジェクトルートの `e2e/` ディレクトリ（Playwright）
 
 ## 主要アーキテクチャ原則
 
@@ -249,9 +286,15 @@ dist/
 local.settings.json
 *.log
 .DS_Store
+test-results/
+playwright-report/
+playwright/.cache/
 ```
 
 ### ビルド・依存関係除外
 - `node_modules/`: npm依存関係
 - `dist/`: ビルド成果物
 - `.serena/`: AIエージェント作業ディレクトリ
+- `test-results/`: Playwright テスト結果
+- `playwright-report/`: Playwright HTML レポート
+- `playwright/.cache/`: Playwright キャッシュ

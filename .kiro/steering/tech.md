@@ -42,6 +42,10 @@ Azure Static Web Apps (Hosting)
 - **Vitest 3.2**: ユニットテストフレームワーク
   - jsdom: DOM環境シミュレーション
   - カバレッジレポート対応
+- **Playwright**: E2Eテストフレームワーク
+  - ブラウザ自動化・E2Eテスト
+  - Page Object Model パターン
+  - Phase 1/2統合テストアーキテクチャ
 
 ### ビルド・開発
 - **ビルドツール**: Vite + TypeScript Compiler
@@ -136,6 +140,21 @@ npm run lint
 npm run test          # 通常実行
 npm run test:ui       # UIモード
 npm run test:coverage # カバレッジ付き
+```
+
+### E2Eテスト (プロジェクトルート `e2e/`)
+```bash
+# 依存関係インストール
+npx playwright install
+
+# E2Eテスト実行
+npx playwright test             # 全テスト実行
+npx playwright test --ui        # UIモード
+npx playwright test --headed    # ブラウザ表示モード
+npx playwright test --debug     # デバッグモード
+
+# Phase 2テスト実行
+PHASE=2 npx playwright test     # Phase 2専用テスト含む
 ```
 
 ### バックエンド (`api/`)
