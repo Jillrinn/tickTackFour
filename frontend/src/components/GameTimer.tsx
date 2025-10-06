@@ -12,6 +12,7 @@ export function GameTimer() {
     gameState,
     setPlayerCount,
     updatePlayerTime,
+    updatePlayerName,
     setActivePlayer,
     switchToNextPlayer,
     setPaused,
@@ -54,7 +55,13 @@ export function GameTimer() {
               return (
               <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${isTimedOut ? 'timeout' : ''}`}>
                 <div className="player-info">
-                  <div className="player-name">{player.name}</div>
+                  <input
+                    type="text"
+                    className="player-name-input"
+                    value={player.name}
+                    onChange={(e) => updatePlayerName(player.id, e.target.value)}
+                    aria-label="プレイヤー名"
+                  />
                   <div className="player-id">ID: {player.id.substring(0, 8)}...</div>
                 </div>
                 <div className="player-time">経過時間: {formatTime(player.elapsedTimeSeconds)}</div>

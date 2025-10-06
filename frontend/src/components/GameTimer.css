@@ -218,10 +218,28 @@
   margin-bottom: 0.75rem;
 }
 
-.player-name {
+.player-name-input {
   font-size: 1.1rem;
   font-weight: 600;
   color: #1a1a1a;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.player-name-input:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: #667eea;
+}
+
+.player-name-input:focus {
+  outline: none;
+  background-color: white;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .player-id {
