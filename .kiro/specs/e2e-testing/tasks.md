@@ -105,7 +105,7 @@
 ## Phase 5: 将来対応とCI/CD統合
 
 - [ ] 5. Phase 2への拡張準備とCI/CDパイプライン統合を完了する
-- [ ] 5.1 Phase 2専用テストの雛形を実装する
+- [x] 5.1 Phase 2専用テストの雛形を実装する
   - persistence.spec.ts を作成（DB永続化検証テスト雛形）
   - realtime-sync.spec.ts を作成（SignalRリアルタイム同期テスト雛形）
   - test.skip(process.env.PHASE !== '2') による実行制御を実装
