@@ -20,6 +20,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `multiplayer-sync`: マルチプレイヤー同期機能（Cosmos DB永続化、SignalRリアルタイム同期）
 - `top-time-player-indicator`: 最も時間を使っているプレイヤーの別枠表示機能
 - `e2e-testing`: E2Eテスト環境構築（将来的なバックエンド・SignalR統合を考慮した拡張可能なテスト構成）
+- `ui-controls-enhancement`: UIコントロール強化（ドロップダウン、トグルスイッチ、セクション分割、固定表示）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines

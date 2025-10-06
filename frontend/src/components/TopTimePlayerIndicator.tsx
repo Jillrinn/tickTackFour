@@ -1,4 +1,4 @@
-import { useGameState } from '../hooks/useGameState';
+import type { Player } from '../types/GameState';
 import './TopTimePlayerIndicator.css';
 
 /**
@@ -6,8 +6,7 @@ import './TopTimePlayerIndicator.css';
  * 最も時間を使っているプレイヤーを別枠で表示する
  *
  * 表示条件:
- * - timerMode === 'count-up'
- * - 最長時間プレイヤーが存在する（全員0秒でない）
+ * - longestPlayer !== null（親コンポーネントで判定）
  *
  * 表示内容:
  * - "最も時間を使っているプレイヤー: [プレイヤー名] (HH:MM:SS)"
@@ -18,12 +17,11 @@ import './TopTimePlayerIndicator.css';
  * - 要件2.3: 視覚的に目立つスタイル
  * - 要件2.4: プレイヤー名または番号表示
  */
-export function TopTimePlayerIndicator() {
-  const { getLongestTimePlayer, formatTime } = useGameState();
+interface TopTimePlayerIndicatorProps {
+  longestPlayer: Player | null;
+}
 
-  // 最長時間プレイヤーを取得
-  const longestPlayer = getLongestTimePlayer();
-
+export function TopTimePlayerIndicator({ longestPlayer }: TopTimePlayerIndicatorProps) {
   // 表示条件を満たさない場合は非表示
   if (!longestPlayer) {
     return null;

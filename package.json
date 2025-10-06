@@ -10,11 +10,19 @@
     "dev": "npm run dev --workspace=frontend",
     "test": "npm test --workspace=frontend -- --run",
     "test:coverage": "npm run test:coverage --workspace=frontend",
+    "test:e2e": "playwright test",
+    "test:e2e:phase1": "PHASE=1 playwright test",
+    "test:e2e:phase2": "PHASE=2 playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
     "build": "npm run build --workspace=frontend",
     "lint": "npm run lint --workspace=frontend",
     "clean": "rm -rf frontend/dist"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@playwright/test": "^1.56.0"
+  },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"

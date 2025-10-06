@@ -2,8 +2,8 @@
 
 ## Phase 1: E2Eテスト環境の構築
 
-- [ ] 1. E2Eテスト実行環境の基盤を整備する
-- [ ] 1.1 Playwrightのインストールと基本設定を完了する
+- [x] 1. E2Eテスト実行環境の基盤を整備する
+- [x] 1.1 Playwrightのインストールと基本設定を完了する
   - Playwrightパッケージとブラウザドライバをインストール
   - playwright.config.ts を作成し、ベースURL、タイムアウト、リトライ戦略を設定
   - Chrome、Firefox、Safariの3ブラウザ設定を追加
@@ -11,14 +11,14 @@
   - トレース記録とスクリーンショット設定を有効化
   - _Requirements: 1.1, 1.2, 1.3, 1.6_
 
-- [ ] 1.2 E2Eテストディレクトリ構造を作成する
+- [x] 1.2 E2Eテストディレクトリ構造を作成する
   - プロジェクトルートに `e2e/` ディレクトリを作成
   - サブディレクトリを作成（specs/, pages/, fixtures/, helpers/）
   - E2Eテスト専用のTypeScript設定ファイル（e2e/tsconfig.json）を作成
   - .gitignore にPlaywrightの成果物ディレクトリを追加（playwright-report/, test-results/）
   - _Requirements: 1.7, 7.7_
 
-- [ ] 1.3 基本テストとレポート機能を検証する
+- [x] 1.3 基本テストとレポート機能を検証する
   - シンプルな動作確認テストを作成してPlaywright実行を確認
   - HTMLレポート生成機能を検証
   - 失敗時のスクリーンショットとトレース記録機能を確認

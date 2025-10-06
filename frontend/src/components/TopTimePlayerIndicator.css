@@ -1,25 +1,67 @@
 /**
  * TopTimePlayerIndicator スタイル
- * Phase 2: 基本スタイル（Phase 3で視覚的な目立つスタイルとレスポンシブ対応を追加）
+ * Phase 3: 視覚的に目立つスタイル + レスポンシブ対応
+ *
+ * デザイン要件:
+ * - 要件2.3: 視覚的に目立つスタイル（枠線、背景色、フォントサイズ）
+ * - 要件4.1〜4.5: レスポンシブ表示（375px〜1440px+）
  */
 
 .top-time-indicator {
-  /* Phase 3で詳細なスタイルを追加 */
-  padding: 12px;
-  margin: 12px 0;
+  /* 視覚的に目立つスタイル */
+  background-color: #fffbeb; /* 薄黄色背景 */
+  border: 2px solid #f59e0b; /* オレンジ色の枠線 */
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  font-size: 1.1rem;
+  font-weight: bold;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .top-time-indicator__label {
   /* ラベル部分のスタイル */
+  color: #92400e; /* 濃いオレンジ色 */
 }
 
 .top-time-indicator__player-name {
   /* プレイヤー名部分のスタイル */
+  color: #d97706; /* オレンジ色 */
   font-weight: bold;
 }
 
 .top-time-indicator__time {
   /* 時間表示部分のスタイル */
+  color: #92400e; /* 濃いオレンジ色 */
   font-family: 'Courier New', monospace;
+}
+
+/* レスポンシブ: スマートフォン（〜767px） */
+@media (max-width: 767px) {
+  .top-time-indicator {
+    width: 100%;
+    font-size: 1rem;
+    padding: 12px;
+    margin: 12px 0;
+  }
+}
+
+/* レスポンシブ: タブレット・PC（768px〜） */
+@media (min-width: 768px) {
+  .top-time-indicator {
+    max-width: 600px;
+    margin: 16px auto;
+    font-size: 1.2rem;
+    padding: 16px;
+  }
+}
+
+/* レスポンシブ: 大画面PC（1440px〜） */
+@media (min-width: 1440px) {
+  .top-time-indicator {
+    max-width: 700px;
+    font-size: 1.3rem;
+    padding: 20px;
+  }
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
+import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import './GameTimer.css';
 
 /**
@@ -20,7 +21,8 @@ export function GameTimer() {
     resetGame,
     formatTime,
     getTimedOutPlayerId,
-    isPlayerControlDisabled
+    isPlayerControlDisabled,
+    getLongestTimePlayer
   } = useGameState();
 
   // カウントダウンモード用の初期時間設定（秒単位）
@@ -29,6 +31,9 @@ export function GameTimer() {
   // タイムアウトしたプレイヤーID（Task 12.2）
   const timedOutPlayerId = getTimedOutPlayerId();
 
+  // 最長時間プレイヤーを取得
+  const longestPlayer = getLongestTimePlayer();
+
   return (
     <div className="game-timer">
       <header className="game-header">
@@ -36,6 +41,9 @@ export function GameTimer() {
       </header>
 
       <main className="game-main">
+        {/* 最長時間プレイヤー表示（カウントアップモード時のみ） */}
+        <TopTimePlayerIndicator longestPlayer={longestPlayer} />
+
         <div className="players-section">
           <h3>プレイヤー一覧</h3>
           <ul className="players-grid">
