@@ -119,6 +119,8 @@
 .status-info p {
   margin: 0;
   padding: 0.25rem 0;
+  color: #212121;
+  font-weight: 500;
 }
 
 .players-section {
@@ -149,11 +151,45 @@
   border-radius: 8px;
   border: 2px solid transparent;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .player-card.active {
-  background: #e3f2fd;
-  border-color: #2196f3;
+  background: #1976d2;
+  border-color: #0d47a1;
+  border-width: 3px;
+  box-shadow: 0 0 20px rgba(25, 118, 210, 0.5);
+  transform: scale(1.02);
+}
+
+.player-card.active .player-name {
+  color: white;
+  font-weight: 700;
+}
+
+.player-card.active .player-id {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.player-card.active .player-time {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.player-card.active::before {
+  content: "▶ 現在のターン";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0d47a1;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* Task 12.2: カウントダウン時間切れの視覚通知 */
@@ -185,18 +221,19 @@
 .player-name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: #1a1a1a;
 }
 
 .player-id {
   font-size: 0.85rem;
-  color: #666;
+  color: #424242;
 }
 
 .player-time {
   font-size: 1rem;
   margin-bottom: 0.75rem;
-  color: #555;
+  color: #212121;
+  font-weight: 500;
 }
 
 .player-actions {
@@ -272,6 +309,29 @@
   background: #5568d3;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 主要操作ボタン（次のプレイヤーへ）の強調表示 */
+.next-player-btn {
+  background: #2e7d32 !important;
+  font-size: 1.3rem !important;
+  padding: 1rem 2rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4) !important;
+  position: relative;
+  min-width: 200px;
+}
+
+.next-player-btn:hover {
+  background: #1b5e20 !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.5) !important;
+}
+
+.next-player-btn::before {
+  content: "▶";
+  margin-right: 8px;
+  font-size: 1.1rem;
 }
 
 .countdown-control {

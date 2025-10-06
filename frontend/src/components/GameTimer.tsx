@@ -96,7 +96,7 @@ export function GameTimer() {
               />
               <span>秒</span>
             </div>
-            <button onClick={switchToNextPlayer} style={{ background: '#4CAF50' }}>
+            <button onClick={switchToNextPlayer} className="next-player-btn">
               次のプレイヤーへ
             </button>
             <button onClick={() => setPaused(!gameState.isPaused)}>
