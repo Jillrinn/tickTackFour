@@ -77,16 +77,16 @@ graph TB
 ### テストディレクトリ構造
 
 ```
-frontend/
-├── e2e/                                    # E2Eテストルート
-│   ├── frontend-only/                      # フロントエンド専用テスト（Phase 1）
+tickTackFour/
+├── e2e/                                    # E2Eテストルート（プロジェクトルート直下）
+│   ├── specs/                              # Phase 1/2共通テストスイート
 │   │   ├── player-management.spec.ts       # プレイヤー管理テスト
 │   │   ├── timer-operations.spec.ts        # タイマー動作テスト
-│   │   ├── player-controls.spec.ts         # プレイヤー操作テスト
+│   │   ├── active-player.spec.ts           # アクティブプレイヤー管理テスト
 │   │   ├── game-controls.spec.ts           # ゲーム制御テスト
-│   │   └── responsive-ui.spec.ts           # レスポンシブUIテスト
-│   ├── full-stack/                         # フルスタックテスト（Phase 2準備）
-│   │   └── .gitkeep                        # 将来のバックエンド統合テスト用
+│   │   ├── responsive-ui.spec.ts           # レスポンシブUIテスト
+│   │   ├── persistence.spec.ts             # 永続化検証（Phase 2のみ実行）
+│   │   └── realtime-sync.spec.ts           # リアルタイム同期検証（Phase 2のみ実行）
 │   ├── pages/                              # Page Object Model
 │   │   ├── GameTimerPage.ts                # ゲームタイマーページオブジェクト
 │   │   └── components/                     # コンポーネント別ページオブジェクト
@@ -95,15 +95,20 @@ frontend/
 │   │       └── GameStatus.ts               # ゲーム状態コンポーネント
 │   ├── fixtures/                           # テストフィクスチャ
 │   │   ├── gameState.ts                    # ゲーム状態フィクスチャ
-│   │   └── playerData.ts                   # プレイヤーデータフィクスチャ
+│   │   ├── playerData.ts                   # プレイヤーデータフィクスチャ
+│   │   └── multi-context.ts                # 複数ブラウザコンテキスト用fixture
 │   ├── helpers/                            # ヘルパー関数
 │   │   ├── assertions.ts                   # カスタムアサーション
 │   │   ├── navigation.ts                   # ナビゲーションヘルパー
 │   │   └── waiting.ts                      # 待機ヘルパー
-│   └── tsconfig.json                       # E2Eテスト用TypeScript設定
-├── playwright.config.ts                    # Playwright設定ファイル
+│   ├── tsconfig.json                       # E2Eテスト用TypeScript設定
+│   └── playwright.config.ts                # Playwright設定ファイル
 ├── playwright-report/                      # テストレポート（gitignore）
-└── test-results/                           # テスト結果（gitignore）
+├── test-results/                           # テスト結果（gitignore）
+├── frontend/
+└── .github/
+    └── workflows/
+        └── azure-static-web-apps-*.yml     # CI/CDにE2Eテスト追加
 ```
 
 ### アーキテクチャパターン
@@ -114,7 +119,7 @@ frontend/
 
 **Helper Pattern**: 共通操作（待機、アサーション、ナビゲーション）を抽象化し、テストコードの可読性を向上させます。
 
-**Layered Test Architecture**: フロントエンド専用テスト（`frontend-only/`）とフルスタックテスト（`full-stack/`）を分離し、将来のバックエンド統合時の拡張を容易にします。
+**Unified Test Architecture**: Phase 1/2で同じテストファイルを使用する統合アーキテクチャ。フロントエンド操作を起点に全機能（DB、SignalR含む）を検証します。Phase 2専用の永続化・リアルタイム同期テストは`test.skip()`で制御します。
 
 ## 技術スタックと設計決定
 
@@ -192,38 +197,57 @@ export class GameTimerPage {
 - 獲得: 長期的な保守コスト削減、テストコード品質向上、チーム間の一貫性確保
 - 犠牲: 初期実装コストの増加（ページオブジェクトクラス作成）、小規模テストでのオーバーヘッド
 
-#### 決定2: テストモード分離アーキテクチャ
+#### 決定2: Phase 1/2統合テストアーキテクチャ
 
-**決定**: フロントエンド専用テスト（`frontend-only/`）とフルスタックテスト（`full-stack/`）をディレクトリレベルで分離し、環境変数による切り替えをサポートする。
+**決定**: Phase 1（インメモリ）とPhase 2（バックエンド統合）で同じテストファイルを使用する統合アーキテクチャを採用する。フロントエンド操作を起点に全機能（DB永続化、SignalRリアルタイム同期含む）を検証する。
 
-**コンテキスト**: 現在はフロントエンドのみの実装だが、将来的にAzure Functions + Cosmos DB + SignalRのバックエンド統合が予定されている。テストアーキテクチャを後から大幅に変更するのは困難であり、最初から拡張性を考慮する必要がある。
+**コンテキスト**: 現在はフロントエンドのみの実装だが、将来的にAzure Functions + Cosmos DB + SignalRのバックエンド統合が予定されている。**重要な洞察**: バックエンド実装後はインメモリ機能がなくなるため、ユーザー操作は変わらない。したがって、同じテストファイルで両フェーズに対応可能である。
 
 **代替案**:
-1. **単一テストスイート**: 全テストを1つのディレクトリに配置し、条件分岐で制御
-2. **モックベース**: フロントエンドテストでバックエンドをモック、実装後もモック継続
-3. **ディレクトリ分離**: テストモードごとに完全に分離したディレクトリ構造
+1. **ディレクトリ分離**: `frontend-only/`と`full-stack/`で別々のテストファイル
+2. **環境検出 + 適応的検証**: テスト内でバックエンドの有無を検出し、検証方法を切り替え
+3. **統合テストスイート**: 同じテストファイルでPhase 1/2に対応、Playwrightの標準機能で検証
 
-**選択したアプローチ**: ディレクトリ分離 + 環境変数制御
+**選択したアプローチ**: 統合テストスイート（選択肢3）
 
 ```typescript
-// playwright.config.ts
-const testMode = process.env.TEST_MODE || 'frontend-only';
-const testDir = testMode === 'full-stack'
-  ? './e2e/full-stack'
-  : './e2e/frontend-only';
+// specs/player-management.spec.ts
+test('プレイヤー名を変更できる', async ({ page }) => {
+  await page.goto('http://localhost:5173');
+
+  // フロントエンド操作（Phase 1/2共通）
+  await page.locator('[data-testid="player-1-name-input"]').fill('Alice');
+
+  // Phase 1: DOM検証のみ
+  // Phase 2: DOM検証 + 自動的にネットワークリクエスト（API、SignalR）が検証される
+  await expect(page.locator('[data-testid="player-1-name"]')).toHaveText('Alice');
+
+  // Phase 2: リロード後の永続化を検証
+  await page.reload();
+  await expect(page.locator('[data-testid="player-1-name"]')).toHaveText('Alice');
+});
 ```
 
-各テストモードは独立したテストスイートとして実行され、CI/CDパイプラインで適切なモードを選択可能にします。
+Phase 2専用テスト（persistence.spec.ts、realtime-sync.spec.ts）は`test.skip()`で制御:
+```typescript
+// specs/persistence.spec.ts
+test('ゲーム状態がリロード後も復元される', async ({ page }) => {
+  // Phase 1では実行されない
+  test.skip(process.env.PHASE !== '2', 'Phase 2のみ実行');
+
+  // Phase 2でのみ実行されるテストロジック
+});
+```
 
 **根拠**:
-- **明確な責任分離**: フロントエンドとフルスタックテストの境界が明確
-- **段階的移行**: バックエンド実装後もフロントエンドテストを継続実行可能
-- **CI/CD柔軟性**: プルリクエストではfrontend-onlyを実行、本番デプロイ前にfull-stackを実行など
-- **実装の強制**: ディレクトリ構造により、開発者が適切なテストモードを選択せざるを得ない
+- **ユーザー操作の不変性**: バックエンド統合後もUI操作は変わらない
+- **Playwrightの検証機能**: ネットワークリクエスト、リロード、複数ブラウザコンテキストで全機能を検証可能
+- **保守性**: 同じテストファイルで両フェーズに対応するため、重複コードなし
+- **シンプルさ**: 環境検出や適応的検証の複雑なメカニズム不要
 
 **トレードオフ**:
-- 獲得: 将来の拡張性確保、テストモード間の干渉防止、明確なテスト戦略
-- 犠牲: 初期ディレクトリ構造の複雑化、空の`full-stack/`ディレクトリの維持
+- 獲得: テストコードの重複排除、保守コスト削減、シンプルなアーキテクチャ
+- 犠牲: Phase 2専用テストの明示的なskip制御が必要
 
 #### 決定3: data-testid属性の優先使用
 
@@ -358,7 +382,7 @@ interface Reporter {
 ```
 
 **主要設定値**:
-- **testDir**: `./e2e/frontend-only`（環境変数`TEST_MODE`で切替）
+- **testDir**: `./e2e/specs`（Phase 1/2共通テストスイート）
 - **baseURL**: `http://localhost:5173`（Vite開発サーバー）
 - **timeout**: 30000ms（タイマーテストで時間経過を検証するため）
 - **retries**: CI環境で2回、ローカル環境で0回
@@ -908,137 +932,173 @@ use: {
 - ブラウザコンテキスト再利用による高速化
 - 不要なネットワークリクエストのブロック（画像、フォント）
 
-## 将来のバックエンド統合を考慮したテストアーキテクチャ
+## テスト実装戦略
 
-### テストモード切り替え設計
+### Phase 1/2での同じテストファイルの動作
 
-**環境変数による制御**:
+**基本方針**: ユーザー操作は Phase 1（インメモリ）と Phase 2（バックエンド統合）で変わらない。Playwrightの標準機能（DOM検証、ネットワークリクエスト検証、リロード、複数ブラウザコンテキスト）を使用して全機能を検証する。
+
+**Phase 1（インメモリモード）での実行例**:
 ```typescript
-// playwright.config.ts
-const testMode = process.env.TEST_MODE || 'frontend-only';
+// specs/player-management.spec.ts
+test('プレイヤー名を変更できる', async ({ page }) => {
+  await page.goto('http://localhost:5173');
 
-export default defineConfig({
-  testDir: testMode === 'full-stack' ? './e2e/full-stack' : './e2e/frontend-only',
-  use: {
-    baseURL: testMode === 'full-stack'
-      ? 'http://localhost:5173'  // フルスタック: 実際のバックエンド接続
-      : 'http://localhost:5173', // フロントエンドのみ: モックなし（インメモリー動作）
-  },
+  // フロントエンド操作（Phase 1/2共通）
+  await page.locator('[data-testid="player-1-name-input"]').fill('Alice');
+
+  // Phase 1: DOM検証のみ
+  await expect(page.locator('[data-testid="player-1-name"]')).toHaveText('Alice');
 });
 ```
 
-### データアクセスレイヤー設計
-
-**フロントエンドのみモード**（Phase 1）:
+**Phase 2（バックエンド統合）での実行例**:
 ```typescript
-// e2e/helpers/dataAccess.ts
-export class GameDataAccess {
-  constructor(private testMode: 'frontend-only' | 'full-stack') {}
+// 同じテストファイル specs/player-management.spec.ts
+test('プレイヤー名を変更できる', async ({ page }) => {
+  await page.goto('http://localhost:5173');
 
-  /**
-   * ゲーム状態を取得
-   * - frontend-only: ページから直接取得
-   * - full-stack: APIエンドポイント経由で取得
-   */
-  async getGameState(page: Page): Promise<GameStateData> {
-    if (this.testMode === 'frontend-only') {
-      // フロントエンドから直接状態を取得（evaluate使用）
-      return await page.evaluate(() => {
-        // window.gameStateなどからアクセス（実装時に定義）
-        return (window as any).gameState;
-      });
-    } else {
-      // APIから状態を取得（Phase 2で実装）
-      const response = await page.request.get('/api/game-state');
-      return await response.json();
-    }
-  }
+  // フロントエンド操作（Phase 1/2共通）
+  await page.locator('[data-testid="player-1-name-input"]').fill('Alice');
 
-  /**
-   * ゲーム状態をリセット
-   * - frontend-only: UIからリセット
-   * - full-stack: APIエンドポイント経由でリセット
-   */
-  async resetGameState(page: Page): Promise<void> {
-    if (this.testMode === 'frontend-only') {
-      // UIのリセットボタンをクリック
-      await page.locator('text=リセット').click();
-    } else {
-      // API経由でリセット（Phase 2で実装）
-      await page.request.post('/api/game-state/reset');
-    }
-  }
-}
+  // Phase 2: DOM検証 + バックエンド検証
+  await expect(page.locator('[data-testid="player-1-name"]')).toHaveText('Alice');
+
+  // Playwrightが自動的にネットワークリクエストを監視:
+  // - PUT /api/players/{id} が呼ばれる
+  // - SignalR接続経由でbroadcastされる
+
+  // リロード後も永続化されていることを確認（Cosmos DB復元）
+  await page.reload();
+  await expect(page.locator('[data-testid="player-1-name"]')).toHaveText('Alice');
+});
 ```
 
-### フルスタックテストパターン雛形
+### Phase 2専用テストの実装パターン
 
-**Phase 2で実装するテストの雛形**（`e2e/full-stack/`）:
-
+**永続化検証テスト**（`specs/persistence.spec.ts`）:
 ```typescript
-// e2e/full-stack/backend-integration.spec.ts
 import { test, expect } from '@playwright/test';
 import { GameTimerPage } from '../pages/GameTimerPage';
-import { GameDataAccess } from '../helpers/dataAccess';
 
-test.describe('バックエンド統合テスト', () => {
-  let gameTimerPage: GameTimerPage;
-  let dataAccess: GameDataAccess;
+test.describe('DB永続化検証', () => {
+  // Phase 1では全テストをスキップ
+  test.skip(process.env.PHASE !== '2', 'Phase 2のみ実行');
 
-  test.beforeEach(async ({ page }) => {
-    gameTimerPage = new GameTimerPage(page);
-    dataAccess = new GameDataAccess('full-stack');
+  test('ゲーム状態がリロード後も復元される', async ({ page }) => {
+    const gameTimerPage = new GameTimerPage(page);
     await gameTimerPage.navigate();
 
-    // データベース状態をクリーンアップ
-    await dataAccess.resetGameState(page);
-  });
-
-  test('SignalRリアルタイム同期: 複数クライアント間でタイマー同期', async ({ page, context }) => {
-    // 2つ目のブラウザコンテキストを作成（別クライアントシミュレート）
-    const page2 = await context.newPage();
-    const gameTimerPage2 = new GameTimerPage(page2);
-    await gameTimerPage2.navigate();
-
-    // クライアント1でプレイヤーをアクティブ化
-    await gameTimerPage.gameControls.setPlayerCount(4);
-    const player1 = gameTimerPage.getPlayerCardByIndex(0);
-    await player1.setActive();
-
-    // クライアント2でSignalR経由の同期を確認
-    const player1_client2 = gameTimerPage2.getPlayerCardByIndex(0);
-    await expect(async () => {
-      const isActive = await player1_client2.isActive();
-      expect(isActive).toBe(true);
-    }).toPass({ timeout: 3000 }); // SignalR同期待機
-
-    // 両クライアントでタイマー進行を確認
-    await page.waitForTimeout(2000);
-    const time1 = await player1.getElapsedTimeSeconds();
-    const time2 = await player1_client2.getElapsedTimeSeconds();
-    expect(Math.abs(time1 - time2)).toBeLessThanOrEqual(1); // 1秒以内の誤差
-  });
-
-  test('データベース永続化: ページリロード後も状態保持', async ({ page }) => {
     // ゲーム状態を設定
     await gameTimerPage.gameControls.setPlayerCount(5);
     await gameTimerPage.gameControls.setTimerModeCountDown(300);
     const player1 = gameTimerPage.getPlayerCardByIndex(0);
     await player1.setActive();
 
-    // ページをリロード
+    // 経過時間を取得
+    await page.waitForTimeout(5000);
+    const timeBeforeReload = await player1.getElapsedTimeSeconds();
+
+    // ページリロード
     await page.reload();
     await gameTimerPage.verifyPageLoaded();
 
-    // 状態が保持されていることを確認（Cosmos DBから復元）
+    // Cosmos DBから状態が復元されることを確認
     const playerCount = await gameTimerPage.getPlayerCount();
     expect(playerCount).toBe(5);
 
     const activeCard = await gameTimerPage.getActivePlayerCard();
     expect(activeCard).not.toBeNull();
+
+    const timeAfterReload = await player1.getElapsedTimeSeconds();
+    expect(timeAfterReload).toBeGreaterThanOrEqual(timeBeforeReload);
   });
 });
 ```
+
+**リアルタイム同期検証テスト**（`specs/realtime-sync.spec.ts`）:
+```typescript
+import { test, expect } from '@playwright/test';
+import { GameTimerPage } from '../pages/GameTimerPage';
+
+test.describe('SignalRリアルタイム同期検証', () => {
+  // Phase 1では全テストをスキップ
+  test.skip(process.env.PHASE !== '2', 'Phase 2のみ実行');
+
+  test('複数クライアント間でゲーム状態が同期される', async ({ browser }) => {
+    // 2つの独立したブラウザコンテキストを作成
+    const context1 = await browser.newContext();
+    const context2 = await browser.newContext();
+    const page1 = await context1.newPage();
+    const page2 = await context2.newPage();
+
+    const gameTimerPage1 = new GameTimerPage(page1);
+    const gameTimerPage2 = new GameTimerPage(page2);
+
+    await gameTimerPage1.navigate();
+    await gameTimerPage2.navigate();
+
+    // クライアント1でプレイヤーをアクティブ化
+    await gameTimerPage1.gameControls.setPlayerCount(4);
+    const player1_client1 = gameTimerPage1.getPlayerCardByIndex(0);
+    await player1_client1.setActive();
+
+    // クライアント2でSignalR経由で即座に反映されることを確認
+    const player1_client2 = gameTimerPage2.getPlayerCardByIndex(0);
+    await expect(async () => {
+      const isActive = await player1_client2.isActive();
+      expect(isActive).toBe(true);
+    }).toPass({ timeout: 3000 }); // SignalR同期待機
+
+    // タイマー進行が両クライアントで同期されることを確認
+    await page1.waitForTimeout(2000);
+    const time1 = await player1_client1.getElapsedTimeSeconds();
+    const time2 = await player1_client2.getElapsedTimeSeconds();
+    expect(Math.abs(time1 - time2)).toBeLessThanOrEqual(1); // 1秒以内の誤差
+  });
+
+  test('次のプレイヤーへの切り替えが全クライアントで同期される', async ({ browser }) => {
+    const context1 = await browser.newContext();
+    const context2 = await browser.newContext();
+    const page1 = await context1.newPage();
+    const page2 = await context2.newPage();
+
+    const gameTimerPage1 = new GameTimerPage(page1);
+    const gameTimerPage2 = new GameTimerPage(page2);
+
+    await gameTimerPage1.navigate();
+    await gameTimerPage2.navigate();
+
+    // クライアント1で「次のプレイヤーへ」をクリック
+    await gameTimerPage1.gameControls.switchToNextPlayer();
+
+    // クライアント2でSignalR経由で即座に反映されることを確認
+    await expect(async () => {
+      const activeCard = await gameTimerPage2.getActivePlayerCard();
+      expect(activeCard).not.toBeNull();
+    }).toPass({ timeout: 3000 });
+  });
+});
+```
+
+### テスト実行制御
+
+**package.json scripts**:
+```json
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:phase1": "PHASE=1 playwright test",
+    "test:e2e:phase2": "PHASE=2 playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
+  }
+}
+```
+
+**CI/CD環境変数制御**:
+- Phase 1（現在）: `PHASE=1` → persistence.spec.ts と realtime-sync.spec.ts をスキップ
+- Phase 2（バックエンド統合後）: `PHASE=2` → 全テストを実行
 
 ### CI/CD統合設計
 
@@ -1054,7 +1114,7 @@ on:
     branches: [main]
 
 jobs:
-  frontend-only-tests:
+  e2e-tests-phase1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -1063,14 +1123,16 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
+        run: npm install
+
+      - name: Install frontend dependencies
         run: |
           cd frontend
           npm install
 
       - name: Install Playwright browsers
-        run: |
-          cd frontend
-          npx playwright install --with-deps
+        run: npx playwright install --with-deps
+        working-directory: ./
 
       - name: Start dev server
         run: |
@@ -1078,31 +1140,69 @@ jobs:
           npm run dev &
           npx wait-on http://localhost:5173
 
-      - name: Run E2E tests (frontend-only)
-        run: |
-          cd frontend
-          npm run test:e2e
+      - name: Run E2E tests (Phase 1)
+        run: npm run test:e2e:phase1
         env:
-          TEST_MODE: frontend-only
+          PHASE: '1'
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: frontend/playwright-report/
+          name: playwright-report-phase1
+          path: playwright-report/
 
       - name: Upload test artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: frontend/test-results/
+          name: test-results-phase1
+          path: test-results/
 
-  # Phase 2で追加: フルスタックテスト
-  # full-stack-tests:
+  # Phase 2で有効化: フルスタックテスト
+  # e2e-tests-phase2:
   #   runs-on: ubuntu-latest
-  #   steps: [...]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #
+  #     - name: Install dependencies
+  #       run: npm install
+  #
+  #     - name: Install frontend dependencies
+  #       run: |
+  #         cd frontend
+  #         npm install
+  #
+  #     - name: Install Playwright browsers
+  #       run: npx playwright install --with-deps
+  #       working-directory: ./
+  #
+  #     - name: Start backend services
+  #       run: |
+  #         # Cosmos DB Emulator起動
+  #         # Azure Functions起動
+  #         # SignalR起動
+  #
+  #     - name: Start dev server
+  #       run: |
+  #         cd frontend
+  #         npm run dev &
+  #         npx wait-on http://localhost:5173
+  #
+  #     - name: Run E2E tests (Phase 2)
+  #       run: npm run test:e2e:phase2
+  #       env:
+  #         PHASE: '2'
+  #
+  #     - name: Upload test results
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: playwright-report-phase2
+  #         path: playwright-report/
 ```
 
 ## フロントエンド実装の検証プロセス（必須）
