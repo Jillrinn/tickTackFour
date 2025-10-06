@@ -18,6 +18,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `multiplayer-game-timer`: マルチプレイヤーゲームタイマーのコア機能（Phase 1: インメモリー実装）
 - `frontend-ux-improvements`: フロントエンドUX改善（プレイヤー名入力、UI簡素化、レイアウト最適化）
 - `multiplayer-sync`: マルチプレイヤー同期機能（Cosmos DB永続化、SignalRリアルタイム同期）
+- `top-time-player-indicator`: 最も時間を使っているプレイヤーの別枠表示機能
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
