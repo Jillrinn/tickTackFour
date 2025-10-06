@@ -85,17 +85,19 @@ export function GameTimer() {
             <button onClick={() => setPlayerCount(5)}>5人</button>
             <button onClick={() => setPlayerCount(6)}>6人</button>
             <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
-            <div className="countdown-control">
-              <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
-              <input
-                type="number"
-                value={countdownSeconds}
-                onChange={(e) => setCountdownSeconds(Number(e.target.value))}
-                min="1"
-                max="3600"
-              />
-              <span>秒</span>
-            </div>
+            <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
+            {gameState.timerMode === 'count-down' && (
+              <div className="countdown-control">
+                <input
+                  type="number"
+                  value={countdownSeconds}
+                  onChange={(e) => setCountdownSeconds(Number(e.target.value))}
+                  min="1"
+                  max="3600"
+                />
+                <span>秒</span>
+              </div>
+            )}
             <button onClick={() => setPaused(!gameState.isPaused)}>
               {gameState.isPaused ? '再開' : '一時停止'}
             </button>
