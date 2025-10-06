@@ -77,7 +77,7 @@ graph TB
 ### テストディレクトリ構造
 
 ```
-tickTackFour/
+tickTackFour/                               # プロジェクトルート
 ├── e2e/                                    # E2Eテストルート（プロジェクトルート直下）
 │   ├── specs/                              # Phase 1/2共通テストスイート
 │   │   ├── player-management.spec.ts       # プレイヤー管理テスト
@@ -87,17 +87,17 @@ tickTackFour/
 │   │   ├── responsive-ui.spec.ts           # レスポンシブUIテスト
 │   │   ├── persistence.spec.ts             # 永続化検証（Phase 2のみ実行）
 │   │   └── realtime-sync.spec.ts           # リアルタイム同期検証（Phase 2のみ実行）
-│   ├── pages/                              # Page Object Model
+│   ├── pages/                              # Page Object Model（E2Eテスト用）
 │   │   ├── GameTimerPage.ts                # ゲームタイマーページオブジェクト
 │   │   └── components/                     # コンポーネント別ページオブジェクト
 │   │       ├── PlayerCard.ts               # プレイヤーカードコンポーネント
 │   │       ├── GameControls.ts             # ゲーム制御コンポーネント
 │   │       └── GameStatus.ts               # ゲーム状態コンポーネント
-│   ├── fixtures/                           # テストフィクスチャ
+│   ├── fixtures/                           # テストフィクスチャ（E2Eテスト用）
 │   │   ├── gameState.ts                    # ゲーム状態フィクスチャ
 │   │   ├── playerData.ts                   # プレイヤーデータフィクスチャ
 │   │   └── multi-context.ts                # 複数ブラウザコンテキスト用fixture
-│   ├── helpers/                            # ヘルパー関数
+│   ├── helpers/                            # ヘルパー関数（E2Eテスト用）
 │   │   ├── assertions.ts                   # カスタムアサーション
 │   │   ├── navigation.ts                   # ナビゲーションヘルパー
 │   │   └── waiting.ts                      # 待機ヘルパー
@@ -105,7 +105,12 @@ tickTackFour/
 │   └── playwright.config.ts                # Playwright設定ファイル
 ├── playwright-report/                      # テストレポート（gitignore）
 ├── test-results/                           # テスト結果（gitignore）
-├── frontend/
+├── frontend/                               # フロントエンド実装（既存）
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── GameTimer.tsx               # 実装コード
+│   │   └── hooks/
+│   └── package.json
 └── .github/
     └── workflows/
         └── azure-static-web-apps-*.yml     # CI/CDにE2Eテスト追加
