@@ -48,19 +48,11 @@ export default defineConfig({
     },
   },
 
-  // ブラウザプロジェクト設定
+  // ブラウザプロジェクト設定（Chromiumのみ）
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
     },
   ],
 
