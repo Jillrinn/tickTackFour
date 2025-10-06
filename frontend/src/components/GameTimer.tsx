@@ -12,6 +12,7 @@ export function GameTimer() {
     setPlayerCount,
     updatePlayerTime,
     setActivePlayer,
+    switchToNextPlayer,
     setPaused,
     setTimerMode,
     resetGame
@@ -60,6 +61,9 @@ export function GameTimer() {
             <button onClick={() => setPlayerCount(6)}>6人</button>
             <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
             <button onClick={() => setTimerMode('count-down', 600)}>カウントダウン</button>
+            <button onClick={switchToNextPlayer} style={{ fontWeight: 'bold', background: '#4CAF50', color: 'white' }}>
+              次のプレイヤーへ
+            </button>
             <button onClick={() => setPaused(!gameState.isPaused)}>
               {gameState.isPaused ? '再開' : '一時停止'}
             </button>
@@ -69,13 +73,16 @@ export function GameTimer() {
 
           <h3>テスト用情報</h3>
           <div style={{ marginTop: '20px', padding: '10px', background: '#fff3cd', borderRadius: '4px' }}>
-            <p><strong>動作確認ポイント:</strong></p>
+            <p><strong>動作確認ポイント（Task 10.3 ターン管理機能）:</strong></p>
             <ul>
               <li>✅ プレイヤー数を4→5→6と変更できる</li>
               <li>✅ プレイヤーの経過時間を更新できる</li>
               <li>✅ アクティブプレイヤーを設定すると背景色が変わる</li>
               <li>✅ タイマーモードを切り替えると経過時間がリセットされる</li>
               <li>✅ リセットボタンで全プレイヤーの時間が初期化される</li>
+              <li>🆕 「次のプレイヤーへ」ボタンでターン切り替えができる</li>
+              <li>🆕 最後のプレイヤーから最初のプレイヤーへ循環する</li>
+              <li>🆕 アクティブプレイヤーのタイマーのみ動作し、他は停止する</li>
             </ul>
             <p style={{ marginTop: '10px', fontSize: '12px' }}>
               <strong>Chrome DevTools確認方法:</strong><br/>

@@ -157,6 +157,34 @@ export function useGameState() {
   }, []);
 
   /**
+   * 次のプレイヤーへターン切り替え（Task 10.3）
+   * - 現在のアクティブプレイヤーから次のプレイヤーへターンを切り替える
+   * - 最後のプレイヤーから最初のプレイヤーへ循環
+   * - アクティブプレイヤーがいない場合は最初のプレイヤーをアクティブに
+   */
+  const switchToNextPlayer = useCallback(() => {
+    setGameState((prev) => {
+      const currentIndex = prev.activePlayerId
+        ? prev.players.findIndex(p => p.id === prev.activePlayerId)
+        : -1;
+
+      // 次のプレイヤーのインデックスを計算（循環ロジック）
+      const nextIndex = (currentIndex + 1) % prev.players.length;
+      const nextPlayerId = prev.players[nextIndex].id;
+
+      return {
+        ...prev,
+        activePlayerId: nextPlayerId,
+        players: prev.players.map(p => ({
+          ...p,
+          isActive: p.id === nextPlayerId
+        })),
+        lastUpdatedAt: new Date()
+      };
+    });
+  }, []);
+
+  /**
    * ゲームをリセット
    */
   const resetGame = useCallback(() => {
@@ -245,6 +273,7 @@ export function useGameState() {
     setPlayerCount,
     updatePlayerTime,
     setActivePlayer,
+    switchToNextPlayer,
     setPaused,
     setTimerMode,
     resetGame
