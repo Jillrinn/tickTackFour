@@ -156,6 +156,28 @@
   border-color: #2196f3;
 }
 
+/* Task 12.2: カウントダウン時間切れの視覚通知 */
+.player-card.timeout {
+  background: #ffebee;
+  border-color: #f44336;
+  animation: timeout-pulse 1s ease-in-out infinite;
+}
+
+@keyframes timeout-pulse {
+  0% {
+    background-color: #ffebee;
+    border-color: #f44336;
+  }
+  50% {
+    background-color: #ffcdd2;
+    border-color: #e53935;
+  }
+  100% {
+    background-color: #ffebee;
+    border-color: #f44336;
+  }
+}
+
 .player-info {
   margin-bottom: 0.75rem;
 }
@@ -198,6 +220,19 @@
 .player-actions button:hover {
   background: #5568d3;
   transform: translateY(-1px);
+}
+
+/* Task 12.3: 無効化されたボタンのスタイル */
+.player-actions button:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.player-actions button:disabled:hover {
+  background: #ccc;
+  transform: none;
 }
 
 .controls-section {

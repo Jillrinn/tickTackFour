@@ -16,11 +16,17 @@ export function GameTimer() {
     switchToNextPlayer,
     setPaused,
     setTimerMode,
-    resetGame
+    resetGame,
+    formatTime,
+    getTimedOutPlayerId,
+    isPlayerControlDisabled
   } = useGameState();
 
   // カウントダウンモード用の初期時間設定（秒単位）
   const [countdownSeconds, setCountdownSeconds] = React.useState(600);
+
+  // タイムアウトしたプレイヤーID（Task 12.2）
+  const timedOutPlayerId = getTimedOutPlayerId();
 
   return (
     <div className="game-timer">
@@ -42,23 +48,33 @@ export function GameTimer() {
         <div className="players-section">
           <h3>プレイヤー一覧</h3>
           <ul className="players-grid">
-            {gameState.players.map((player) => (
-              <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''}`}>
+            {gameState.players.map((player) => {
+              const isTimedOut = player.id === timedOutPlayerId;
+              const isDisabled = isPlayerControlDisabled(player.id);
+              return (
+              <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${isTimedOut ? 'timeout' : ''}`}>
                 <div className="player-info">
                   <div className="player-name">{player.name}</div>
                   <div className="player-id">ID: {player.id.substring(0, 8)}...</div>
                 </div>
-                <div className="player-time">経過時間: {player.elapsedTimeSeconds}秒</div>
+                <div className="player-time">経過時間: {formatTime(player.elapsedTimeSeconds)}</div>
                 <div className="player-actions">
-                  <button onClick={() => updatePlayerTime(player.id, player.elapsedTimeSeconds + 10)}>
+                  <button
+                    onClick={() => updatePlayerTime(player.id, player.elapsedTimeSeconds + 10)}
+                    disabled={isDisabled}
+                  >
                     +10秒
                   </button>
-                  <button onClick={() => setActivePlayer(player.id)}>
+                  <button
+                    onClick={() => setActivePlayer(player.id)}
+                    disabled={isDisabled}
+                  >
                     アクティブに設定
                   </button>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
 

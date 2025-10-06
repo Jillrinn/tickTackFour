@@ -268,6 +268,65 @@ export function useGameState() {
     return () => clearInterval(timerId);
   }, [gameState.activePlayerId, gameState.isPaused]);
 
+  /**
+   * タイマー値をMM:SS形式にフォーマット（Task 12.1）
+   */
+  const formatTime = useCallback((seconds: number): string => {
+    // 負の値は0として扱う
+    const totalSeconds = Math.max(0, seconds);
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+
+    // MM:SS形式（分は2桁ゼロ埋め、秒も2桁ゼロ埋め）
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }, []);
+
+  /**
+   * カウントダウンモードで時間切れになったプレイヤーIDを返す（Task 12.2）
+   */
+  const getTimedOutPlayerId = useCallback((): string | null => {
+    // カウントアップモードでは常にnull
+    if (gameState.timerMode === 'count-up') {
+      return null;
+    }
+
+    // カウントダウンモードで0秒のプレイヤーを検索
+    const timedOutPlayer = gameState.players.find(p => p.elapsedTimeSeconds === 0);
+    return timedOutPlayer ? timedOutPlayer.id : null;
+  }, [gameState.timerMode, gameState.players]);
+
+  /**
+   * プレイヤー操作が無効化されているかを判定（Task 12.3）
+   * 他のプレイヤーがアクティブな時、そのプレイヤー以外の操作を無効化
+   */
+  const isPlayerControlDisabled = useCallback((playerId: string): boolean => {
+    // アクティブプレイヤーがいない場合は全プレイヤー有効
+    if (!gameState.activePlayerId) {
+      return false;
+    }
+
+    // 自分がアクティブなら有効、他のプレイヤーがアクティブなら無効
+    return playerId !== gameState.activePlayerId;
+  }, [gameState.activePlayerId]);
+
+  /**
+   * プレイヤー数が有効な範囲（4〜6人）かを判定（Task 12.4）
+   */
+  const validatePlayerCount = useCallback((count: number): boolean => {
+    return GameStateValidator.validatePlayerCount(count);
+  }, []);
+
+  /**
+   * プレイヤー数のエラーメッセージを取得（Task 12.4）
+   */
+  const getPlayerCountError = useCallback((count: number): string | null => {
+    if (validatePlayerCount(count)) {
+      return null;
+    }
+    return 'プレイヤー数は4〜6人の範囲で入力してください';
+  }, [validatePlayerCount]);
+
   return {
     gameState,
     setPlayerCount,
@@ -276,6 +335,11 @@ export function useGameState() {
     switchToNextPlayer,
     setPaused,
     setTimerMode,
-    resetGame
+    resetGame,
+    formatTime,
+    getTimedOutPlayerId,
+    isPlayerControlDisabled,
+    validatePlayerCount,
+    getPlayerCountError
   };
 }
