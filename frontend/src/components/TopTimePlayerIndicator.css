@@ -1,0 +1,25 @@
+/**
+ * TopTimePlayerIndicator スタイル
+ * Phase 2: 基本スタイル（Phase 3で視覚的な目立つスタイルとレスポンシブ対応を追加）
+ */
+
+.top-time-indicator {
+  /* Phase 3で詳細なスタイルを追加 */
+  padding: 12px;
+  margin: 12px 0;
+  text-align: center;
+}
+
+.top-time-indicator__label {
+  /* ラベル部分のスタイル */
+}
+
+.top-time-indicator__player-name {
+  /* プレイヤー名部分のスタイル */
+  font-weight: bold;
+}
+
+.top-time-indicator__time {
+  /* 時間表示部分のスタイル */
+  font-family: 'Courier New', monospace;
+}
