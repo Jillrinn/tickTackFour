@@ -311,6 +311,28 @@ export function useGameState() {
   }, [gameState.activePlayerId]);
 
   /**
+   * プレイヤー名を更新（Task 1.1）
+   * - プレイヤー名を動的に変更できる状態管理機能
+   * - 名前変更時に状態を即座に更新
+   */
+  const updatePlayerName = useCallback((playerId: string, newName: string) => {
+    setGameState((prev) => {
+      const playerExists = prev.players.some(p => p.id === playerId);
+      if (!playerExists) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        players: prev.players.map(p =>
+          p.id === playerId ? { ...p, name: newName } : p
+        ),
+        lastUpdatedAt: new Date()
+      };
+    });
+  }, []);
+
+  /**
    * プレイヤー数が有効な範囲（4〜6人）かを判定（Task 12.4）
    */
   const validatePlayerCount = useCallback((count: number): boolean => {
@@ -336,6 +358,7 @@ export function useGameState() {
     setPaused,
     setTimerMode,
     resetGame,
+    updatePlayerName,
     formatTime,
     getTimedOutPlayerId,
     isPlayerControlDisabled,
