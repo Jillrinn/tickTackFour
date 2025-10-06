@@ -1,3 +1,4 @@
+import React from 'react';
 import { useGameState } from '../hooks/useGameState';
 import './GameTimer.css';
 
@@ -17,6 +18,9 @@ export function GameTimer() {
     setTimerMode,
     resetGame
   } = useGameState();
+
+  // カウントダウンモード用の初期時間設定（秒単位）
+  const [countdownSeconds, setCountdownSeconds] = React.useState(600);
 
   return (
     <div className="game-timer">
@@ -60,7 +64,18 @@ export function GameTimer() {
             <button onClick={() => setPlayerCount(5)}>5人</button>
             <button onClick={() => setPlayerCount(6)}>6人</button>
             <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
-            <button onClick={() => setTimerMode('count-down', 600)}>カウントダウン</button>
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
+              <input
+                type="number"
+                value={countdownSeconds}
+                onChange={(e) => setCountdownSeconds(Number(e.target.value))}
+                min="1"
+                max="3600"
+                style={{ width: '80px', padding: '5px' }}
+              />
+              <span>秒</span>
+            </div>
             <button onClick={switchToNextPlayer} style={{ fontWeight: 'bold', background: '#4CAF50', color: 'white' }}>
               次のプレイヤーへ
             </button>
@@ -73,16 +88,14 @@ export function GameTimer() {
 
           <h3>テスト用情報</h3>
           <div style={{ marginTop: '20px', padding: '10px', background: '#fff3cd', borderRadius: '4px' }}>
-            <p><strong>動作確認ポイント（Task 10.3 ターン管理機能）:</strong></p>
+            <p><strong>動作確認ポイント（Task 10.4 ゲームコントロール機能）:</strong></p>
             <ul>
-              <li>✅ プレイヤー数を4→5→6と変更できる</li>
-              <li>✅ プレイヤーの経過時間を更新できる</li>
-              <li>✅ アクティブプレイヤーを設定すると背景色が変わる</li>
-              <li>✅ タイマーモードを切り替えると経過時間がリセットされる</li>
-              <li>✅ リセットボタンで全プレイヤーの時間が初期化される</li>
-              <li>🆕 「次のプレイヤーへ」ボタンでターン切り替えができる</li>
-              <li>🆕 最後のプレイヤーから最初のプレイヤーへ循環する</li>
-              <li>🆕 アクティブプレイヤーのタイマーのみ動作し、他は停止する</li>
+              <li>✅ リセットボタンで全プレイヤーのタイマーが初期値にリセット</li>
+              <li>✅ 一時停止/再開ボタンでアクティブタイマーの制御</li>
+              <li>✅ カウントアップ/カウントダウンモード切り替え</li>
+              <li>🆕 カウントダウンモード時の初期時間設定（入力フィールド）</li>
+              <li>🆕 初期時間を1〜3600秒の範囲で設定可能</li>
+              <li>🆕 設定した初期時間でカウントダウンモード開始</li>
             </ul>
             <p style={{ marginTop: '10px', fontSize: '12px' }}>
               <strong>Chrome DevTools確認方法:</strong><br/>
