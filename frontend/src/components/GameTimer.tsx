@@ -36,16 +36,6 @@ export function GameTimer() {
       </header>
 
       <main className="game-main">
-        <div className="game-status">
-          <h2>ゲーム状態</h2>
-          <div className="status-info">
-            <p>プレイヤー数: {gameState.players.length}</p>
-            <p>タイマーモード: {gameState.timerMode}</p>
-            <p>一時停止中: {gameState.isPaused ? 'はい' : 'いいえ'}</p>
-            <p>アクティブプレイヤー: {gameState.activePlayerId || 'なし'}</p>
-          </div>
-        </div>
-
         <div className="players-section">
           <h3>プレイヤー一覧</h3>
           <ul className="players-grid">
@@ -109,7 +99,6 @@ export function GameTimer() {
             <button onClick={() => setPaused(!gameState.isPaused)}>
               {gameState.isPaused ? '再開' : '一時停止'}
             </button>
-            <button onClick={() => setActivePlayer(null)}>アクティブ解除</button>
             <button onClick={resetGame}>リセット</button>
           </div>
         </div>

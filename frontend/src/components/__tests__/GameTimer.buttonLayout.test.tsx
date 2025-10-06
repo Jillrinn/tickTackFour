@@ -30,15 +30,20 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    // 初期状態: アクティブプレイヤーなし
-    expect(screen.getByText(/アクティブプレイヤー: なし/)).toBeInTheDocument();
+    const playerCards = screen.getAllByRole('listitem');
+
+    // 初期状態: activeクラスを持つプレイヤーカードがない
+    playerCards.forEach(card => {
+      expect(card).not.toHaveClass('active');
+    });
 
     // 次のプレイヤーボタンをクリック
     const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
     await user.click(nextPlayerButton);
 
-    // ターンが切り替わっていることを確認（アクティブプレイヤーが設定される）
-    expect(screen.queryByText(/アクティブプレイヤー: なし/)).not.toBeInTheDocument();
+    // ターンが切り替わっていることを確認（1人目がactiveクラスを持つ）
+    const updatedPlayerCards = screen.getAllByRole('listitem');
+    expect(updatedPlayerCards[0]).toHaveClass('active');
   });
 
   test('次のプレイヤーボタンが他のコントロールボタンより前に配置される', () => {

@@ -25,7 +25,6 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     expect(screen.getByRole('button', { name: 'カウントアップ' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'カウントダウン' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /一時停止|再開/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'アクティブ解除' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'リセット' })).toBeInTheDocument();
   });
 
