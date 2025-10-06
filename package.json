@@ -4,27 +4,17 @@
   "description": "マルチプレイヤー・ゲームタイマー - ボードゲーム用の4〜6人対応タイマーアプリケーション",
   "private": true,
   "workspaces": [
-    "frontend",
-    "api"
+    "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:front\" \"npm run dev:api\"",
-    "dev:front": "npm run dev --workspace=frontend",
-    "dev:api": "npm start --workspace=api",
-    "test": "npm run test:front && npm run test:api",
-    "test:front": "npm test --workspace=frontend -- --run",
-    "test:api": "npm test --workspace=api",
-    "test:coverage": "npm run test:coverage --workspace=frontend && npm run test:coverage --workspace=api",
-    "build": "npm run build:front && npm run build:api",
-    "build:front": "npm run build --workspace=frontend",
-    "build:api": "npm run build --workspace=api",
+    "dev": "npm run dev --workspace=frontend",
+    "test": "npm test --workspace=frontend -- --run",
+    "test:coverage": "npm run test:coverage --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
     "lint": "npm run lint --workspace=frontend",
-    "clean": "npm run clean --workspace=api && rm -rf frontend/dist api/dist",
-    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=api"
+    "clean": "rm -rf frontend/dist"
   },
-  "devDependencies": {
-    "concurrently": "^9.1.2"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
@@ -37,9 +27,7 @@
     "game-timer",
     "multiplayer",
     "board-game",
-    "react",
-    "azure",
-    "signalr"
+    "react"
   ],
   "author": "",
   "license": "MIT"

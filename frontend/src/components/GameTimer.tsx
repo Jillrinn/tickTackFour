@@ -1,319 +1,90 @@
-import { useState, useEffect, useCallback } from 'react';
-import { SignalRConnectionManager, ConnectionState } from '../services/SignalRConnectionManager';
-import { PlayerList } from './PlayerList';
-import { TimerControls } from './TimerControls';
-import { useGameTimer } from '../hooks/useGameTimer';
-import type { GameState, TimerMode } from '../types/GameState';
+import { useGameState } from '../hooks/useGameState';
 import './GameTimer.css';
 
-const API_BASE_URL = '/api';
-
 /**
- * GameTimerルートコンポーネント
- * - アプリケーション全体の状態管理
- * - SignalR接続のライフサイクル管理
- * - APIとの通信
+ * GameTimerルートコンポーネント（Phase 1: インメモリー版）
+ * - useStateのみで状態管理
+ * - DB/SignalR接続なし
  */
 export function GameTimer() {
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
-  const [error, setError] = useState<string | null>(null);
-  const [_signalRManager, setSignalRManager] = useState<SignalRConnectionManager | null>(null);
-
-  // ゲーム状態をAPIから取得
-  const fetchGameState = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/game`);
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error?.message || 'Unknown error');
-      }
-
-      const data = result.data;
-
-      // Date型に変換
-      const state: GameState = {
-        ...data,
-        players: data.players.map((p: any) => ({
-          ...p,
-          createdAt: new Date(p.createdAt)
-        })),
-        createdAt: new Date(data.createdAt),
-        lastUpdatedAt: new Date(data.lastUpdatedAt)
-      };
-
-      setGameState(state);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch game state:', err);
-      setError('ゲーム状態の取得に失敗しました');
-    }
-  }, []);
-
-  // SignalR接続の初期化
-  useEffect(() => {
-    const manager = new SignalRConnectionManager(`${API_BASE_URL}`);
-
-    // 接続状態変化のコールバック
-    manager.onConnectionStateChanged((state) => {
-      setConnectionState(state);
-    });
-
-    // SignalRイベントリスナー
-    manager.on('TurnSwitched', (data: { activePlayerId: string }) => {
-      setGameState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          activePlayerId: data.activePlayerId,
-          players: prev.players.map((p) => ({
-            ...p,
-            isActive: p.id === data.activePlayerId
-          }))
-        };
-      });
-    });
-
-    manager.on('TimerUpdated', (data: { playerId: string; elapsedTimeSeconds: number }) => {
-      setGameState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          players: prev.players.map((p) =>
-            p.id === data.playerId ? { ...p, elapsedTimeSeconds: data.elapsedTimeSeconds } : p
-          )
-        };
-      });
-    });
-
-    manager.on('GameReset', (data: { players: any[] }) => {
-      setGameState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          players: data.players.map((p) => ({
-            ...p,
-            createdAt: new Date(p.createdAt)
-          })),
-          activePlayerId: null,
-          isPaused: false
-        };
-      });
-    });
-
-    manager.on('PlayersUpdated', (data: { players: any[] }) => {
-      setGameState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          players: data.players.map((p) => ({
-            ...p,
-            createdAt: new Date(p.createdAt)
-          }))
-        };
-      });
-    });
-
-    // 接続開始（エラーは警告として記録するのみ）
-    manager.start().catch((err) => {
-      console.error('SignalR connection failed:', err);
-      console.warn('リアルタイム更新が無効です。手動でリロードしてください。');
-    });
-
-    setSignalRManager(manager);
-
-    // クリーンアップ
-    return () => {
-      manager.stop().catch(console.error);
-    };
-  }, []);
-
-  // 初回ゲーム状態取得
-  useEffect(() => {
-    fetchGameState();
-  }, [fetchGameState]);
-
-  // タイマーティックコールバック
-  const handleTimerTick = useCallback((playerId: string, newElapsedTime: number) => {
-    setGameState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        players: prev.players.map((p) =>
-          p.id === playerId ? { ...p, elapsedTimeSeconds: newElapsedTime } : p
-        )
-      };
-    });
-  }, []);
-
-  // サーバー同期コールバック
-  const handleServerSync = useCallback(async (playerId: string, elapsedTime: number) => {
-    try {
-      await fetch(`${API_BASE_URL}/syncTimer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, elapsedTimeSeconds: elapsedTime })
-      });
-    } catch (err) {
-      console.error('Failed to sync timer:', err);
-    }
-  }, []);
-
-  // 時間切れコールバック
-  const handleTimeExpired = useCallback((playerId: string) => {
-    console.log(`Time expired for player: ${playerId}`);
-    // 必要に応じて追加処理（通知など）
-  }, []);
-
-  // useGameTimerフックを使用
-  useGameTimer(
-    gameState || {
-      players: [],
-      activePlayerId: null,
-      isPaused: false,
-      timerMode: 'count-up',
-      createdAt: new Date(),
-      lastUpdatedAt: new Date()
-    },
-    handleTimerTick,
-    handleServerSync,
-    handleTimeExpired
-  );
-
-  // ターン切り替え
-  const handleSwitchTurn = useCallback(async () => {
-    if (!gameState || !gameState.activePlayerId) return;
-
-    const currentIndex = gameState.players.findIndex((p) => p.id === gameState.activePlayerId);
-    const nextIndex = (currentIndex + 1) % gameState.players.length;
-    const nextPlayerId = gameState.players[nextIndex].id;
-
-    try {
-      await fetch(`${API_BASE_URL}/switchTurn`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPlayerId: gameState.activePlayerId, nextPlayerId })
-      });
-    } catch (err) {
-      console.error('Failed to switch turn:', err);
-      setError('ターン切り替えに失敗しました');
-    }
-  }, [gameState]);
-
-  // ゲーム一時停止
-  const handlePauseGame = useCallback(async () => {
-    try {
-      await fetch(`${API_BASE_URL}/pauseGame`, { method: 'POST' });
-      setGameState((prev) => (prev ? { ...prev, isPaused: true } : prev));
-    } catch (err) {
-      console.error('Failed to pause game:', err);
-      setError('一時停止に失敗しました');
-    }
-  }, []);
-
-  // ゲーム再開
-  const handleResumeGame = useCallback(async () => {
-    try {
-      await fetch(`${API_BASE_URL}/resumeGame`, { method: 'POST' });
-      setGameState((prev) => (prev ? { ...prev, isPaused: false } : prev));
-    } catch (err) {
-      console.error('Failed to resume game:', err);
-      setError('再開に失敗しました');
-    }
-  }, []);
-
-  // ゲームリセット
-  const handleResetGame = useCallback(async () => {
-    try {
-      await fetch(`${API_BASE_URL}/resetGame`, { method: 'POST' });
-      await fetchGameState();
-    } catch (err) {
-      console.error('Failed to reset game:', err);
-      setError('リセットに失敗しました');
-    }
-  }, [fetchGameState]);
-
-  // プレイヤー数更新
-  const handleUpdatePlayers = useCallback(async (count: number) => {
-    try {
-      await fetch(`${API_BASE_URL}/updatePlayers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerCount: count })
-      });
-      await fetchGameState();
-    } catch (err) {
-      console.error('Failed to update players:', err);
-      setError('プレイヤー数の更新に失敗しました');
-    }
-  }, [fetchGameState]);
-
-  // タイマーモード設定
-  const handleSetTimerMode = useCallback(
-    async (mode: TimerMode, initialTimeSeconds?: number) => {
-      try {
-        await fetch(`${API_BASE_URL}/setTimerMode`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode, initialTimeSeconds })
-        });
-        await fetchGameState();
-      } catch (err) {
-        console.error('Failed to set timer mode:', err);
-        setError('タイマーモードの設定に失敗しました');
-      }
-    },
-    [fetchGameState]
-  );
-
-  if (error) {
-    return (
-      <div className="game-timer error">
-        <h1>エラーが発生しました</h1>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()}>再読み込み</button>
-      </div>
-    );
-  }
-
-  if (!gameState) {
-    return (
-      <div className="game-timer loading">
-        <h1>読み込み中...</h1>
-      </div>
-    );
-  }
+  const {
+    gameState,
+    setPlayerCount,
+    updatePlayerTime,
+    setActivePlayer,
+    setPaused,
+    setTimerMode,
+    resetGame
+  } = useGameState();
 
   return (
     <div className="game-timer">
       <header className="game-header">
-        <h1>マルチプレイヤー・ゲームタイマー</h1>
-        <div className="connection-status">
-          接続状態:{' '}
-          <span className={`status-${connectionState.toLowerCase()}`}>{connectionState}</span>
-        </div>
+        <h1>マルチプレイヤー・ゲームタイマー (Phase 1: インメモリー版)</h1>
       </header>
 
       <main className="game-main">
-        <PlayerList
-          players={gameState.players}
-          activePlayerId={gameState.activePlayerId}
-          timerMode={gameState.timerMode}
-        />
+        <div style={{ padding: '20px' }}>
+          <h2>ゲーム状態</h2>
+          <div style={{ marginBottom: '20px' }}>
+            <p>プレイヤー数: {gameState.players.length}</p>
+            <p>タイマーモード: {gameState.timerMode}</p>
+            <p>一時停止中: {gameState.isPaused ? 'はい' : 'いいえ'}</p>
+            <p>アクティブプレイヤー: {gameState.activePlayerId || 'なし'}</p>
+          </div>
 
-        <TimerControls
-          gameState={gameState}
-          onSwitchTurn={handleSwitchTurn}
-          onPauseGame={handlePauseGame}
-          onResumeGame={handleResumeGame}
-          onResetGame={handleResetGame}
-          onUpdatePlayers={handleUpdatePlayers}
-          onSetTimerMode={handleSetTimerMode}
-        />
+          <h3>プレイヤー一覧</h3>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {gameState.players.map((player) => (
+              <li key={player.id} style={{ marginBottom: '10px', padding: '10px', background: player.isActive ? '#e3f2fd' : '#f5f5f5' }}>
+                <div>
+                  <strong>{player.name}</strong> (ID: {player.id.substring(0, 8)}...)
+                </div>
+                <div>経過時間: {player.elapsedTimeSeconds}秒</div>
+                <div>
+                  <button onClick={() => updatePlayerTime(player.id, player.elapsedTimeSeconds + 10)}>
+                    +10秒
+                  </button>
+                  <button onClick={() => setActivePlayer(player.id)} style={{ marginLeft: '5px' }}>
+                    アクティブに設定
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <h3>操作</h3>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button onClick={() => setPlayerCount(4)}>4人</button>
+            <button onClick={() => setPlayerCount(5)}>5人</button>
+            <button onClick={() => setPlayerCount(6)}>6人</button>
+            <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
+            <button onClick={() => setTimerMode('count-down', 600)}>カウントダウン</button>
+            <button onClick={() => setPaused(!gameState.isPaused)}>
+              {gameState.isPaused ? '再開' : '一時停止'}
+            </button>
+            <button onClick={() => setActivePlayer(null)}>アクティブ解除</button>
+            <button onClick={resetGame}>リセット</button>
+          </div>
+
+          <h3>テスト用情報</h3>
+          <div style={{ marginTop: '20px', padding: '10px', background: '#fff3cd', borderRadius: '4px' }}>
+            <p><strong>動作確認ポイント:</strong></p>
+            <ul>
+              <li>✅ プレイヤー数を4→5→6と変更できる</li>
+              <li>✅ プレイヤーの経過時間を更新できる</li>
+              <li>✅ アクティブプレイヤーを設定すると背景色が変わる</li>
+              <li>✅ タイマーモードを切り替えると経過時間がリセットされる</li>
+              <li>✅ リセットボタンで全プレイヤーの時間が初期化される</li>
+            </ul>
+            <p style={{ marginTop: '10px', fontSize: '12px' }}>
+              <strong>Chrome DevTools確認方法:</strong><br/>
+              1. F12でDevToolsを開く<br/>
+              2. Consoleタブで `window.gameState` を確認（開発時のみ）<br/>
+              3. Reactタブ（React Developer Tools拡張機能）でstate確認
+            </p>
+          </div>
+        </div>
       </main>
     </div>
   );
