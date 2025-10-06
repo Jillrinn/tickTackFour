@@ -1,0 +1,712 @@
+# 技術設計書
+
+## 概要
+
+本機能は、既存のインメモリータイマー（multiplayer-game-timer Phase 1完了）に、マルチプレイヤー同期機能を追加します。Phase 1ではCosmos DB Table APIによる永続化とポーリング同期を実装し、Phase 2ではSignalR Serviceによるリアルタイム双方向通信（<1秒同期）を実装します。
+
+**対象ユーザー**: 複数デバイスからゲームタイマーを共有したいボードゲームプレイヤー
+
+**実現価値**:
+- ブラウザリロード後も状態復元可能
+- 複数デバイス間での状態共有（Phase 1: 手動リロード、Phase 2: リアルタイム）
+- Azure無料層での完全無料運用
+
+**既存システムへの影響**:
+- multiplayer-game-timer Phase 1のReactコンポーネント（GameTimer）を拡張
+- インメモリー状態管理からAzure Functions + Cosmos DB統合へ移行
+- 既存のUIとタイマーロジックは維持、同期機能を追加レイヤーとして実装
+
+### 目標
+- Phase 1: Cosmos DB永続化と5秒ポーリング同期の実装
+- Phase 2: SignalR接続による1秒以内のリアルタイム同期の実装
+- Azure無料層制約内での安定動作（Cosmos DB 1000 RU/s、SignalR 20接続・20K msg/日）
+
+### 非目標
+- 認証・認可機能（無料層でのシンプル運用）
+- ゲーム履歴の保存（ステートレス設計）
+- リアルタイム更新の1秒未満保証（無料層の制約を考慮）
+
+## アーキテクチャ
+
+### 既存アーキテクチャ分析
+
+**現在の実装** (multiplayer-game-timer Phase 1):
+- React 19 + TypeScript + Viteフロントエンド
+- useStateによるインメモリー状態管理（gameState）
+- プレイヤー配列、アクティブプレイヤーインデックス、タイマーモードを管理
+- Azure Static Web Appsにデプロイ済み
+
+**統合方針**:
+- 既存のGameTimerコンポーネントを拡張（破壊的変更なし）
+- 状態管理をローカルuseState → Azure Functions API連携に移行
+- UIとタイマーロジックは既存コードを最大限再利用
+
+### 全体アーキテクチャ
+
+#### Phase 1: Cosmos DB統合（ポーリング同期）
+
+```mermaid
+graph TB
+    A[React App] -->|GET /api/game| B[Azure Functions]
+    B -->|Query| C[Cosmos DB Table API]
+    C -->|Game State| B
+    B -->|Game State| A
+
+    A -->|5秒ごとポーリング| B
+
+    A -->|POST /api/updateGame| B
+    B -->|Update with ETag| C
+    C -->|Success/Conflict| B
+    B -->|Response| A
+
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style C fill:#f3e5f5
+```
+
+#### Phase 2: SignalRリアルタイム同期
+
+```mermaid
+graph TB
+    A[Device A] <-->|WebSocket| D[SignalR Service]
+    B[Device B] <-->|WebSocket| D
+    C[Device C] <-->|WebSocket| D
+
+    D <-->|Negotiate & Events| E[Azure Functions]
+    E <-->|CRUD| F[Cosmos DB]
+
+    A -->|操作| E
+    E -->|Broadcast| D
+    D -->|Event| B
+    D -->|Event| C
+
+    style A fill:#e1f5fe
+    style B fill:#e1f5fe
+    style C fill:#e1f5fe
+    style D fill:#fce4ec
+    style E fill:#fff3e0
+    style F fill:#f3e5f5
+```
+
+### 技術スタック調整
+
+本機能は既存のmultiplayer-game-timerを拡張するため、確立された技術スタックに新しい依存関係を追加します。
+
+**追加ライブラリ**:
+- `@azure/data-tables` (13.3.x): Cosmos DB Table APIクライアント
+  - 選定理由: Azure公式SDKで型安全、無料層対応
+  - 代替案: REST API直接呼び出し（型安全性低下のため不採用）
+
+- `@azure/functions` (4.8.x): Azure Functions SDK
+  - 選定理由: Managed Functions（Static Web Apps統合）で必須
+  - 代替案: なし（Azure環境での標準）
+
+- `@microsoft/signalr` (9.0.x): SignalRクライアント（Phase 2）
+  - 選定理由: リアルタイム双方向通信、自動再接続機能
+  - 代替案: WebSocket直接実装（再接続ロジック複雑化のため不採用）
+
+**既存技術スタックとの統合**:
+- React 19: SignalR HubConnectionをuseEffectで管理
+- TypeScript 5.9: Azure SDKの型定義を活用
+- Vite 7: 環境変数でAzure接続文字列を管理
+
+### 主要設計決定
+
+#### 決定1: Cosmos DB Table API選定
+
+**決定**: Cosmos DB Table APIを永続化ストレージとして採用
+
+**コンテキスト**: ゲーム状態（プレイヤー配列、タイマー値、アクティブプレイヤー）を複数デバイス間で共有し、ブラウザリロード後も復元する必要がある
+
+**代替案**:
+1. Cosmos DB SQL API: より強力なクエリ機能、ただし無料層が400 RU/s（Table APIは1000 RU/s）
+2. Azure Table Storage: シンプルなKey-Value、ただしCosmos DBより機能制限
+3. Azure Blob Storage: 構造化データには不向き
+
+**選定アプローチ**: Table API
+- シンプルなKey-Valueアクセス（PartitionKey="game", RowKey="default"）
+- 無料層1000 RU/s（本用途では約2.5 RU/s使用、余裕あり）
+- ETagによる楽観的ロック機能（同時更新競合解決）
+
+**根拠**:
+- 単一ゲーム状態の読み書きのみ（複雑なクエリ不要）
+- 無料層のRU/s上限が最も高い
+- Azure Functions統合が容易
+
+**トレードオフ**:
+- 獲得: 無料層での十分なRU/s、シンプルなデータアクセス、楽観的ロック
+- 犠牲: 複雑なクエリ機能、リレーショナルデータモデリング
+
+#### 決定2: Phase 1ポーリング → Phase 2 SignalR段階的移行
+
+**決定**: Phase 1でポーリング同期、Phase 2でSignalRリアルタイム同期の2段階実装
+
+**コンテキスト**: リアルタイム同期機能を実装するにあたり、段階的な検証とリスク軽減が必要
+
+**代替案**:
+1. SignalR直接実装: Phase 1なしでリアルタイム同期のみ実装
+2. WebSocket直接実装: SignalRを使わず低レベル実装
+3. Server-Sent Events (SSE): 片方向通信のみ
+
+**選定アプローチ**: 2段階移行（ポーリング → SignalR）
+- Phase 1: Cosmos DB統合 + 5秒ポーリング（手動リロード不要）
+- Phase 2: SignalR接続 + リアルタイムイベント配信（<1秒同期）
+- SignalR切断時はPhase 1ポーリングにフォールバック
+
+**根拠**:
+- 段階的検証でリスク軽減（Cosmos DB統合を先行検証）
+- フォールバック機能による高可用性
+- 無料層制約（SignalR 20K msg/日）への対応
+
+**トレードオフ**:
+- 獲得: 段階的リスク軽減、フォールバック機能、無料層最適化
+- 犠牲: 実装工数増加（2段階開発）
+
+#### 決定3: ETagによる楽観的ロック制御
+
+**決定**: Cosmos DB Table APIのETagを使用した楽観的ロック制御
+
+**コンテキスト**: 複数デバイスからの同時更新による競合を検出し、データ整合性を保証する必要がある
+
+**代替案**:
+1. 悲観的ロック: 更新前にロック取得（Table APIで未サポート）
+2. Last-Write-Wins: 最後の書き込みが勝つ（競合検出なし）
+3. カスタムバージョン管理: 独自のバージョンフィールド追加
+
+**選定アプローチ**: ETag楽観的ロック
+- Cosmos DBから取得したETagを記録
+- 更新時にETagを指定して条件付き更新
+- 競合時（ETag不一致）は最新状態を取得して再試行（最大3回）
+
+**根拠**:
+- Table API標準機能で追加実装不要
+- 競合検出と自動再試行で整合性保証
+- 競合頻度が低いゲームタイマー用途に最適
+
+**トレードオフ**:
+- 獲得: シンプルな実装、標準機能活用、整合性保証
+- 犠牲: 高競合環境では再試行オーバーヘッド
+
+## システムフロー
+
+### フロー1: ゲーム状態初期化（Phase 1）
+
+```mermaid
+sequenceDiagram
+    participant R as React App
+    participant F as Azure Functions
+    participant C as Cosmos DB
+
+    R->>F: GET /api/game
+    F->>C: Query (PK="game", RK="default")
+
+    alt データ存在
+        C->>F: GameStateEntity + ETag
+        F->>R: Game State
+        R->>R: useStateに反映
+    else データ未存在
+        F->>C: Insert Default State
+        C->>F: Success + ETag
+        F->>R: Default Game State
+        R->>R: 初期状態表示
+    end
+
+    R->>R: 5秒ポーリング開始
+```
+
+### フロー2: タイマー操作とポーリング同期（Phase 1）
+
+```mermaid
+sequenceDiagram
+    participant D1 as Device 1
+    participant F as Azure Functions
+    participant C as Cosmos DB
+    participant D2 as Device 2
+
+    D1->>F: POST /api/switchTurn
+    F->>C: Update with ETag
+
+    alt ETag一致
+        C->>F: Success + New ETag
+        F->>D1: Success
+        D1->>D1: UI更新
+    else ETag競合
+        C->>F: Conflict (412)
+        F->>C: Get Latest State
+        C->>F: Latest State + ETag
+        F->>C: Retry Update
+        C->>F: Success
+        F->>D1: Success
+    end
+
+    Note over D2: 5秒後ポーリング
+    D2->>F: GET /api/game
+    F->>C: Query Latest State
+    C->>F: Updated State
+    F->>D2: Updated State
+    D2->>D2: UI同期完了
+```
+
+### フロー3: SignalRリアルタイム同期（Phase 2）
+
+```mermaid
+sequenceDiagram
+    participant D1 as Device 1
+    participant S as SignalR Service
+    participant F as Azure Functions
+    participant C as Cosmos DB
+    participant D2 as Device 2
+    participant D3 as Device 3
+
+    D1->>F: GET /api/negotiate
+    F->>S: Get Connection Info
+    S->>F: Connection URL + Token
+    F->>D1: Connection Info
+    D1->>S: WebSocket Connect
+    S->>D1: Connected
+
+    Note over D1: ターン切り替え操作
+    D1->>F: POST /api/switchTurn
+    F->>C: Update State
+    C->>F: Success
+    F->>S: Broadcast "TurnSwitched" Event
+    S->>D2: TurnSwitched Event
+    S->>D3: TurnSwitched Event
+
+    D2->>D2: UI即座に更新
+    D3->>D3: UI即座に更新
+
+    Note over D1,D3: <1秒以内に全デバイス同期完了
+```
+
+## 要件トレーサビリティ
+
+| 要件 | 要件概要 | コンポーネント | インターフェース | フロー |
+|------|----------|----------------|------------------|--------|
+| 1.1 | ゲーム状態取得 | GameStateService, GetGameFunction | GET /api/game | フロー1 |
+| 1.3 | ゲーム状態保存 | GameStateService, UpdateGameFunction | POST /api/updateGame | フロー2 |
+| 2.1 | 5秒ポーリング | PollingService (React useEffect) | GET /api/game | フロー2 |
+| 3.1-3.3 | 楽観的ロック | GameStateService (ETag処理) | Cosmos DB条件付き更新 | フロー2 |
+| 4.1 | SignalR接続 | SignalRService, NegotiateFunction | GET /api/negotiate | フロー3 |
+| 4.3 | イベント配信 | SignalRHubService | SignalRブロードキャスト | フロー3 |
+| 5.1 | 自動再接続 | SignalRService (withAutomaticReconnect) | SignalR再接続ロジック | - |
+
+## コンポーネントとインターフェース
+
+### バックエンド層（Azure Functions）
+
+#### GameStateService
+
+**責任と境界**
+- **主要責任**: Cosmos DB Table APIへのゲーム状態CRUD操作
+- **ドメイン境界**: ゲーム状態の永続化とETag管理
+- **データ所有**: GameStateEntity（PK="game", RK="default"）
+- **トランザクション境界**: 単一エンティティ更新（楽観的ロック）
+
+**依存関係**
+- **Inbound**: GetGameFunction, UpdateGameFunction, SwitchTurnFunction
+- **Outbound**: Cosmos DB Table API (`@azure/data-tables`)
+- **External**: Azure Cosmos DB Free Tier（1000 RU/s）
+
+**外部依存関係調査** (@azure/data-tables):
+- Azure公式SDK、TypeScript完全サポート
+- TableClient APIメソッド: getEntity, upsertEntity, updateEntity
+- ETag自動処理: updateEntity({ etag: "*" })で楽観的ロック
+- エラー型: RestError (statusCode 412 = Conflict)
+- 制約: プリミティブ型のみ（配列はJSON文字列化必須）
+
+**契約定義**
+
+**サービスインターフェース**:
+```typescript
+interface GameStateService {
+  // ゲーム状態取得（初回は初期化）
+  getGameState(): Promise<Result<GameState, GameStateError>>;
+
+  // ゲーム状態更新（ETag楽観的ロック）
+  updateGameState(state: GameState, etag: string): Promise<Result<GameState, GameStateError>>;
+
+  // ターン切り替え（ETag再試行含む）
+  switchTurn(currentEtag: string): Promise<Result<GameState, GameStateError>>;
+}
+
+type Result<T, E> = { success: true; value: T } | { success: false; error: E };
+
+type GameStateError =
+  | { type: 'NotFound' }
+  | { type: 'Conflict'; latestState: GameState }
+  | { type: 'NetworkError'; message: string };
+```
+
+**事前条件**:
+- Cosmos DB接続文字列が環境変数に設定されていること
+- ETag更新時は有効なETag文字列を渡すこと
+
+**事後条件**:
+- 成功時は最新のGameStateとETagを返す
+- 競合時はConflictエラーと最新状態を返す
+
+**不変条件**:
+- GameStateEntityのPK="game", RK="default"は常に固定
+
+**状態管理**:
+- **状態モデル**: ETagによるバージョン管理（Cosmos DB自動生成）
+- **永続化**: Cosmos DB Table API（強整合性）
+- **並行制御**: 楽観的ロック（ETag一致確認）
+
+#### SignalRHubService (Phase 2)
+
+**責任と境界**
+- **主要責任**: SignalR Serviceを通じたイベントブロードキャスト
+- **ドメイン境界**: リアルタイムイベント配信
+- **データ所有**: なし（イベント配信のみ）
+- **トランザクション境界**: なし（イベント送信）
+
+**依存関係**
+- **Inbound**: SwitchTurnFunction, UpdateTimerFunction
+- **Outbound**: Azure SignalR Service
+- **External**: SignalR Service Free Tier（20接続, 20K msg/日）
+
+**契約定義**
+
+**イベント契約**:
+- **Published Events**:
+  - `TurnSwitched`: { activePlayerIndex: number } - ターン切り替え時
+  - `TimerUpdated`: { playerIndex: number, elapsedSeconds: number } - タイマー更新時
+  - `GameReset`: { gameState: GameState } - ゲームリセット時
+  - `PlayersUpdated`: { playerCount: number, players: Player[] } - プレイヤー変更時
+
+- **配信順序**: 保証なし（イベント独立性前提）
+- **配信保証**: At-least-once（SignalR Service仕様）
+
+**API契約**:
+| メソッド | エンドポイント | リクエスト | レスポンス | エラー |
+|----------|----------------|------------|------------|--------|
+| POST | /api/messages | EventPayload | 200 OK | 500, 503 |
+
+### フロントエンド層（React）
+
+#### PollingService (Phase 1)
+
+**責任と境界**
+- **主要責任**: 5秒ごとのCosmos DB状態ポーリング
+- **ドメイン境界**: 定期的な状態同期
+- **データ所有**: ポーリングタイマー（setInterval ID）
+
+**契約定義**
+
+```typescript
+interface PollingService {
+  // ポーリング開始
+  startPolling(callback: (state: GameState) => void): void;
+
+  // ポーリング停止
+  stopPolling(): void;
+
+  // ポーリング状態確認
+  isPolling(): boolean;
+}
+```
+
+**実装方法** (React useEffect):
+```typescript
+useEffect(() => {
+  if (!signalRConnected) {
+    const intervalId = setInterval(async () => {
+      const response = await fetch('/api/game');
+      const state = await response.json();
+      setGameState(state);
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }
+}, [signalRConnected]);
+```
+
+#### SignalRService (Phase 2)
+
+**責任と境界**
+- **主要責任**: SignalR接続管理とイベントリスナー登録
+- **ドメイン境界**: リアルタイム双方向通信
+- **データ所有**: HubConnection インスタンス
+
+**依存関係**
+- **Outbound**: Azure SignalR Service (`@microsoft/signalr`)
+- **External**: SignalR Service Free Tier
+
+**外部依存関係調査** (@microsoft/signalr 9.0):
+- HubConnectionBuilder API: 接続構築、自動再接続設定
+- withAutomaticReconnect([0, 2000, 5000, 10000]): 再接続遅延設定
+- on(eventName, callback): イベントリスナー登録
+- invoke(methodName, ...args): サーバーメソッド呼び出し
+- 接続状態: Disconnected, Connecting, Connected, Reconnecting
+- エラー型: HubException, TimeoutError
+
+**契約定義**
+
+```typescript
+interface SignalRService {
+  // SignalR接続開始
+  connect(): Promise<Result<void, SignalRError>>;
+
+  // イベントリスナー登録
+  on(eventName: SignalREventType, callback: (payload: any) => void): void;
+
+  // 接続状態確認
+  getConnectionState(): ConnectionState;
+
+  // 切断
+  disconnect(): Promise<void>;
+}
+
+type SignalREventType = 'TurnSwitched' | 'TimerUpdated' | 'GameReset' | 'PlayersUpdated';
+type ConnectionState = 'Disconnected' | 'Connecting' | 'Connected' | 'Reconnecting';
+type SignalRError = { type: 'ConnectionFailed'; message: string };
+```
+
+**自動再接続戦略**:
+- 再接続遅延: [0ms, 2s, 5s, 10s]（最大4回試行）
+- 再接続成功時: GET /api/gameで最新状態同期
+- 再接続失敗時: PollingServiceにフォールバック
+
+## データモデル
+
+### 物理データモデル（Cosmos DB Table API）
+
+#### GameStateEntity
+
+Cosmos DB Table APIのスキーマ定義:
+
+```typescript
+interface GameStateEntity {
+  // Table API必須フィールド
+  partitionKey: string;      // 固定値: "game"
+  rowKey: string;            // 固定値: "default"
+  etag?: string;             // 楽観的ロック用（Cosmos DB自動生成）
+  timestamp?: Date;          // 最終更新日時（Cosmos DB自動生成）
+
+  // ゲーム状態フィールド
+  playerCount: number;       // プレイヤー数（4-6）
+  players: string;           // Player[]をJSON文字列化（Table APIは配列未サポート）
+  activePlayerIndex: number; // アクティブプレイヤーインデックス
+  timerMode: string;         // 'countup' | 'countdown'
+  countdownSeconds: number;  // カウントダウン秒数
+  isPaused: boolean;         // 一時停止状態
+}
+
+interface Player {
+  name: string;              // プレイヤー名
+  elapsedSeconds: number;    // 経過秒数
+}
+```
+
+**シリアライゼーション処理**:
+- 保存時: `JSON.stringify(players)` → GameStateEntity.players
+- 取得時: `JSON.parse(entity.players)` → Player[]
+
+**主キー設計**:
+- PartitionKey: "game"（単一パーティション、複数ゲーム未対応）
+- RowKey: "default"（単一ゲーム状態のみ）
+
+**ETag運用**:
+- Cosmos DBが自動生成（更新ごとに変化）
+- 更新時に前回取得したETagを指定
+- ETag不一致時はRestError (statusCode: 412)
+
+### データ契約とイベントスキーマ（Phase 2）
+
+#### SignalRイベントスキーマ
+
+```typescript
+// ターン切り替えイベント
+interface TurnSwitchedEvent {
+  eventType: 'TurnSwitched';
+  payload: {
+    activePlayerIndex: number;
+  };
+}
+
+// タイマー更新イベント
+interface TimerUpdatedEvent {
+  eventType: 'TimerUpdated';
+  payload: {
+    playerIndex: number;
+    elapsedSeconds: number;
+  };
+}
+
+// ゲームリセットイベント
+interface GameResetEvent {
+  eventType: 'GameReset';
+  payload: {
+    gameState: GameState;
+  };
+}
+
+// プレイヤー更新イベント
+interface PlayersUpdatedEvent {
+  eventType: 'PlayersUpdated';
+  payload: {
+    playerCount: number;
+    players: Player[];
+  };
+}
+
+type SignalREvent = TurnSwitchedEvent | TimerUpdatedEvent | GameResetEvent | PlayersUpdatedEvent;
+```
+
+**スキーマバージョニング**:
+- 現状: バージョン管理なし（Phase 1実装）
+- 将来: eventTypeにバージョン追加（例: "TurnSwitched.v2"）
+
+**後方互換性**:
+- 新フィールド追加時: オプショナルプロパティで追加
+- 既存フィールド削除時: 非推奨マーク → 次バージョンで削除
+
+## エラーハンドリング
+
+### エラー戦略
+
+各エラータイプに対する具体的な処理と復旧メカニズム:
+
+### エラーカテゴリと対応
+
+#### ユーザーエラー (4xx)
+- **400 Bad Request**: バリデーションエラー → フィールド単位エラーメッセージ表示
+- **404 Not Found**: ゲーム状態未存在 → デフォルト状態で初期化
+- **412 Precondition Failed**: ETag競合 → 最新状態取得して再試行（最大3回）
+
+#### システムエラー (5xx)
+- **500 Internal Server Error**: Azure Functions障害 → インメモリーモードにフォールバック
+- **503 Service Unavailable**: Cosmos DB/SignalR一時停止 → ローカルストレージ保存、ポーリング再開
+- **Timeout**: API応答遅延 → 5秒タイムアウト後エラー表示、再試行ボタン提供
+
+#### ビジネスロジックエラー (422)
+- **楽観的ロック競合**: 3回再試行後も失敗 → 手動リロード促進メッセージ
+- **SignalR切断**: 自動再接続（0ms, 2s, 5s, 10s遅延）→ 失敗時ポーリング切り替え
+
+**エラーフロー** (楽観的ロック競合時):
+
+```mermaid
+graph TB
+    A[POST /api/updateGame] -->|ETag指定| B{Cosmos DB更新}
+    B -->|成功| C[Success Response]
+    B -->|412 Conflict| D[最新状態取得]
+    D --> E{再試行カウント}
+    E -->|< 3回| F[ETag更新して再試行]
+    F --> B
+    E -->|>= 3回| G[エラー表示: 手動リロード促進]
+
+    style C fill:#c8e6c9
+    style G fill:#ffcdd2
+```
+
+### モニタリング
+
+**エラートラッキング**: Azure Application Insights統合
+- エラー率: HTTP 5xx応答の割合
+- 楽観的ロック競合率: 412エラーの頻度
+- SignalR切断率: 再接続試行回数
+
+**ログ出力**:
+- Info: ゲーム状態取得、更新成功
+- Warning: 楽観的ロック競合、SignalR再接続試行
+- Error: Cosmos DB接続失敗、SignalR接続失敗
+
+**ヘルスモニタリング**:
+- Cosmos DB RU/s使用率（目標: <100 RU/s、上限: 1000 RU/s）
+- SignalRメッセージ数（目標: <10K/日、上限: 20K/日）
+- Azure Functions実行回数（目標: <50K/月、上限: 100万/月）
+
+## テスト戦略
+
+### ユニットテスト
+
+**Azure Functions API** (Jest + ts-jest):
+- GameStateService CRUD操作（Cosmos DBモック）
+  - getGameState: 初回初期化、既存状態取得
+  - updateGameState: ETag楽観的ロック、競合処理
+  - switchTurn: ターン循環ロジック
+
+- SignalRHubService イベント送信（SignalRモック）
+  - broadcastTurnSwitched: TurnSwitchedイベント配信
+  - broadcastTimerUpdated: TimerUpdatedイベント配信
+
+**フロントエンド** (Vitest + jsdom):
+- PollingService: 5秒ポーリング、停止処理
+- SignalRService: 接続、イベントリスナー登録、自動再接続
+
+### 統合テスト
+
+**Azure Functions API → Cosmos DB** (Jest):
+- エンドツーエンドCRUD操作
+- ETag競合シナリオ（並列更新）
+- ネットワークエラーハンドリング
+
+**フロントエンド → Azure Functions** (Vitest):
+- GET /api/game → useStateへの反映
+- POST /api/updateGame → 楽観的更新
+
+### E2E/UIテスト
+
+**Chrome DevTools MCP検証** (Phase 1):
+1. アプリケーション起動（npm run dev）
+2. navigate_page → http://localhost:5173
+3. take_snapshot → 初期状態確認
+4. click（ターン切り替えボタン）→ take_snapshot
+5. ブラウザリロード → take_snapshot（状態復元確認）
+6. 複数タブ同時操作 → 5秒待機 → take_snapshot（ポーリング同期確認）
+
+**Chrome DevTools MCP検証** (Phase 2):
+1. 複数タブでアプリケーション起動
+2. タブAでターン切り替え → タブB/Cで即座に反映確認（<1秒）
+3. ネットワーク切断（DevTools Offline）→ 自動再接続確認
+4. 再接続成功 → 最新状態同期確認
+
+### パフォーマンス/負荷テスト
+
+**Cosmos DB RU/s測定**:
+- 1操作あたりのRU消費量測定（目標: <5 RU/操作）
+- 同時アクセス時のRU/s合計（目標: <100 RU/s）
+
+**SignalRメッセージ数測定**:
+- 1時間の連続操作でのメッセージ数（目標: <1000 msg/時）
+- 1秒更新時の1日メッセージ数推定（約5.5時間分 = 20K msg）
+
+**Azure Functions実行時間**:
+- GET /api/game: 目標<200ms
+- POST /api/updateGame: 目標<300ms
+- SignalRブロードキャスト: 目標<100ms
+
+## パフォーマンスとスケーラビリティ
+
+### ターゲットメトリクス
+
+- **API応答時間**: GET /api/game <200ms, POST /api/updateGame <300ms
+- **リアルタイム同期**: <1秒でイベント配信（Phase 2）
+- **ポーリング同期**: 5秒間隔でCosmos DB状態取得（Phase 1）
+
+### スケーリングアプローチ
+
+**水平スケーリング**:
+- Azure Functions: Consumption Planの自動スケール（無料層制約内）
+- SignalR Service: 同時接続20まで（無料層上限）
+
+**垂直スケーリング**:
+- 不要（無料層固定リソース）
+
+### キャッシング戦略
+
+**クライアントサイド**:
+- ETag記録: 最新のETagをReact useStateで保持
+- ローカルストレージ: Cosmos DB接続失敗時のフォールバック
+
+**サーバーサイド**:
+- なし（Cosmos DB直接アクセス、キャッシュレイヤー不要）
+
+### 最適化テクニック
+
+**無料層最適化**:
+- ポーリング間隔調整: 5秒固定（RU/s節約）
+- SignalRメッセージ削減: 状態変更時のみ配信（定期送信なし）
+- Cosmos DBパーティションキー最適化: 単一パーティション（PK="game"）
