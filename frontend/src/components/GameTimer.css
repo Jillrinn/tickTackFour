@@ -96,6 +96,86 @@
   width: 100%;
 }
 
+/* Task 2.1-2.3: 固定ヘッダー */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.sticky-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sticky-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.sticky-header-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.sticky-header-player {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1976d2;
+}
+
+.sticky-header-time {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2e7d32;
+  background: rgba(46, 125, 50, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+.sticky-header-status {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #757575;
+}
+
+.sticky-header-btn {
+  flex-shrink: 0;
+}
+
+/* レスポンシブ対応: スマートフォン（768px以下） */
+@media (max-width: 768px) {
+  .sticky-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .sticky-header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sticky-header-info {
+    justify-content: center;
+  }
+
+  .sticky-header-btn {
+    width: 100%;
+  }
+}
+
 .game-status {
   background: rgba(255, 255, 255, 0.95);
   padding: 1.5rem;

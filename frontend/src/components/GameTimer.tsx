@@ -41,6 +41,30 @@ export function GameTimer() {
       </header>
 
       <main className="game-main">
+        {/* Task 2.1-2.3: 固定ヘッダー */}
+        <div className="sticky-header" data-testid="sticky-header">
+          <div className="sticky-header-content">
+            <div className="sticky-header-info" data-testid="active-player-info">
+              {gameState.activePlayerId ? (
+                <>
+                  <span className="sticky-header-label">現在のプレイヤー:</span>
+                  <span className="sticky-header-player">
+                    {gameState.players.find(p => p.id === gameState.activePlayerId)?.name || 'プレイヤー'}
+                  </span>
+                  <span className="sticky-header-time">
+                    {formatTime(gameState.players.find(p => p.id === gameState.activePlayerId)?.elapsedTimeSeconds || 0)}
+                  </span>
+                </>
+              ) : (
+                <span className="sticky-header-status">ゲーム未開始</span>
+              )}
+            </div>
+            <button onClick={switchToNextPlayer} className="next-player-btn sticky-header-btn">
+              次のプレイヤーへ
+            </button>
+          </div>
+        </div>
+
         {/* 最長時間プレイヤー表示（カウントアップモード時のみ） */}
         <TopTimePlayerIndicator longestPlayer={longestPlayer} />
 

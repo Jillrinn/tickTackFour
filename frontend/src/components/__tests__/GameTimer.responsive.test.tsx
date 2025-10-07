@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, test, expect } from 'vitest';
 import { GameTimer } from '../GameTimer';
 
@@ -6,17 +6,20 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('次のプレイヤーボタンがスマートフォンで適切なサイズで表示される', () => {
     render(<GameTimer />);
 
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
 
-    // next-player-btnクラスが適用されていることを確認
-    expect(nextPlayerButton).toHaveClass('next-player-btn');
+    // すべてのnext-player-btnクラスが適用されていることを確認
+    nextPlayerButtons.forEach(button => {
+      expect(button).toHaveClass('next-player-btn');
+    });
   });
 
   test('すべてのコントロールボタンが適切に表示される', () => {
     render(<GameTimer />);
 
     // 次のプレイヤーボタンが表示されていることを確認
-    expect(screen.getByRole('button', { name: /次のプレイヤーへ/ })).toBeInTheDocument();
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    expect(nextPlayerButtons.length).toBeGreaterThan(0);
 
     // 他のコントロールボタンも表示されていることを確認
     expect(screen.getByRole('button', { name: '4人' })).toBeInTheDocument();
@@ -37,17 +40,19 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     const primaryControls = controlsSection!.querySelector('.primary-controls');
     expect(primaryControls).toBeTruthy();
 
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
-    expect(primaryControls).toContainElement(nextPlayerButton);
+    const nextPlayerButtons = within(primaryControls as HTMLElement).getAllByRole('button', { name: /次のプレイヤーへ/ });
+    expect(nextPlayerButtons.length).toBeGreaterThan(0);
   });
 
   test('次のプレイヤーボタンに読みやすいフォントサイズが設定されている', () => {
     render(<GameTimer />);
 
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
 
-    // next-player-btnクラスが適用され、CSSでフォントサイズが設定されることを確認
-    expect(nextPlayerButton).toHaveClass('next-player-btn');
+    // すべてのボタンにnext-player-btnクラスが適用され、CSSでフォントサイズが設定されることを確認
+    nextPlayerButtons.forEach(button => {
+      expect(button).toHaveClass('next-player-btn');
+    });
   });
 
   test('ボタンの配置順序がレスポンシブ対応に影響しない', () => {

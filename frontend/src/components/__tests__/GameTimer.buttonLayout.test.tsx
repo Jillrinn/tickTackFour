@@ -20,10 +20,12 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
   test('次のプレイヤーボタンが最も視認しやすい位置に配置されている', () => {
     render(<GameTimer />);
 
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
 
-    // next-player-btnクラスが適用されていることを確認（強調表示用）
-    expect(nextPlayerButton).toHaveClass('next-player-btn');
+    // すべての次のプレイヤーボタンにnext-player-btnクラスが適用されていることを確認（強調表示用）
+    nextPlayerButtons.forEach(button => {
+      expect(button).toHaveClass('next-player-btn');
+    });
   });
 
   test('次のプレイヤーボタンをクリックするとターン切り替えが即座に実行される', async () => {
@@ -37,9 +39,9 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
       expect(card).not.toHaveClass('active');
     });
 
-    // 次のプレイヤーボタンをクリック
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
-    await user.click(nextPlayerButton);
+    // 次のプレイヤーボタンをクリック（最初のボタンを使用）
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    await user.click(nextPlayerButtons[0]);
 
     // ターンが切り替わっていることを確認（1人目がactiveクラスを持つ）
     const updatedPlayerCards = screen.getAllByRole('listitem');
