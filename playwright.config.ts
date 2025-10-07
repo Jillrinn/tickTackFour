@@ -56,13 +56,11 @@ export default defineConfig({
     },
   ],
 
-  // 開発サーバー設定（ローカル実行時）
-  webServer: process.env.CI
-    ? undefined
-    : {
-        command: 'cd frontend && npm run dev',
-        url: 'http://localhost:5173',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120000,
-      },
+  // 開発サーバー設定
+  webServer: {
+    command: 'cd frontend && npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
 });
