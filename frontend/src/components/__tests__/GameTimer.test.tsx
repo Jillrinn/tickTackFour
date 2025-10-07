@@ -60,14 +60,13 @@ describe('GameTimer - Task 1.3: セクション境界の視覚的区切り', () 
 
   it('固定ヘッダーが設定セクションの前に配置されていること（DOM順序）', () => {
     render(<GameTimer />);
-    const gameMain = screen.getByRole('main');
     const stickyHeader = screen.getByTestId('sticky-header');
     const settingsSection = screen.getByTestId('settings-controls');
 
     // DOM上でstickyHeaderがsettingsより前にあることを確認
-    const children = Array.from(gameMain.children);
-    const headerIndex = children.indexOf(stickyHeader);
-    const settingsIndex = children.indexOf(settingsSection);
-    expect(headerIndex).toBeLessThan(settingsIndex);
+    // compareDocumentPosition を使用して相対位置を確認
+    const position = stickyHeader.compareDocumentPosition(settingsSection);
+    // DOCUMENT_POSITION_FOLLOWING (4) は stickyHeader が settingsSection の前にあることを示す
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

@@ -68,10 +68,7 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
         // 固定ヘッダーのボタン
         const stickyHeader = screen.getByTestId('sticky-header');
         expect(within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i })).toBeVisible();
-
-        // 主要操作セクションのボタン
-        const primaryControls = screen.getByTestId('primary-controls');
-        expect(within(primaryControls).getByRole('button', { name: /一時停止|再開/i })).toBeVisible();
+        expect(within(stickyHeader).getByRole('button', { name: /一時停止|再開/i })).toBeVisible();
 
         // 設定セクションのコントロール
         const settingsControls = screen.getByTestId('settings-controls');
@@ -134,7 +131,6 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
         // 全てのセクションが表示される
         expect(screen.getByTestId('sticky-header')).toBeVisible();
-        expect(screen.getByTestId('primary-controls')).toBeVisible();
         expect(screen.getByTestId('settings-controls')).toBeVisible();
       });
     });
@@ -152,9 +148,6 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
       // 固定ヘッダー
       expect(screen.getByTestId('sticky-header')).toBeInTheDocument();
-
-      // 主要操作セクション
-      expect(screen.getByTestId('primary-controls')).toBeInTheDocument();
 
       // 設定セクション
       expect(screen.getByTestId('settings-controls')).toBeInTheDocument();
@@ -203,7 +196,7 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
     it('トグルスイッチがタップターゲットサイズ44px以上である', () => {
       render(<GameTimer />);
       const toggle = screen.getByTestId('timer-mode-toggle');
-      const toggleContainer = toggle.closest('.toggle-switch');
+      const toggleContainer = toggle.closest('.toggle-switch-enhanced');
 
       expect(toggleContainer).toBeInTheDocument();
       // CSSでmin-height: 44pxが適用されることを確認（jsdom環境ではスタイル値を直接テストできない）
@@ -266,7 +259,6 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
         // 全ての主要コントロールが表示され、操作可能であることを確認
         expect(screen.getByTestId('sticky-header')).toBeVisible();
-        expect(screen.getByTestId('primary-controls')).toBeVisible();
         expect(screen.getByTestId('settings-controls')).toBeVisible();
 
         // ボタンが全て表示される（getAllByRoleで複数取得される場合があるため、最初の要素をチェック）

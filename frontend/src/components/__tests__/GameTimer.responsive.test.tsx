@@ -30,7 +30,7 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     expect(screen.getByRole('button', { name: 'リセット' })).toBeInTheDocument();
   });
 
-  test('次のプレイヤーボタンが主要操作セクション内に配置されている', () => {
+  test('次のプレイヤーボタンが固定ヘッダー内に配置されている', () => {
     render(<GameTimer />);
 
     // Task 5.1: 「次のプレイヤー」ボタンは固定ヘッダーに移動
@@ -59,9 +59,8 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
     expect(nextPlayerButton).toBeInTheDocument();
 
-    // 主要操作セクションには一時停止ボタンのみ
-    const primaryControls = screen.getByTestId('primary-controls');
-    const pauseButton = within(primaryControls).getByRole('button', { name: /一時停止|再開/i });
+    // 固定ヘッダーには一時停止ボタンもある
+    const pauseButton = within(stickyHeader).getByRole('button', { name: /一時停止|再開/i });
     expect(pauseButton).toBeInTheDocument();
 
     // 設定セクションにはドロップダウン、トグル、リセットが存在

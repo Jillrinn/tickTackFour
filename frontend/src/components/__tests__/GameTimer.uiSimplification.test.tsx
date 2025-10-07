@@ -55,8 +55,8 @@ describe('GameTimer - UI簡素化', () => {
     // プレイヤー一覧が表示される
     expect(screen.getByRole('heading', { name: 'プレイヤー一覧', level: 3 })).toBeInTheDocument();
 
-    // 操作ボタンが表示される
-    expect(screen.getByRole('heading', { name: '操作', level: 3 })).toBeInTheDocument();
+    // 設定ボタンが表示される
+    expect(screen.getByRole('heading', { name: '設定', level: 3 })).toBeInTheDocument();
 
     // 次のプレイヤーボタンが表示される（複数存在する可能性があるため）
     const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });

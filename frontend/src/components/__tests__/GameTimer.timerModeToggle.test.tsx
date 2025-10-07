@@ -47,7 +47,7 @@ describe('GameTimer - Task 4.1: カウントモードトグルスイッチUI', (
     render(<GameTimer />);
     const toggle = screen.getByTestId('timer-mode-toggle');
     const label = toggle.closest('label');
-    expect(label).toHaveClass('toggle-switch');
+    expect(label).toHaveClass('toggle-switch-enhanced');
   });
 });
 
@@ -139,7 +139,7 @@ describe('GameTimer - Task 4.2: カウントモード切替機能', () => {
     expect(toggle.disabled).toBe(true);
 
     // 一時停止ボタンをクリック
-    const pauseButton = screen.getByRole('button', { name: '一時停止' });
+    const pauseButton = screen.getByRole('button', { name: /一時停止/ });
     await user.click(pauseButton);
 
     // 一時停止中はトグルスイッチが有効化される
