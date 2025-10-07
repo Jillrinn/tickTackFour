@@ -158,6 +158,68 @@ E2Eテスト完了: [機能名]
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
+#### 3. Specification Completion (仕様完了処理)
+
+E2Eテスト完了後、**必ず**以下を実施：
+
+1. **spec.jsonを更新**: phaseを"implementation-done"に変更
+2. **tasks.mdを更新**: spec.json更新タスクをチェック済み`[x]`に変更
+3. **Gitコミット作成**: 以下の情報を含む最終コミットメッセージで記録
+
+**tasks.md最終フェーズのタスク例**:
+```markdown
+## Phase [最終]: 実装完了処理
+
+### [番号]. 実装完了処理を実施する
+
+- [ ] [番号].1 全テスト結果の確認
+  - 全てのユニットテストが成功していることを確認
+  - 全てのE2Eテストが成功していることを確認
+  - エラーや予期しない動作が発生しないことを確認
+
+- [ ] [番号].2 spec.json更新とコミット作成
+  - spec.jsonのphaseを"implementation-done"に更新
+  - tasks.mdの全タスクをチェック済み[x]に更新
+  - 詳細なコミットメッセージを作成（実装内容、テスト結果含む）
+  - Gitコミット作成（実装完了の最終コミット）
+```
+
+**最終コミットメッセージテンプレート**:
+```
+実装完了: [機能名]
+
+## 実装完了サマリー
+
+### 全Phase完了状況
+- **Phase 1**: [Phase 1名] ✅
+- **Phase 2**: [Phase 2名] ✅
+...
+
+### 全テスト結果
+- **ユニットテスト**: [N]/[N]パス ✅
+- **E2Eテスト**: [M]/[M]パス ✅
+- **合計**: [N+M]/[N+M]テストパス ✅
+
+### 実装された機能
+1. [機能1の概要]
+2. [機能2の概要]
+...
+
+## ファイル変更サマリー
+
+### 更新:
+- `spec.json`: phase → "implementation-done"
+- `tasks.md`: 全タスク完了[x]にマーク
+
+## 実装期間
+- 開始: [開始日時]
+- 完了: [完了日時]
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
 ### ワークフロー全体の流れ
 
 ```
@@ -185,12 +247,17 @@ tasks.md更新: E2Eテストタスクを[x] チェック
   ↓
 Gitコミット: E2Eテスト実装完了のコミット
   ↓
+spec.json更新: phaseを"implementation-done"に変更
+  ↓
+Gitコミット: 実装完了の最終コミット
+  ↓
 完了
 ```
 
 **重要**:
 - **各タスク実装時**: ユニットテスト → 実装 → コミット
 - **最終テストフェーズ**: 全機能のE2Eテストをまとめて実装 → コミット
+- **最終タスク**: spec.jsonのphase更新 → 実装完了コミット
 - E2Eテストにより全機能の実機動作が自動検証される
 
 ## Steering Configuration
