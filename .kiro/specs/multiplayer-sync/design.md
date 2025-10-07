@@ -223,17 +223,27 @@ sequenceDiagram
     participant C as Cosmos DB
     participant D2 as Device 2
 
-    D1->>F: POST /api/switchTurn
+    Note over D1: ターン切り替えボタンクリック
+    D1->>F: POST /api/switchTurn (ETagのみ、時間は送らない)
+
+    Note over F: バックエンドで時間計算
+    F->>F: 現在時刻 - turnStartedAt で経過時間算出
+    F->>F: accumulatedSeconds += 経過時間
+    F->>F: turnStartedAt = now()
+    F->>F: activePlayerIndex++
+
     F->>C: Update with ETag
 
     alt ETag一致
         C->>F: Success + New ETag
-        F->>D1: Success
-        D1->>D1: UI更新
+        F->>F: 計算済み経過時間を含むレスポンス作成
+        F->>D1: GameStateWithTime (計算済み時間含む)
+        D1->>D1: バックエンド時間を基準にUI更新
     else ETag競合
         C->>F: Conflict (412)
         F->>C: Get Latest State
         C->>F: Latest State + ETag
+        F->>F: 最新状態で時間再計算
         F->>C: Retry Update
         C->>F: Success
         F->>D1: Success
@@ -242,9 +252,14 @@ sequenceDiagram
     Note over D2: 5秒後ポーリング
     D2->>F: GET /api/game
     F->>C: Query Latest State
-    C->>F: Updated State
-    F->>D2: Updated State
-    D2->>D2: UI同期完了
+    C->>F: GameStateEntity
+
+    Note over F: バックエンドで時間計算
+    F->>F: 現在時刻 - turnStartedAt で経過時間算出
+    F->>F: レスポンス = accumulatedSeconds + 経過時間
+
+    F->>D2: GameStateWithTime (計算済み時間含む)
+    D2->>D2: バックエンド時間でUI同期完了
 ```
 
 ### フロー3: SignalRリアルタイム同期（Phase 2）
@@ -277,6 +292,42 @@ sequenceDiagram
     D3->>D3: UI即座に更新
 
     Note over D1,D3: <1秒以内に全デバイス同期完了
+```
+
+### フロー4: 一時停止/再開操作（Phase 1）
+
+```mermaid
+sequenceDiagram
+    participant D as Device
+    participant F as Azure Functions
+    participant C as Cosmos DB
+
+    Note over D: 一時停止ボタンクリック
+    D->>F: POST /api/pause (ETagのみ)
+
+    Note over F: バックエンドで時間計算し累積
+    F->>F: 現在時刻 - turnStartedAt で経過時間算出
+    F->>F: accumulatedSeconds += 経過時間
+    F->>F: pausedAt = now()
+    F->>F: isPaused = true
+
+    F->>C: Update with ETag
+    C->>F: Success + New ETag
+    F->>D: GameStateWithTime (isPaused: true)
+    D->>D: 一時停止状態でUI更新
+
+    Note over D: 再開ボタンクリック
+    D->>F: POST /api/resume (ETagのみ)
+
+    Note over F: 新しいターン開始時刻を記録
+    F->>F: turnStartedAt = now()
+    F->>F: pausedAt = null
+    F->>F: isPaused = false
+
+    F->>C: Update with ETag
+    C->>F: Success + New ETag
+    F->>D: GameStateWithTime (isPaused: false)
+    D->>D: タイマー再開、UI更新
 ```
 
 ## 要件トレーサビリティ
@@ -320,39 +371,65 @@ sequenceDiagram
 **サービスインターフェース**:
 ```typescript
 interface GameStateService {
-  // ゲーム状態取得（初回は初期化）
-  getGameState(): Promise<Result<GameState, GameStateError>>;
+  // ゲーム状態取得（初回は初期化、経過時間は計算済み）
+  getGameState(): Promise<Result<GameStateWithTime, GameStateError>>;
 
-  // ゲーム状態更新（ETag楽観的ロック）
-  updateGameState(state: GameState, etag: string): Promise<Result<GameState, GameStateError>>;
+  // ターン切り替え（バックエンドで時間計算、ETag再試行含む）
+  switchTurn(currentEtag: string): Promise<Result<GameStateWithTime, GameStateError>>;
 
-  // ターン切り替え（ETag再試行含む）
-  switchTurn(currentEtag: string): Promise<Result<GameState, GameStateError>>;
+  // 一時停止（バックエンドで時間計算し累積）
+  pauseGame(currentEtag: string): Promise<Result<GameStateWithTime, GameStateError>>;
+
+  // 再開（新しいターン開始時刻を記録）
+  resumeGame(currentEtag: string): Promise<Result<GameStateWithTime, GameStateError>>;
+
+  // 内部ヘルパー: 経過時間計算
+  calculateElapsedSeconds(
+    player: Player,
+    isActive: boolean,
+    isPaused: boolean,
+    turnStartedAt: string | null
+  ): number;
+}
+
+// レスポンス用の型（経過時間は計算済み）
+interface GameStateWithTime {
+  players: Array<{ name: string; elapsedSeconds: number }>;
+  activePlayerIndex: number;
+  timerMode: string;
+  countdownSeconds: number;
+  isPaused: boolean;
+  etag: string;
 }
 
 type Result<T, E> = { success: true; value: T } | { success: false; error: E };
 
 type GameStateError =
   | { type: 'NotFound' }
-  | { type: 'Conflict'; latestState: GameState }
+  | { type: 'Conflict'; latestState: GameStateWithTime }
   | { type: 'NetworkError'; message: string };
 ```
 
 **事前条件**:
 - Cosmos DB接続文字列が環境変数に設定されていること
 - ETag更新時は有効なETag文字列を渡すこと
+- フロントエンドから経過時間を送信しないこと（バックエンドが計算）
 
 **事後条件**:
-- 成功時は最新のGameStateとETagを返す
-- 競合時はConflictエラーと最新状態を返す
+- 成功時は最新のGameStateWithTime（計算済み経過時間含む）とETagを返す
+- 競合時はConflictエラーと最新状態（計算済み）を返す
+- getGameState()は常に現在時刻で計算した経過時間を返す
 
 **不変条件**:
 - GameStateEntityのPK="game", RK="default"は常に固定
+- 経過時間の計算はバックエンドのみが実施
+- フロントエンドは計算済みの経過時間を表示のみに使用
 
 **状態管理**:
 - **状態モデル**: ETagによるバージョン管理（Cosmos DB自動生成）
 - **永続化**: Cosmos DB Table API（強整合性）
 - **並行制御**: 楽観的ロック（ETag一致確認）
+- **時間計算**: バックエンドがturnStartedAtから現在時刻で計算
 
 #### SignalRHubService (Phase 2)
 
@@ -389,16 +466,16 @@ type GameStateError =
 #### PollingService (Phase 1)
 
 **責任と境界**
-- **主要責任**: 5秒ごとのCosmos DB状態ポーリング
-- **ドメイン境界**: 定期的な状態同期
-- **データ所有**: ポーリングタイマー（setInterval ID）
+- **主要責任**: 5秒ごとのバックエンド計算済み時間の同期
+- **ドメイン境界**: バックエンド時間との定期同期
+- **データ所有**: ポーリングタイマー（setInterval ID）、サーバー時間基準値
 
 **契約定義**
 
 ```typescript
 interface PollingService {
-  // ポーリング開始
-  startPolling(callback: (state: GameState) => void): void;
+  // ポーリング開始（バックエンド計算済み時間を取得）
+  startPolling(callback: (state: GameStateWithTime) => void): void;
 
   // ポーリング停止
   stopPolling(): void;
@@ -410,17 +487,40 @@ interface PollingService {
 
 **実装方法** (React useEffect):
 ```typescript
+// バックエンドから計算済み時間を取得し、ローカルタイマーの基準とする
+const [serverTime, setServerTime] = useState(0);     // バックエンド計算の経過時間
+const [displayTime, setDisplayTime] = useState(0);   // 表示用時間（滑らか）
+const [lastSyncTime, setLastSyncTime] = useState(Date.now());
+
 useEffect(() => {
   if (!signalRConnected) {
     const intervalId = setInterval(async () => {
       const response = await fetch('/api/game');
       const state = await response.json();
-      setGameState(state);
+
+      // バックエンド計算済みの時間を基準に設定
+      const serverElapsed = state.players[activePlayerIndex].elapsedSeconds;
+      setServerTime(serverElapsed);
+      setLastSyncTime(Date.now());
     }, 5000);
 
     return () => clearInterval(intervalId);
   }
-}, [signalRConnected]);
+}, [signalRConnected, activePlayerIndex]);
+
+// 表示用ローカルタイマー（滑らかなUI更新のみ）
+useEffect(() => {
+  const displayTimer = setInterval(() => {
+    if (!isPaused) {
+      const localElapsed = (Date.now() - lastSyncTime) / 1000;
+      setDisplayTime(serverTime + localElapsed);
+    } else {
+      setDisplayTime(serverTime);
+    }
+  }, 100);  // 100msごとに更新（滑らかな表示）
+
+  return () => clearInterval(displayTimer);
+}, [serverTime, lastSyncTime, isPaused]);
 ```
 
 #### SignalRService (Phase 2)
@@ -492,11 +592,15 @@ interface GameStateEntity {
   timerMode: string;         // 'countup' | 'countdown'
   countdownSeconds: number;  // カウントダウン秒数
   isPaused: boolean;         // 一時停止状態
+
+  // 時間管理フィールド（バックエンド計算用）
+  turnStartedAt?: string;    // ISO8601タイムスタンプ、アクティブプレイヤーのターン開始時刻
+  pausedAt?: string;         // ISO8601タイムスタンプ、一時停止時刻
 }
 
 interface Player {
-  name: string;              // プレイヤー名
-  elapsedSeconds: number;    // 経過秒数
+  name: string;                  // プレイヤー名
+  accumulatedSeconds: number;    // 累積経過時間（一時停止時・ターン終了時に加算）
 }
 ```
 
@@ -507,6 +611,11 @@ interface Player {
 **主キー設計**:
 - PartitionKey: "game"（単一パーティション、複数ゲーム未対応）
 - RowKey: "default"（単一ゲーム状態のみ）
+
+**時間管理フィールドの運用**:
+- turnStartedAt: アクティブプレイヤーのターン開始時にISO8601形式で記録
+- pausedAt: 一時停止時にISO8601形式で記録、再開時にnullに設定
+- 経過時間計算: `accumulatedSeconds + (現在時刻 - turnStartedAt) / 1000`（一時停止中は`accumulatedSeconds`のみ）
 
 **ETag運用**:
 - Cosmos DBが自動生成（更新ごとに変化）
