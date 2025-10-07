@@ -125,7 +125,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     render(<GameTimer />);
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
 
     // ゲームを開始（プレイヤー1をアクティブに）
     await user.click(nextPlayerButtons[0]);
@@ -139,7 +139,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     render(<GameTimer />);
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
     const pauseButton = screen.getByRole('button', { name: /一時停止|再開/ });
 
     // ゲームを開始

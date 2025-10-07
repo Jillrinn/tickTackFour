@@ -44,7 +44,7 @@ describe('TimerControls', () => {
       />
     );
 
-    expect(screen.getByText('次のプレイヤーへ')).toBeInTheDocument();
+    expect(screen.getByText('次のプレイヤー')).toBeInTheDocument();
   });
 
   it('一時停止/再開ボタンが表示される', () => {
@@ -133,7 +133,7 @@ describe('TimerControls', () => {
       />
     );
 
-    await user.click(screen.getByText('次のプレイヤーへ'));
+    await user.click(screen.getByText('次のプレイヤー'));
     expect(onSwitchTurn).toHaveBeenCalled();
   });
 

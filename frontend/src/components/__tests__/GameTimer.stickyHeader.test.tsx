@@ -19,10 +19,10 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
     expect(gameMain.firstChild).toBe(stickyHeader);
   });
 
-  it('固定ヘッダー内に「次のプレイヤーへ」ボタンが配置されていること', () => {
+  it('固定ヘッダー内に「次のプレイヤー」ボタンが配置されていること', () => {
     render(<GameTimer />);
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /次のプレイヤー/ });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
   });
 
@@ -51,17 +51,17 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
 });
 
 describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => {
-  it('「次のプレイヤーへ」ボタンをクリックすると固定ヘッダーのプレイヤー情報が更新されること', async () => {
+  it('「次のプレイヤー」ボタンをクリックすると固定ヘッダーのプレイヤー情報が更新されること', async () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
 
     // 初期状態：ゲーム未開始
     expect(stickyHeader).toHaveTextContent(/ゲーム未開始|未開始/);
 
-    // 「次のプレイヤーへ」ボタンをクリック（最初のボタンを使用）
+    // 「次のプレイヤー」ボタンをクリック（最初のボタンを使用）
     await user.click(nextPlayerButtons[0]);
 
     // ヘッダーにプレイヤー1の情報が表示される
@@ -74,7 +74,7 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     render(<GameTimer />);
 
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
 
     // プレイヤー1をアクティブに
     await user.click(nextPlayerButtons[0]);
@@ -85,12 +85,12 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     expect(stickyHeader).toHaveTextContent(/プレイヤー2/);
   });
 
-  it('固定ヘッダーの「次のプレイヤーへ」ボタンが機能すること', async () => {
+  it('固定ヘッダーの「次のプレイヤー」ボタンが機能すること', async () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtonInHeader = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtonInHeader = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/ });
 
     // ボタンをクリック
     await user.click(nextPlayerButtonInHeader);

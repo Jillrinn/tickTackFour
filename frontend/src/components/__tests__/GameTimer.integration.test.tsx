@@ -6,8 +6,8 @@ import userEvent from '@testing-library/user-event';
 /**
  * Task 5.1 & 5.2: GameTimer統合テスト
  * - セクション構造の正しさ
- * - 固定ヘッダー内の「次のプレイヤーへ」ボタンのみ存在
- * - 主要操作セクションに「次のプレイヤーへ」ボタンが存在しない
+ * - 固定ヘッダー内の「次のプレイヤー」ボタンのみ存在
+ * - 主要操作セクションに「次のプレイヤー」ボタンが存在しない
  * - useGameStateとの連携動作確認
  */
 describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
@@ -28,13 +28,7 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       expect(stickyHeader).toBeInTheDocument();
     });
 
-    it('主要操作セクションが固定ヘッダーの下に存在する', () => {
-      render(<GameTimer />);
-      const primaryControls = screen.getByTestId('primary-controls');
-      expect(primaryControls).toBeInTheDocument();
-    });
-
-    it('設定・その他セクションが主要操作セクションの下に存在する', () => {
+    it('設定セクションが存在する', () => {
       render(<GameTimer />);
       const settingsControls = screen.getByTestId('settings-controls');
       expect(settingsControls).toBeInTheDocument();
@@ -54,28 +48,20 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       expect(toggle).toBeInTheDocument();
     });
 
-    it('「次のプレイヤーへ」ボタンが固定ヘッダー内に1つだけ存在する', () => {
+    it('「次のプレイヤー」ボタンが固定ヘッダー内に1つだけ存在する', () => {
       render(<GameTimer />);
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /次のプレイヤーへ/i });
+      const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /次のプレイヤー/i });
       expect(nextPlayerButtons).toHaveLength(1);
     });
 
-    it('主要操作セクション内に「次のプレイヤーへ」ボタンが存在しない', () => {
+    it('固定ヘッダー内に一時停止ボタンと次のプレイヤーボタンが存在する', () => {
       render(<GameTimer />);
-      const primaryControls = screen.getByTestId('primary-controls');
-      const buttons = within(primaryControls).queryAllByRole('button', { name: /次のプレイヤーへ/i });
-      expect(buttons).toHaveLength(0);
-    });
-
-    it('主要操作セクションには一時停止/再開ボタンのみ存在する', () => {
-      render(<GameTimer />);
-      const primaryControls = screen.getByTestId('primary-controls');
-      const pauseButton = within(primaryControls).getByRole('button', { name: /一時停止|再開/i });
+      const stickyHeader = screen.getByTestId('sticky-header');
+      const pauseButton = within(stickyHeader).getByRole('button', { name: /一時停止|再開/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
       expect(pauseButton).toBeInTheDocument();
-      // ボタン総数が1つであることを確認
-      const allButtons = within(primaryControls).getAllByRole('button');
-      expect(allButtons).toHaveLength(1);
+      expect(nextPlayerButton).toBeInTheDocument();
     });
   });
 
@@ -88,9 +74,9 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       const activePlayerInfo = screen.getByTestId('active-player-info');
       expect(within(activePlayerInfo).getByText('ゲーム未開始')).toBeInTheDocument();
 
-      // 「次のプレイヤーへ」ボタンをクリックしてプレイヤー1をアクティブに
+      // 「次のプレイヤー」ボタンをクリックしてプレイヤー1をアクティブに
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
       await user.click(nextPlayerButton);
 
       // アクティブプレイヤー情報が表示される
@@ -150,9 +136,9 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
-      // 「次のプレイヤーへ」ボタンをクリックしてゲーム開始
+      // 「次のプレイヤー」ボタンをクリックしてゲーム開始
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
       await user.click(nextPlayerButton);
 
       // ドロップダウンとトグルが無効化される
@@ -168,9 +154,9 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
-      // 「次のプレイヤーへ」ボタンをクリックしてゲーム開始
+      // 「次のプレイヤー」ボタンをクリックしてゲーム開始
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
       await user.click(nextPlayerButton);
 
       // 一時停止ボタンをクリック
@@ -186,13 +172,13 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       });
     });
 
-    it('固定ヘッダーの「次のプレイヤーへ」ボタンが正しく動作する', async () => {
+    it('固定ヘッダーの「次のプレイヤー」ボタンが正しく動作する', async () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
       const activePlayerInfo = screen.getByTestId('active-player-info');
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
 
       // 初回クリック: プレイヤー1がアクティブに
       await user.click(nextPlayerButton);
@@ -217,16 +203,15 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
     });
   });
 
-  describe('セクション境界の視覚的区切り（Task 1.3）', () => {
-    it('主要操作セクションと設定セクションが視覚的に区別される', () => {
+  describe('セクション構造（Task 1.3）', () => {
+    it('固定ヘッダーと設定セクションが存在する', () => {
       render(<GameTimer />);
-      const primaryControls = screen.getByTestId('primary-controls');
+      const stickyHeader = screen.getByTestId('sticky-header');
       const settingsControls = screen.getByTestId('settings-controls');
 
-      // 両セクションが存在し、異なるdata-testidを持つことで視覚的区別が可能
-      expect(primaryControls).toBeInTheDocument();
+      // 両セクションが存在することを確認
+      expect(stickyHeader).toBeInTheDocument();
       expect(settingsControls).toBeInTheDocument();
-      expect(primaryControls).not.toBe(settingsControls);
     });
   });
 });

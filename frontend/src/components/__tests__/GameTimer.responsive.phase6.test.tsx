@@ -67,7 +67,7 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
         // 固定ヘッダーのボタン
         const stickyHeader = screen.getByTestId('sticky-header');
-        expect(within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i })).toBeVisible();
+        expect(within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i })).toBeVisible();
 
         // 主要操作セクションのボタン
         const primaryControls = screen.getByTestId('primary-controls');
@@ -177,9 +177,9 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
     it('全てのボタンがタップターゲットサイズ44px以上である', () => {
       render(<GameTimer />);
 
-      // 「次のプレイヤーへ」ボタン
+      // 「次のプレイヤー」ボタン
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
       expect(nextPlayerButton).toBeInTheDocument();
       // CSSでmin-height: 44pxが適用されることを確認（jsdom環境ではスタイル値を直接テストできない）
 
@@ -227,7 +227,7 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
       // Tab順序を確認（固定ヘッダー → 主要操作 → 設定）
       const focusableElements = [
-        screen.getByRole('button', { name: /次のプレイヤーへ/i }),
+        screen.getByRole('button', { name: /次のプレイヤー/i }),
         screen.getByRole('button', { name: /一時停止|再開/i }),
         screen.getByTestId('player-count-dropdown'),
         screen.getByTestId('timer-mode-toggle'),
@@ -270,7 +270,7 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
         expect(screen.getByTestId('settings-controls')).toBeVisible();
 
         // ボタンが全て表示される（getAllByRoleで複数取得される場合があるため、最初の要素をチェック）
-        const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/i });
+        const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/i });
         expect(nextPlayerButtons[0]).toBeVisible();
         expect(screen.getByRole('button', { name: /一時停止|再開/i })).toBeVisible();
         expect(screen.getByRole('button', { name: /リセット/i })).toBeVisible();

@@ -59,7 +59,7 @@ describe('GameTimer - UI簡素化', () => {
     expect(screen.getByRole('heading', { name: '操作', level: 3 })).toBeInTheDocument();
 
     // 次のプレイヤーボタンが表示される（複数存在する可能性があるため）
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
 
     // 一時停止ボタンが表示される

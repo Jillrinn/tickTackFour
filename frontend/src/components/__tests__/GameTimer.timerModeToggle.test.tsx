@@ -119,8 +119,8 @@ describe('GameTimer - Task 4.2: カウントモード切替機能', () => {
     // 初期状態は有効
     expect(toggle.disabled).toBe(false);
 
-    // ゲームを開始（次のプレイヤーへボタンをクリック）
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    // ゲームを開始（次のプレイヤーボタンをクリック）
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
     await user.click(nextPlayerButtons[0]);
 
     // ゲーム進行中はトグルスイッチが無効化される
@@ -132,7 +132,7 @@ describe('GameTimer - Task 4.2: カウントモード切替機能', () => {
     render(<GameTimer />);
 
     // ゲームを開始
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
     await user.click(nextPlayerButtons[0]);
 
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;

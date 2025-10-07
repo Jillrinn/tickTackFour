@@ -6,7 +6,7 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('次のプレイヤーボタンがスマートフォンで適切なサイズで表示される', () => {
     render(<GameTimer />);
 
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
 
     // すべてのnext-player-btnクラスが適用されていることを確認
     nextPlayerButtons.forEach(button => {
@@ -18,7 +18,7 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     render(<GameTimer />);
 
     // 次のプレイヤーボタンが表示されていることを確認
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
 
     // プレイヤー人数ドロップダウンが表示されていることを確認（Phase 3でボタンからドロップダウンに変更）
@@ -33,9 +33,9 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('次のプレイヤーボタンが主要操作セクション内に配置されている', () => {
     render(<GameTimer />);
 
-    // Task 5.1: 「次のプレイヤーへ」ボタンは固定ヘッダーに移動
+    // Task 5.1: 「次のプレイヤー」ボタンは固定ヘッダーに移動
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
     expect(nextPlayerButton).toBeInTheDocument();
     expect(nextPlayerButton).toHaveClass('next-player-btn');
   });
@@ -43,7 +43,7 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('次のプレイヤーボタンに読みやすいフォントサイズが設定されている', () => {
     render(<GameTimer />);
 
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
 
     // すべてのボタンにnext-player-btnクラスが適用され、CSSでフォントサイズが設定されることを確認
     nextPlayerButtons.forEach(button => {
@@ -54,9 +54,9 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('ボタンの配置順序がレスポンシブ対応に影響しない', () => {
     render(<GameTimer />);
 
-    // Task 5.1: 「次のプレイヤーへ」ボタンは固定ヘッダーに移動
+    // Task 5.1: 「次のプレイヤー」ボタンは固定ヘッダーに移動
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
     expect(nextPlayerButton).toBeInTheDocument();
 
     // 主要操作セクションには一時停止ボタンのみ

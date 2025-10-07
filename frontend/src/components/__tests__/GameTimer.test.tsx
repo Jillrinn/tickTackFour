@@ -2,41 +2,35 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { GameTimer } from '../GameTimer';
 
-describe('GameTimer - Task 1.2: 設定・その他セクション', () => {
-  it('主要操作セクション（primary-controls）が存在すること', () => {
-    render(<GameTimer />);
-    const primarySection = screen.getByTestId('primary-controls');
-    expect(primarySection).toBeInTheDocument();
-  });
-
-  it('設定・その他セクション（settings-controls）が存在すること', () => {
+describe('GameTimer - Task 1.2: 設定セクション', () => {
+  it('設定セクション（settings-controls）が存在すること', () => {
     render(<GameTimer />);
     const settingsSection = screen.getByTestId('settings-controls');
     expect(settingsSection).toBeInTheDocument();
   });
 
-  it('主要操作セクションに一時停止/再開ボタンが配置されていること', () => {
+  it('固定ヘッダーに一時停止/再開ボタンが配置されていること', () => {
     render(<GameTimer />);
-    const primarySection = screen.getByTestId('primary-controls');
+    const stickyHeader = screen.getByTestId('sticky-header');
     const pauseButton = screen.getByText(/一時停止|再開/);
-    expect(primarySection).toContainElement(pauseButton);
+    expect(stickyHeader).toContainElement(pauseButton);
   });
 
-  it('設定・その他セクションにプレイヤー人数ドロップダウンが配置されていること（Phase 3で変更）', () => {
+  it('設定セクションにプレイヤー人数ドロップダウンが配置されていること（Phase 3で変更）', () => {
     render(<GameTimer />);
     const settingsSection = screen.getByTestId('settings-controls');
     const dropdown = screen.getByTestId('player-count-dropdown');
     expect(settingsSection).toContainElement(dropdown);
   });
 
-  it('設定・その他セクションにカウントモードトグルスイッチが配置されていること（Phase 4で変更）', () => {
+  it('設定セクションにカウントモードトグルスイッチが配置されていること（Phase 4で変更）', () => {
     render(<GameTimer />);
     const settingsSection = screen.getByTestId('settings-controls');
     const toggleSwitch = screen.getByTestId('timer-mode-toggle');
     expect(settingsSection).toContainElement(toggleSwitch);
   });
 
-  it('設定・その他セクションにリセットボタンが配置されていること', () => {
+  it('設定セクションにリセットボタンが配置されていること', () => {
     render(<GameTimer />);
     const settingsSection = screen.getByTestId('settings-controls');
     const resetButton = screen.getByText('リセット');
@@ -54,26 +48,26 @@ describe('GameTimer - Task 1.2: 設定・その他セクション', () => {
 });
 
 describe('GameTimer - Task 1.3: セクション境界の視覚的区切り', () => {
-  it('主要操作セクションと設定・その他セクションが視覚的に区別されるCSSクラスを持つこと', () => {
+  it('固定ヘッダーと設定セクションが視覚的に区別されるCSSクラスを持つこと', () => {
     render(<GameTimer />);
-    const primarySection = screen.getByTestId('primary-controls');
+    const stickyHeader = screen.getByTestId('sticky-header');
     const settingsSection = screen.getByTestId('settings-controls');
 
     // CSSクラス名の存在確認
-    expect(primarySection).toHaveClass('primary-controls');
+    expect(stickyHeader).toHaveClass('sticky-header');
     expect(settingsSection).toHaveClass('settings-controls');
   });
 
-  it('主要操作セクションが設定・その他セクションの前に配置されていること（DOM順序）', () => {
+  it('固定ヘッダーが設定セクションの前に配置されていること（DOM順序）', () => {
     render(<GameTimer />);
-    const controlsSection = screen.getByTestId('controls-section');
-    const primarySection = screen.getByTestId('primary-controls');
+    const gameMain = screen.getByRole('main');
+    const stickyHeader = screen.getByTestId('sticky-header');
     const settingsSection = screen.getByTestId('settings-controls');
 
-    // DOM上でprimaryがsettingsより前にあることを確認
-    const children = Array.from(controlsSection.children);
-    const primaryIndex = children.indexOf(primarySection);
+    // DOM上でstickyHeaderがsettingsより前にあることを確認
+    const children = Array.from(gameMain.children);
+    const headerIndex = children.indexOf(stickyHeader);
     const settingsIndex = children.indexOf(settingsSection);
-    expect(primaryIndex).toBeLessThan(settingsIndex);
+    expect(headerIndex).toBeLessThan(settingsIndex);
   });
 });
