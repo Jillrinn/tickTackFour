@@ -309,7 +309,7 @@ select {
   }
 
   .toggle-switch-enhanced input:checked + .toggle-slider::before {
-    transform: translateX(calc(100% - 4px));
+    transform: translateX(100%);
   }
 
   .toggle-label-left,
@@ -976,7 +976,7 @@ select {
 }
 
 .toggle-switch-enhanced input:checked + .toggle-slider::before {
-  transform: translateX(calc(100% + 8px));
+  transform: translateX(100%);
   background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
 }
 
