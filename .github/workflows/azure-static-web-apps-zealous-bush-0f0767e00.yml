@@ -28,6 +28,8 @@ jobs:
           app_location: "/frontend"
           app_build_command: "npm run build"
           output_location: "dist"
+          api_location: "/api"
+          api_build_command: "npm run build"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
