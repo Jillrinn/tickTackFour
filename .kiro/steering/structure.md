@@ -24,11 +24,31 @@ tickTackFour/
 ```
 frontend/
 ├── src/
+│   ├── components/    # UIコンポーネント
+│   │   ├── GameTimer.tsx           # メインタイマーコンポーネント
+│   │   ├── GameTimer.css           # タイマースタイル
+│   │   ├── PlayerList.tsx          # プレイヤーリスト
+│   │   ├── PlayerList.css          # プレイヤーリストスタイル
+│   │   ├── PrimaryControls.tsx    # 主要操作コントロール
+│   │   ├── PrimaryControls.css    # 主要操作スタイル
+│   │   ├── SettingsControls.tsx   # 設定・その他コントロール
+│   │   ├── SettingsControls.css   # 設定スタイル
+│   │   ├── TimerControls.tsx      # タイマーコントロール
+│   │   ├── TimerControls.css      # タイマーコントロールスタイル
+│   │   ├── TopTimePlayerIndicator.tsx  # 最長時間プレイヤー表示
+│   │   ├── TopTimePlayerIndicator.css  # 最長時間プレイヤースタイル
+│   │   └── __tests__/             # コンポーネントテスト
+│   ├── hooks/         # カスタムReactフック
+│   │   ├── useGameState.ts        # ゲーム状態管理フック
+│   │   ├── useGameTimer.ts        # タイマー管理フック
+│   │   └── __tests__/             # フックテスト
 │   ├── types/         # 型定義
-│   │   ├── GameState.ts        # ゲーム状態の型定義
-│   │   ├── SignalREvents.ts    # SignalRイベントの型定義
-│   │   ├── index.ts            # 型定義のエクスポート
-│   │   └── __tests__/          # 型定義のテスト
+│   │   ├── GameState.ts           # ゲーム状態の型定義
+│   │   ├── SignalREvents.ts       # SignalRイベントの型定義
+│   │   ├── index.ts               # 型定義のエクスポート
+│   │   └── __tests__/             # 型定義のテスト
+│   ├── test/          # テストセットアップ
+│   │   └── setup.ts               # Vitestセットアップ
 │   ├── assets/        # 静的アセット（画像、アイコン等）
 │   ├── App.tsx        # ルートReactコンポーネント
 │   ├── App.css        # アプリケーションスタイル
@@ -47,8 +67,17 @@ frontend/
 ```
 
 ### 主要ファイルの役割
+- **`components/`**: UIコンポーネント（GameTimer、PlayerList、Controls等）
+  - `GameTimer.tsx`: メインタイマーコンポーネント（Phase 1: インメモリー版）
+  - `PlayerList.tsx`: プレイヤーカード一覧表示
+  - `PrimaryControls.tsx`: 次のプレイヤーへ、一時停止/再開ボタン
+  - `SettingsControls.tsx`: プレイヤー人数、タイマーモード、リセット
+  - `TopTimePlayerIndicator.tsx`: 最長時間プレイヤーの別枠表示
+- **`hooks/`**: カスタムReactフック
+  - `useGameState.ts`: ゲーム状態管理（プレイヤー、タイマー、ターン管理）
+  - `useGameTimer.ts`: タイマーロジック（カウントアップ/ダウン、一時停止）
 - **`types/`**: 共有型定義（フロントエンド・バックエンド間で型を共有）
-- **`App.tsx`**: メインUIロジック、SignalR接続、タイマー管理
+- **`App.tsx`**: ルートコンポーネント、SignalR接続管理（Phase 2）
 - **`main.tsx`**: ReactDOM初期化、アプリケーションマウント
 - **`vite.config.ts`**: ビルド最適化、開発サーバー設定、プラグイン設定
 
@@ -131,16 +160,24 @@ e2e/
 │   ├── tech.md        # 技術スタック
 │   └── structure.md   # プロジェクト構造（本ファイル）
 └── specs/             # 機能仕様
-    └── multiplayer-game-timer/
+    ├── multiplayer-game-timer/      # Phase 1コア機能（実装完了）
+    ├── frontend-ux-improvements/    # フロントエンドUX改善（実装完了）
+    ├── top-time-player-indicator/   # 最長時間プレイヤー表示（実装完了）
+    ├── e2e-testing/                 # E2Eテスト環境（実装完了）
+    ├── ui-controls-enhancement/     # UIコントロール強化（実装中）
+    ├── turn-time-tracking/          # ターン時間トラッキング（設計完了）
+    └── multiplayer-sync/            # Phase 2同期機能（設計完了）
         ├── spec.json       # 仕様メタデータ
         ├── requirements.md # 要件定義
         ├── design.md       # 技術設計
-        └── tasks.md        # 実装タスク
+        └── tasks.md        # 実装タスク（承認後生成）
 ```
 
 ### ファイルの役割
 - **`steering/`**: AI開発の全体ガイド（Always Included）
 - **`specs/`**: 個別機能の仕様管理（Phase管理、承認フロー）
+  - 各仕様は Requirements → Design → Tasks → Implementation の流れで進行
+  - spec.jsonで進捗状態と承認フローを管理
 
 ## Claude Code設定 (`.claude/`)
 
@@ -220,17 +257,34 @@ import { GameState, SignalREvent } from '@/types'
 
 ### 関心の分離
 - **型定義**: `types/` または `models/` に集約
-- **ビジネスロジック**: カスタムフックまたはサービスクラス
-- **UI**: Reactコンポーネント（Presentation/Container分離）
-- **ユーティリティ**: `utils/` ディレクトリ（将来的に追加予定）
+- **ビジネスロジック**: カスタムフック（`hooks/`）に実装
+  - `useGameState.ts`: ゲーム状態管理とビジネスルール
+  - `useGameTimer.ts`: タイマーロジックとインターバル管理
+- **UI**: Reactコンポーネント（`components/`）
+  - 責務ごとに分離（GameTimer, PlayerList, Controls等）
+  - プレゼンテーション層とロジック層の分離
+- **ユーティリティ**: 必要に応じて `utils/` ディレクトリに追加
 
-### 状態管理
-- **ローカル状態**: `useState`, `useReducer`
-- **グローバル状態**: SignalRによるサーバー同期（Context API不要）
-- **副作用**: `useEffect` フック
+### 状態管理パターン
+- **Phase 1（インメモリー）**:
+  - **ゲーム状態**: `useGameState` カスタムフックで管理
+  - **ローカル状態**: `useState` で UI 固有の状態管理
+  - **副作用**: `useEffect` でタイマー・インターバル処理
+- **Phase 2（サーバー同期）**:
+  - **グローバル状態**: SignalRによるサーバー同期
+  - **永続化**: Cosmos DB経由で状態保存・復元
+
+### コンポーネント設計原則
+- **単一責任**: 各コンポーネントは一つの機能に特化
+- **Props駆動**: 状態は上位コンポーネント（GameTimer）で管理、Propsで下位に渡す
+- **再利用性**: 汎用的なコンポーネントは独立したファイルに分離
+- **テスト容易性**: ビジネスロジックはフックに集約し、UIと分離
 
 ### テスト配置
 - **ユニットテスト**: 同ディレクトリ内の `__tests__/` フォルダ
+  - コンポーネントテスト: `components/__tests__/`
+  - フックテスト: `hooks/__tests__/`
+  - 型定義テスト: `types/__tests__/`
 - **E2Eテスト**: プロジェクトルートの `e2e/` ディレクトリ（Playwright）
 
 ## 主要アーキテクチャ原則
