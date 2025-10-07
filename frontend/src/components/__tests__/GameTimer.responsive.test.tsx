@@ -24,9 +24,8 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     // プレイヤー人数ドロップダウンが表示されていることを確認（Phase 3でボタンからドロップダウンに変更）
     expect(screen.getByTestId('player-count-dropdown')).toBeInTheDocument();
 
-    // 他のコントロールボタンも表示されていることを確認
-    expect(screen.getByRole('button', { name: 'カウントアップ' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'カウントダウン' })).toBeInTheDocument();
+    // 他のコントロールも表示されていることを確認（Phase 4でカウントモードはトグルスイッチに変更）
+    expect(screen.getByTestId('timer-mode-toggle')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /一時停止|再開/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'リセット' })).toBeInTheDocument();
   });
@@ -34,14 +33,11 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('次のプレイヤーボタンが主要操作セクション内に配置されている', () => {
     render(<GameTimer />);
 
-    const controlsSection = screen.getByRole('heading', { name: '操作', level: 3 }).parentElement;
-    expect(controlsSection).toBeTruthy();
-
-    const primaryControls = controlsSection!.querySelector('.primary-controls');
-    expect(primaryControls).toBeTruthy();
-
-    const nextPlayerButtons = within(primaryControls as HTMLElement).getAllByRole('button', { name: /次のプレイヤーへ/ });
-    expect(nextPlayerButtons.length).toBeGreaterThan(0);
+    // Task 5.1: 「次のプレイヤーへ」ボタンは固定ヘッダーに移動
+    const stickyHeader = screen.getByTestId('sticky-header');
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+    expect(nextPlayerButton).toBeInTheDocument();
+    expect(nextPlayerButton).toHaveClass('next-player-btn');
   });
 
   test('次のプレイヤーボタンに読みやすいフォントサイズが設定されている', () => {
@@ -58,14 +54,19 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
   test('ボタンの配置順序がレスポンシブ対応に影響しない', () => {
     render(<GameTimer />);
 
-    const controlsSection = screen.getByRole('heading', { name: '操作', level: 3 }).parentElement;
-    const buttons = controlsSection!.querySelectorAll('button');
+    // Task 5.1: 「次のプレイヤーへ」ボタンは固定ヘッダーに移動
+    const stickyHeader = screen.getByTestId('sticky-header');
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+    expect(nextPlayerButton).toBeInTheDocument();
 
-    // 次のプレイヤーボタンが最初に配置されていることを確認
-    expect(buttons[0]).toHaveTextContent(/次のプレイヤーへ/);
+    // 主要操作セクションには一時停止ボタンのみ
+    const primaryControls = screen.getByTestId('primary-controls');
+    const pauseButton = within(primaryControls).getByRole('button', { name: /一時停止|再開/i });
+    expect(pauseButton).toBeInTheDocument();
 
-    // 全てのボタンが存在することを確認（レスポンシブで隠れていない）
-    // Phase 3でプレイヤー人数ボタン（3個）→ドロップダウン（1個）に変更: 8個→5個
-    expect(buttons.length).toBeGreaterThanOrEqual(5);
+    // 設定セクションにはドロップダウン、トグル、リセットが存在
+    const settingsControls = screen.getByTestId('settings-controls');
+    expect(within(settingsControls).getByTestId('player-count-dropdown')).toBeInTheDocument();
+    expect(within(settingsControls).getByTestId('timer-mode-toggle')).toBeInTheDocument();
   });
 });

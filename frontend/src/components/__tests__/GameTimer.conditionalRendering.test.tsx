@@ -8,9 +8,15 @@ describe('GameTimer - 条件付きレンダリング', () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    // カウントアップボタンをクリック
-    const countUpButton = screen.getByRole('button', { name: 'カウントアップ' });
-    await user.click(countUpButton);
+    // トグルスイッチを使ってカウントダウンに切り替え（Phase 4で変更）
+    const toggleSwitch = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
+    await user.click(toggleSwitch);
+
+    // カウントダウン秒数設定UIが表示される
+    expect(screen.getByDisplayValue('600')).toBeInTheDocument();
+
+    // カウントアップモードに戻す
+    await user.click(toggleSwitch);
 
     // カウントダウン秒数入力フィールドが非表示
     expect(screen.queryByDisplayValue('600')).not.toBeInTheDocument();
@@ -23,13 +29,12 @@ describe('GameTimer - 条件付きレンダリング', () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    // まずカウントアップモードに切り替え（初期状態確認）
-    const countUpButton = screen.getByRole('button', { name: 'カウントアップ' });
-    await user.click(countUpButton);
+    // 初期状態はカウントアップモードなのでUIは非表示
+    expect(screen.queryByDisplayValue('600')).not.toBeInTheDocument();
 
-    // カウントダウンボタンをクリック
-    const countDownButton = screen.getByRole('button', { name: 'カウントダウン' });
-    await user.click(countDownButton);
+    // トグルスイッチをクリックしてカウントダウンモードに切り替え（Phase 4で変更）
+    const toggleSwitch = screen.getByTestId('timer-mode-toggle');
+    await user.click(toggleSwitch);
 
     // カウントダウン秒数入力フィールドが表示
     expect(screen.getByDisplayValue('600')).toBeInTheDocument();
@@ -42,17 +47,15 @@ describe('GameTimer - 条件付きレンダリング', () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    // 初期状態: カウントダウン秒数設定UIが表示されている（デフォルトはカウントアップモード）
-    // カウントダウンボタンをクリック
-    const countDownButton = screen.getByRole('button', { name: 'カウントダウン' });
-    await user.click(countDownButton);
+    // トグルスイッチをクリックしてカウントダウンモードに切り替え（Phase 4で変更）
+    const toggleSwitch = screen.getByTestId('timer-mode-toggle');
+    await user.click(toggleSwitch);
 
     // カウントダウン秒数設定UIが表示される
     expect(screen.getByDisplayValue('600')).toBeInTheDocument();
 
-    // カウントアップボタンをクリック
-    const countUpButton = screen.getByRole('button', { name: 'カウントアップ' });
-    await user.click(countUpButton);
+    // トグルスイッチをクリックしてカウントアップモードに切り替え
+    await user.click(toggleSwitch);
 
     // カウントダウン秒数設定UIが即座に非表示
     expect(screen.queryByDisplayValue('600')).not.toBeInTheDocument();
@@ -62,9 +65,9 @@ describe('GameTimer - 条件付きレンダリング', () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    // カウントアップボタンをクリック
-    const countUpButton = screen.getByRole('button', { name: 'カウントアップ' });
-    await user.click(countUpButton);
+    // 初期状態はカウントアップモード
+    const toggleSwitch = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
+    expect(toggleSwitch.checked).toBe(false);
 
     // カウントダウン専用のUI要素が存在しないことを確認
     expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument(); // number input
@@ -75,9 +78,9 @@ describe('GameTimer - 条件付きレンダリング', () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    // カウントダウンモードに切り替え
-    const countDownButton = screen.getByRole('button', { name: 'カウントダウン' });
-    await user.click(countDownButton);
+    // トグルスイッチでカウントダウンモードに切り替え（Phase 4で変更）
+    const toggleSwitch = screen.getByTestId('timer-mode-toggle');
+    await user.click(toggleSwitch);
 
     // カウントダウン秒数を変更
     const countdownInput = screen.getByDisplayValue('600');
@@ -85,11 +88,10 @@ describe('GameTimer - 条件付きレンダリング', () => {
     await user.type(countdownInput, '300');
 
     // カウントアップモードに切り替え（UIは非表示になる）
-    const countUpButton = screen.getByRole('button', { name: 'カウントアップ' });
-    await user.click(countUpButton);
+    await user.click(toggleSwitch);
 
     // 再度カウントダウンモードに切り替え
-    await user.click(countDownButton);
+    await user.click(toggleSwitch);
 
     // 設定値が保持されていることを確認
     expect(screen.getByDisplayValue('300')).toBeInTheDocument();

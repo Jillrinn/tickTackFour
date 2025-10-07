@@ -22,24 +22,18 @@ describe('GameTimer - Task 1.2: 設定・その他セクション', () => {
     expect(primarySection).toContainElement(pauseButton);
   });
 
-  it('設定・その他セクションにプレイヤー人数ボタンが配置されていること', () => {
+  it('設定・その他セクションにプレイヤー人数ドロップダウンが配置されていること（Phase 3で変更）', () => {
     render(<GameTimer />);
     const settingsSection = screen.getByTestId('settings-controls');
-    const button4 = screen.getByText('4人');
-    const button5 = screen.getByText('5人');
-    const button6 = screen.getByText('6人');
-    expect(settingsSection).toContainElement(button4);
-    expect(settingsSection).toContainElement(button5);
-    expect(settingsSection).toContainElement(button6);
+    const dropdown = screen.getByTestId('player-count-dropdown');
+    expect(settingsSection).toContainElement(dropdown);
   });
 
-  it('設定・その他セクションにカウントモードボタンが配置されていること', () => {
+  it('設定・その他セクションにカウントモードトグルスイッチが配置されていること（Phase 4で変更）', () => {
     render(<GameTimer />);
     const settingsSection = screen.getByTestId('settings-controls');
-    const countUpButton = screen.getByText('カウントアップ');
-    const countDownButton = screen.getByText('カウントダウン');
-    expect(settingsSection).toContainElement(countUpButton);
-    expect(settingsSection).toContainElement(countDownButton);
+    const toggleSwitch = screen.getByTestId('timer-mode-toggle');
+    expect(settingsSection).toContainElement(toggleSwitch);
   });
 
   it('設定・その他セクションにリセットボタンが配置されていること', () => {

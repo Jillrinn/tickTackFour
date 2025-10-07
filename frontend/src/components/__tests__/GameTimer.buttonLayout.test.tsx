@@ -4,17 +4,15 @@ import { describe, test, expect } from 'vitest';
 import { GameTimer } from '../GameTimer';
 
 describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
-  test('次のプレイヤーボタンがゲームコントロールエリアの最上部に表示される', () => {
+  test('次のプレイヤーボタンが固定ヘッダーに表示される（Task 5.1）', () => {
     render(<GameTimer />);
 
-    // 操作セクション内のすべてのボタンを取得
-    const controlsSection = screen.getByRole('heading', { name: '操作', level: 3 }).parentElement;
-    expect(controlsSection).toBeTruthy();
+    // Task 5.1: 「次のプレイヤーへ」ボタンは固定ヘッダー内に移動
+    const stickyHeader = screen.getByTestId('sticky-header');
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
 
-    const buttonsInControls = within(controlsSection!).getAllByRole('button');
-
-    // 最初のボタンが「次のプレイヤーへ」であることを確認
-    expect(buttonsInControls[0]).toHaveTextContent(/次のプレイヤーへ/);
+    // 固定ヘッダー内に「次のプレイヤーへ」ボタンが存在することを確認
+    expect(nextPlayerButton).toBeInTheDocument();
   });
 
   test('次のプレイヤーボタンが最も視認しやすい位置に配置されている', () => {
@@ -48,36 +46,33 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     expect(updatedPlayerCards[0]).toHaveClass('active');
   });
 
-  test('次のプレイヤーボタンが他のコントロールボタンより前に配置される', () => {
+  test('主要操作セクションには一時停止ボタンのみ存在する（Task 5.1）', () => {
     render(<GameTimer />);
 
-    const controlsSection = screen.getByRole('heading', { name: '操作', level: 3 }).parentElement;
-    const buttonsInControls = within(controlsSection!).getAllByRole('button');
+    // Task 5.1: 主要操作セクションには一時停止ボタンのみ
+    const primaryControls = screen.getByTestId('primary-controls');
+    const buttonsInPrimaryControls = within(primaryControls).getAllByRole('button');
 
-    // 次のプレイヤーボタンのインデックスを取得
-    const nextPlayerIndex = buttonsInControls.findIndex(btn =>
-      btn.textContent?.includes('次のプレイヤーへ')
-    );
-
-    // カウントアップボタンのインデックスを取得（Phase 3でプレイヤー人数はドロップダウンに変更）
-    const countUpButtonIndex = buttonsInControls.findIndex(btn =>
-      btn.textContent === 'カウントアップ'
-    );
-
-    // 次のプレイヤーボタンが設定ボタンより前にあることを確認
-    expect(nextPlayerIndex).toBeLessThan(countUpButtonIndex);
+    // ボタンが1つのみ（一時停止/再開）
+    expect(buttonsInPrimaryControls).toHaveLength(1);
+    expect(buttonsInPrimaryControls[0]).toHaveTextContent(/一時停止|再開/);
   });
 
-  test('次のプレイヤーボタンの配置により操作フローが改善される', () => {
+  test('固定ヘッダーと主要操作セクションが適切に分離される（Task 5.1）', () => {
     render(<GameTimer />);
 
-    const controlsSection = screen.getByRole('heading', { name: '操作', level: 3 }).parentElement;
-    const buttonsInControls = within(controlsSection!).getAllByRole('button');
+    // 固定ヘッダーに「次のプレイヤーへ」ボタンが存在
+    const stickyHeader = screen.getByTestId('sticky-header');
+    const nextPlayerButtonInHeader = within(stickyHeader).getByRole('button', { name: /次のプレイヤーへ/i });
+    expect(nextPlayerButtonInHeader).toBeInTheDocument();
 
-    // 最初のボタンが次のプレイヤーボタンであることを確認
-    expect(buttonsInControls[0]).toHaveTextContent(/次のプレイヤーへ/);
+    // 主要操作セクションには「次のプレイヤーへ」ボタンが存在しない
+    const primaryControls = screen.getByTestId('primary-controls');
+    const buttonsInPrimaryControls = within(primaryControls).queryAllByRole('button', { name: /次のプレイヤーへ/i });
+    expect(buttonsInPrimaryControls).toHaveLength(0);
 
-    // 2番目以降に他の操作ボタンが配置されることを確認（Phase 3でプレイヤー人数はドロップダウンに変更）
-    expect(buttonsInControls[1]).toHaveTextContent(/カウントアップ|カウントダウン|一時停止|リセット/);
+    // 主要操作セクションには一時停止ボタンのみ
+    const pauseButton = within(primaryControls).getByRole('button', { name: /一時停止|再開/i });
+    expect(pauseButton).toBeInTheDocument();
   });
 });

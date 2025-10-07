@@ -110,12 +110,10 @@ export function GameTimer() {
         <div className="controls-section" data-testid="controls-section">
           <h3>操作</h3>
 
-          {/* 主要操作セクション（Task 1.2） */}
+          {/* 主要操作セクション（Task 1.2 & Task 5.1） */}
           <div className="primary-controls" data-testid="primary-controls">
             <h4>主要操作</h4>
-            <button onClick={switchToNextPlayer} className="next-player-btn">
-              次のプレイヤーへ
-            </button>
+            {/* Task 5.1: 「次のプレイヤーへ」ボタンは固定ヘッダーに移動済み */}
             <button onClick={() => setPaused(!gameState.isPaused)}>
               {gameState.isPaused ? '再開' : '一時停止'}
             </button>
@@ -137,8 +135,27 @@ export function GameTimer() {
                 <option value={5}>5人</option>
                 <option value={6}>6人</option>
               </select>
-              <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
-              <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
+              {/* Task 4.1 & 4.2: カウントモードトグルスイッチ */}
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={gameState.timerMode === 'count-down'}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setTimerMode('count-down', countdownSeconds);
+                    } else {
+                      setTimerMode('count-up');
+                    }
+                  }}
+                  disabled={gameState.activePlayerId !== null && !gameState.isPaused}
+                  data-testid="timer-mode-toggle"
+                  aria-label="カウントモード切替"
+                />
+                <span className="slider"></span>
+                <span className="label">
+                  {gameState.timerMode === 'count-down' ? 'カウントダウン' : 'カウントアップ'}
+                </span>
+              </label>
               {gameState.timerMode === 'count-down' && (
                 <div className="countdown-control">
                   <input

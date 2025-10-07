@@ -34,6 +34,10 @@
 ```
 
 
+現在、frontendの改修をした後にchrome-devtoolsで確認をしてもらう形となっていますが、
+e2eテストを追加し、それを実行して確認する形に変更したいです。
+chrome-devtoolsでの確認は不要と考えています。
+
 /kiro:spec-init multiplayer-sync "既存のインメモリータイマー（multiplayer-game-timer Phase 1完了）に、マルチプレイヤー同期機能を追加する。
 
 【Phase 1: Cosmos DB統合】
