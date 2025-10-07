@@ -91,9 +91,9 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     await user.clear(nameInputs[0]);
     await user.type(nameInputs[0], 'アリス');
 
-    // プレイヤー数を5人に変更
-    const fivePlayersButton = screen.getByRole('button', { name: '5人' });
-    await user.click(fivePlayersButton);
+    // プレイヤー数を5人に変更（Phase 3でドロップダウンに変更）
+    const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
+    await user.selectOptions(dropdown, '5');
 
     // 1人目の名前が保持されていることを確認
     const updatedInputs = screen.getAllByRole('textbox', { name: /プレイヤー名/i });

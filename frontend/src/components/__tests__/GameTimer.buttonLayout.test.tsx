@@ -59,13 +59,13 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
       btn.textContent?.includes('次のプレイヤーへ')
     );
 
-    // 4人/5人/6人ボタンのインデックスを取得
-    const playerCountButtonIndex = buttonsInControls.findIndex(btn =>
-      btn.textContent === '4人'
+    // カウントアップボタンのインデックスを取得（Phase 3でプレイヤー人数はドロップダウンに変更）
+    const countUpButtonIndex = buttonsInControls.findIndex(btn =>
+      btn.textContent === 'カウントアップ'
     );
 
-    // 次のプレイヤーボタンがプレイヤー数ボタンより前にあることを確認
-    expect(nextPlayerIndex).toBeLessThan(playerCountButtonIndex);
+    // 次のプレイヤーボタンが設定ボタンより前にあることを確認
+    expect(nextPlayerIndex).toBeLessThan(countUpButtonIndex);
   });
 
   test('次のプレイヤーボタンの配置により操作フローが改善される', () => {
@@ -77,7 +77,7 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     // 最初のボタンが次のプレイヤーボタンであることを確認
     expect(buttonsInControls[0]).toHaveTextContent(/次のプレイヤーへ/);
 
-    // 2番目以降に他の操作ボタンが配置されることを確認
-    expect(buttonsInControls[1]).toHaveTextContent(/4人|5人|6人|カウントアップ|カウントダウン|一時停止|リセット/);
+    // 2番目以降に他の操作ボタンが配置されることを確認（Phase 3でプレイヤー人数はドロップダウンに変更）
+    expect(buttonsInControls[1]).toHaveTextContent(/カウントアップ|カウントダウン|一時停止|リセット/);
   });
 });

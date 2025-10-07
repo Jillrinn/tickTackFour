@@ -21,10 +21,10 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤーへ/ });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
 
+    // プレイヤー人数ドロップダウンが表示されていることを確認（Phase 3でボタンからドロップダウンに変更）
+    expect(screen.getByTestId('player-count-dropdown')).toBeInTheDocument();
+
     // 他のコントロールボタンも表示されていることを確認
-    expect(screen.getByRole('button', { name: '4人' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '5人' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '6人' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'カウントアップ' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'カウントダウン' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /一時停止|再開/ })).toBeInTheDocument();
@@ -65,6 +65,7 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     expect(buttons[0]).toHaveTextContent(/次のプレイヤーへ/);
 
     // 全てのボタンが存在することを確認（レスポンシブで隠れていない）
-    expect(buttons.length).toBeGreaterThanOrEqual(8);
+    // Phase 3でプレイヤー人数ボタン（3個）→ドロップダウン（1個）に変更: 8個→5個
+    expect(buttons.length).toBeGreaterThanOrEqual(5);
   });
 });

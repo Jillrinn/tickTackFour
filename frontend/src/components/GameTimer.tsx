@@ -125,9 +125,18 @@ export function GameTimer() {
           <div className="settings-controls" data-testid="settings-controls">
             <h4>設定・その他</h4>
             <div className="settings-grid">
-              <button onClick={() => setPlayerCount(4)}>4人</button>
-              <button onClick={() => setPlayerCount(5)}>5人</button>
-              <button onClick={() => setPlayerCount(6)}>6人</button>
+              {/* Task 3.1: プレイヤー人数ドロップダウン */}
+              <select
+                value={gameState.players.length}
+                onChange={(e) => setPlayerCount(Number(e.target.value))}
+                disabled={gameState.activePlayerId !== null && !gameState.isPaused}
+                data-testid="player-count-dropdown"
+                aria-label="プレイヤー人数選択"
+              >
+                <option value={4}>4人</option>
+                <option value={5}>5人</option>
+                <option value={6}>6人</option>
+              </select>
               <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
               <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
               {gameState.timerMode === 'count-down' && (
