@@ -2,13 +2,15 @@
 
 ## はじめに
 
-本機能は、既存のインメモリータイマー（multiplayer-game-timer Phase 1完了）に、マルチプレイヤー同期機能を追加します。Phase 1ではCosmos DB Table APIによる永続化と手動リロード同期を実装し、Phase 2ではSignalR Serviceによるリアルタイム双方向通信を実装します。これにより、複数デバイス間でゲーム状態を共有し、1秒以内に同期されるマルチプレイヤー体験を提供します。
+本機能は、既存のインメモリータイマー（multiplayer-game-timer Phase 1完了）に、マルチプレイヤー同期機能を追加します。Cosmos DB Table APIによる永続化、バックエンド主導の時間計算、ポーリング同期を実装し、複数デバイス間でゲーム状態を共有できるようにします。
 
-Azure無料層サービス（Cosmos DB Free Tier、SignalR Service Free Tier、Azure Functions Consumption Plan）を活用し、コスト0円での運用を実現します。
+Azure無料層サービス（Cosmos DB Free Tier、Azure Functions Consumption Plan）を活用し、コスト0円での運用を実現します。
+
+**注:** リアルタイム同期（SignalR Service）については、別仕様 `signalr-realtime-sync` として定義されています。
 
 ## 要件
 
-### 要件1: ゲーム状態の永続化（Phase 1）
+### 要件1: ゲーム状態の永続化
 **目的:** ゲーム参加者として、ブラウザをリロードしても前回のゲーム状態を復元できるようにすることで、中断せずにゲームを継続できるようにする
 
 #### 受入基準
@@ -33,7 +35,7 @@ Azure無料層サービス（Cosmos DB Free Tier、SignalR Service Free Tier、A
 7. WHEN フロントエンドがゲーム状態を取得した時 THEN マルチプレイヤー同期システムは バックエンドで計算された経過時間を表示すること
 8. WHEN フロントエンドが操作イベントを送信する時 THEN マルチプレイヤー同期システムは 経過時間を含めずに操作種別のみを送信すること
 
-### 要件2: ポーリング同期（Phase 1）
+### 要件2: ポーリング同期
 **目的:** ゲーム参加者として、複数デバイスで手動リロードせずに最新の状態を確認できるようにすることで、デバイス間の状態の不一致を最小化する
 
 #### 受入基準
@@ -42,7 +44,7 @@ Azure無料層サービス（Cosmos DB Free Tier、SignalR Service Free Tier、A
 3. IF ポーリング中にネットワークエラーが発生した時 THEN マルチプレイヤー同期システムは 現在の状態を保持し次回のポーリングを継続すること
 4. WHEN 他のデバイスでタイマー操作が実行された時 AND 5秒以内にポーリングが実行された時 THEN マルチプレイヤー同期システムは 変更を反映すること
 
-### 要件3: 楽観的ロック制御（Phase 1）
+### 要件3: 楽観的ロック制御
 **目的:** システム管理者として、複数デバイスからの同時更新による競合を検出できるようにすることで、データ整合性を保証する
 
 #### 受入基準
@@ -51,52 +53,33 @@ Azure無料層サービス（Cosmos DB Free Tier、SignalR Service Free Tier、A
 3. IF 楽観的ロック競合が発生した時 THEN マルチプレイヤー同期システムは 最新の状態を取得し再試行すること
 4. IF 3回の再試行後も競合が解決しない時 THEN マルチプレイヤー同期システムは エラーメッセージを表示し手動リロードを促すこと
 
-### 要件4: SignalRリアルタイム通信（Phase 2）
-**目的:** ゲーム参加者として、1つのデバイスでの操作を他のすべてのデバイスに即座に反映できるようにすることで、リアルタイムなマルチプレイヤー体験を提供する
-
-#### 受入基準
-1. WHEN アプリケーションが起動した時 THEN マルチプレイヤー同期システムは Azure SignalR Serviceに接続すること
-2. WHEN SignalR接続が確立された時 THEN マルチプレイヤー同期システムは 接続状態を「接続中」と表示すること
-3. WHEN タイマー操作（ターン切り替え、一時停止、再開、リセット）が実行された時 THEN マルチプレイヤー同期システムは 1秒以内にすべての接続デバイスに変更を配信すること
-4. WHEN 他のデバイスからイベント（TurnSwitched, TimerUpdated, GameReset, PlayersUpdated）を受信した時 THEN マルチプレイヤー同期システムは UIを即座に更新すること
-5. WHILE SignalR接続が確立されている THE マルチプレイヤー同期システムは ポーリング同期を無効化すること
-
-### 要件5: 自動再接続（Phase 2）
-**目的:** ゲーム参加者として、ネットワーク接続が一時的に切断されても自動的に再接続できるようにすることで、中断のない体験を提供する
-
-#### 受入基準
-1. WHEN SignalR接続が切断された時 THEN マルチプレイヤー同期システムは 自動再接続を試行すること
-2. WHILE 再接続を試行中 THE マルチプレイヤー同期システムは 接続状態を「再接続中」と表示すること
-3. WHEN 再接続に成功した時 THEN マルチプレイヤー同期システムは Cosmos DBから最新の状態を取得しUIを同期すること
-4. IF 再接続に失敗した時 THEN マルチプレイヤー同期システムは ポーリング同期に切り替え接続状態を「切断中（ポーリングモード）」と表示すること
-
-### 要件6: Azure Functions API統合
-**目的:** システム管理者として、Azure Functions（Managed Functions in Static Web Apps）を通じてCosmos DBとSignalRにアクセスできるようにすることで、セキュアかつスケーラブルなバックエンドを提供する
+### 要件4: Azure Functions API統合
+**目的:** システム管理者として、Azure Functions（Managed Functions in Static Web Apps）を通じてCosmos DBにアクセスできるようにすることで、セキュアかつスケーラブルなバックエンドを提供する
 
 #### 受入基準
 1. WHERE Azure Functions API THE マルチプレイヤー同期システムは GET /api/game エンドポイントでゲーム状態を取得できること
 2. WHERE Azure Functions API THE マルチプレイヤー同期システムは POST /api/updateGame エンドポイントでゲーム状態を更新できること
-3. WHERE Azure Functions API THE マルチプレイヤー同期システムは POST /api/switchTurn エンドポイントでターン切り替えとSignalRブロードキャストを実行できること
-4. WHERE Azure Functions API THE マルチプレイヤー同期システムは GET /api/negotiate エンドポイントでSignalR接続情報を取得できること
-5. WHEN Azure Functions APIがエラーを返した時 THEN マルチプレイヤー同期システムは エラーメッセージをユーザーに表示すること
-6. WHERE Azure Functions API THE マルチプレイヤー同期システムは CORS設定でフロントエンドドメインからのアクセスを許可すること
+3. WHERE Azure Functions API THE マルチプレイヤー同期システムは POST /api/switchTurn エンドポイントでターン切り替えを実行できること
+4. WHERE Azure Functions API THE マルチプレイヤー同期システムは POST /api/pauseGame エンドポイントで一時停止を実行できること
+5. WHERE Azure Functions API THE マルチプレイヤー同期システムは POST /api/resumeGame エンドポイントで再開を実行できること
+6. WHERE Azure Functions API THE マルチプレイヤー同期システムは POST /api/resetGame エンドポイントでリセットを実行できること
+7. WHEN Azure Functions APIがエラーを返した時 THEN マルチプレイヤー同期システムは エラーメッセージをユーザーに表示すること
+8. WHERE Azure Functions API THE マルチプレイヤー同期システムは CORS設定でフロントエンドドメインからのアクセスを許可すること
 
-### 要件7: 無料層リソース制約対応
+### 要件5: 無料層リソース制約対応
 **目的:** システム管理者として、Azure無料層の制約内でシステムが安定動作するようにすることで、コスト0円での運用を維持する
 
 #### 受入基準
 1. WHERE Cosmos DB Free Tier THE マルチプレイヤー同期システムは 1000 RU/s以内で動作すること（現在約2.5 RU/s使用）
-2. WHERE SignalR Service Free Tier THE マルチプレイヤー同期システムは 同時接続20以内で動作すること
-3. WHERE SignalR Service Free Tier THE マルチプレイヤー同期システムは 1日20,000メッセージ以内で動作すること（1秒更新で約5.5時間分）
-4. WHEN SignalRメッセージ上限に近づいた時 THEN マルチプレイヤー同期システムは 更新頻度を2秒に調整すること
-5. WHERE Azure Functions Consumption Plan THE マルチプレイヤー同期システムは 月100万リクエスト以内で動作すること
+2. WHERE Azure Functions Consumption Plan THE マルチプレイヤー同期システムは 月100万リクエスト以内で動作すること
+3. WHEN リソース使用量が上限に近づいた時 THEN マルチプレイヤー同期システムは 警告メッセージを表示すること
 
-### 要件8: エラーハンドリングとフォールバック
+### 要件6: エラーハンドリングとフォールバック
 **目的:** ゲーム参加者として、ネットワークエラーやサービス障害時にも基本機能を使用できるようにすることで、信頼性の高い体験を提供する
 
 #### 受入基準
 1. WHEN Azure Functions APIが利用不可の時 THEN マルチプレイヤー同期システムは インメモリーモードで動作を継続すること
 2. WHEN Cosmos DB接続が失敗した時 THEN マルチプレイヤー同期システムは ローカルストレージに状態を保存すること
-3. WHEN SignalR接続が確立できない時 THEN マルチプレイヤー同期システムは ポーリング同期で代替すること
-4. WHERE エラー発生時 THE マルチプレイヤー同期システムは ユーザーに分かりやすいエラーメッセージと復旧手順を表示すること
-5. WHEN フォールバックモードで動作中 THE マルチプレイヤー同期システムは 通常モードへの復帰を定期的に試行すること
+3. WHERE エラー発生時 THE マルチプレイヤー同期システムは ユーザーに分かりやすいエラーメッセージと復旧手順を表示すること
+4. WHEN フォールバックモード（インメモリー）で動作中 THE マルチプレイヤー同期システムは 通常モード（Cosmos DB同期）への復帰を定期的に試行すること
+5. WHEN Cosmos DB接続が復帰した時 THEN マルチプレイヤー同期システムは 自動的にCosmos DB同期に切り替えること
