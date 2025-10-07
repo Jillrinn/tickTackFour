@@ -32,6 +32,7 @@
 現在は単純に経過時間を保持するのみとなっていますが、累計の経過時間とは別に現在のターンでの経過時間を表示する機能を追加してください。
 全てのプレイヤーの累計でゲーム全体のプレイ時間を表示する機能を追加してください。
 ```
+/sc:improve @frontend/src/components/GameTimer.tsx --focus ui
 
 
 現在、frontendの改修をした後にchrome-devtoolsで確認をしてもらう形となっていますが、

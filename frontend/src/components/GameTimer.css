@@ -156,12 +156,34 @@
   flex-shrink: 0;
 }
 
-/* レスポンシブ対応: スマートフォン（768px以下） */
-@media (max-width: 768px) {
+/* Task 6.1 & 6.2: レスポンシブ対応とアクセシビリティ */
+
+/* Task 6.2: 全てのボタンのタップターゲットサイズを44px以上に設定 */
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Task 6.2: ドロップダウンのタップターゲットサイズを44px以上に設定 */
+select {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+/* Task 6.2: トグルスイッチコンテナのタップターゲットサイズを44px以上に設定 */
+.toggle-switch {
+  min-height: 44px;
+  padding: 0.5rem 0;
+}
+
+/* Task 6.1: モバイル (375px〜767px) - セクションを縦方向に積み重ね */
+@media (max-width: 767px) {
   .sticky-header {
     padding: 0.75rem 1rem;
   }
 
+  /* Task 6.1: 固定ヘッダーは縦並び */
   .sticky-header-content {
     flex-direction: column;
     align-items: stretch;
@@ -173,6 +195,58 @@
 
   .sticky-header-btn {
     width: 100%;
+  }
+
+  /* Task 6.1: controls-sectionを縦方向に配置 */
+  .controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .primary-controls,
+  .settings-controls {
+    width: 100%;
+  }
+}
+
+/* Task 6.1: タブレット (768px〜1023px) - セクションを横方向に配置 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Task 6.1: 固定ヘッダーは横並び */
+  .sticky-header-content {
+    flex-direction: row;
+  }
+
+  /* Task 6.1: controls-sectionを横方向に配置 */
+  .controls-section {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .primary-controls,
+  .settings-controls {
+    flex: 1;
+  }
+}
+
+/* Task 6.1: PC (1024px〜1440px+) - セクションを最適なレイアウトで配置 */
+@media (min-width: 1024px) {
+  /* Task 6.1: 固定ヘッダーは横並び */
+  .sticky-header-content {
+    flex-direction: row;
+  }
+
+  /* Task 6.1: controls-sectionを横方向に配置 */
+  .controls-section {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+
+  .primary-controls,
+  .settings-controls {
+    flex: 1;
   }
 }
 

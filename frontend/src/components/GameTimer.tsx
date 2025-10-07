@@ -43,7 +43,7 @@ export function GameTimer() {
       <main className="game-main">
         {/* Task 2.1-2.3: 固定ヘッダー */}
         <div className="sticky-header" data-testid="sticky-header">
-          <div className="sticky-header-content">
+          <div className="sticky-header-content" data-testid="sticky-header-content">
             <div className="sticky-header-info" data-testid="active-player-info">
               {gameState.activePlayerId ? (
                 <>
