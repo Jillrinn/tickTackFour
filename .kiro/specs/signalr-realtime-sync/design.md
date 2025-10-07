@@ -563,6 +563,69 @@ interface ConnectionStatusIndicator {
 
 ## データモデル
 
+### GameStateEntity（Cosmos DB）
+
+既存のmultiplayer-sync仕様で定義されたCosmos DB Table APIスキーマ。SignalR実装でも同じスキーマを再利用します。
+
+```typescript
+interface GameStateEntity {
+  // Table API必須フィールド
+  partitionKey: string;      // 固定値: "game"
+  rowKey: string;            // 固定値: "default"
+  etag?: string;             // 楽観的ロック用（Cosmos DB自動生成）
+  timestamp?: Date;          // 最終更新日時（Cosmos DB自動生成）
+
+  // ゲーム状態フィールド
+  playerCount: number;       // プレイヤー数（4-6）
+  players: string;           // Player[]をJSON文字列化（Table APIは配列未サポート）
+  activePlayerIndex: number; // アクティブプレイヤーインデックス
+  isRunning: boolean;        // タイマー実行中フラグ
+
+  // 時間管理フィールド（バックエンド主導）
+  turnStartedAt: string | null;  // ターン開始時刻（ISO8601）
+  pausedAt: string | null;       // 一時停止時刻（ISO8601）
+  accumulatedSeconds: string;    // 各プレイヤーの累積秒数（number[]をJSON文字列化）
+}
+```
+
+**主キー設計**:
+- **PartitionKey**: "game"（単一パーティション、複数ゲーム未対応）
+- **RowKey**: "default"（単一ゲーム状態のみ）
+
+**配列フィールドのシリアライズ**:
+Cosmos DB Table APIは配列型を直接サポートしないため、JSON文字列化で保存:
+- 保存時: `JSON.stringify(players)` → GameStateEntity.players
+- 取得時: `JSON.parse(entity.players)` → Player[]
+- 保存時: `JSON.stringify(accumulatedSeconds)` → GameStateEntity.accumulatedSeconds
+- 取得時: `JSON.parse(entity.accumulatedSeconds)` → number[]
+
+**時間管理フィールドの運用**:
+- **turnStartedAt**: アクティブプレイヤーのターン開始時にISO8601形式で記録
+- **pausedAt**: 一時停止時にISO8601形式で記録、再開時にnullに設定
+- **経過時間計算**: `accumulatedSeconds[i] + (現在時刻 - turnStartedAt) / 1000`（一時停止中は`accumulatedSeconds[i]`のみ）
+
+**バックエンド時間計算ロジック**:
+
+```typescript
+// ターン切り替え時の時間計算
+const now = new Date().toISOString();
+const turnStartedAt = new Date(entity.turnStartedAt);
+const elapsedSeconds = (Date.now() - turnStartedAt.getTime()) / 1000;
+
+const accumulatedSeconds = JSON.parse(entity.accumulatedSeconds);
+accumulatedSeconds[entity.activePlayerIndex] += elapsedSeconds;
+
+// 新しいターン開始
+entity.activePlayerIndex = (entity.activePlayerIndex + 1) % entity.playerCount;
+entity.turnStartedAt = now;
+entity.accumulatedSeconds = JSON.stringify(accumulatedSeconds);
+```
+
+**ETag楽観的ロック**:
+- Cosmos DBが自動生成するETagを使用して並行制御
+- 更新時にETag一致確認、不一致の場合は412 Precondition Failed
+- 最大3回まで自動再試行（指数バックオフ: 100ms, 200ms, 400ms）
+
 ### SignalRイベントスキーマ
 
 #### TurnSwitched Event

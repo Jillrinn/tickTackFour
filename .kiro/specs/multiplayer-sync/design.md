@@ -552,13 +552,8 @@ graph TB
   - updateGameState: ETag楽観的ロック、競合処理
   - switchTurn: ターン循環ロジック
 
-- SignalRHubService イベント送信（SignalRモック）
-  - broadcastTurnSwitched: TurnSwitchedイベント配信
-  - broadcastTimerUpdated: TimerUpdatedイベント配信
-
 **フロントエンド** (Vitest + jsdom):
-- PollingService: 5秒ポーリング、停止処理
-- SignalRService: 接続、イベントリスナー登録、自動再接続
+- PollingService: 5秒ポーリング、停止処理、エラーハンドリング
 
 ### 統合テスト
 
@@ -581,11 +576,6 @@ graph TB
 5. ブラウザリロード → take_snapshot（状態復元確認）
 6. 複数タブ同時操作 → 5秒待機 → take_snapshot（ポーリング同期確認）
 
-**Chrome DevTools MCP検証** (Phase 2):
-1. 複数タブでアプリケーション起動
-2. タブAでターン切り替え → タブB/Cで即座に反映確認（<1秒）
-3. ネットワーク切断（DevTools Offline）→ 自動再接続確認
-4. 再接続成功 → 最新状態同期確認
 
 ### パフォーマンス/負荷テスト
 
@@ -593,28 +583,24 @@ graph TB
 - 1操作あたりのRU消費量測定（目標: <5 RU/操作）
 - 同時アクセス時のRU/s合計（目標: <100 RU/s）
 
-**SignalRメッセージ数測定**:
-- 1時間の連続操作でのメッセージ数（目標: <1000 msg/時）
-- 1秒更新時の1日メッセージ数推定（約5.5時間分 = 20K msg）
-
 **Azure Functions実行時間**:
 - GET /api/game: 目標<200ms
 - POST /api/updateGame: 目標<300ms
-- SignalRブロードキャスト: 目標<100ms
+- POST /api/pause, /api/resume: 目標<300ms
 
 ## パフォーマンスとスケーラビリティ
 
 ### ターゲットメトリクス
 
 - **API応答時間**: GET /api/game <200ms, POST /api/updateGame <300ms
-- **リアルタイム同期**: <1秒でイベント配信（Phase 2）
-- **ポーリング同期**: 5秒間隔でCosmos DB状態取得（Phase 1）
+- **ポーリング同期**: 5秒間隔でCosmos DB状態取得
+- **Cosmos DB RU/s**: 1操作あたり<5 RU、合計<100 RU/s
 
 ### スケーリングアプローチ
 
 **水平スケーリング**:
 - Azure Functions: Consumption Planの自動スケール（無料層制約内）
-- SignalR Service: 同時接続20まで（無料層上限）
+- Cosmos DB: 1000 RU/s固定（無料層上限）
 
 **垂直スケーリング**:
 - 不要（無料層固定リソース）
@@ -631,6 +617,6 @@ graph TB
 ### 最適化テクニック
 
 **無料層最適化**:
-- ポーリング間隔調整: 5秒固定（RU/s節約）
-- SignalRメッセージ削減: 状態変更時のみ配信（定期送信なし）
+- ポーリング間隔調整: 5秒固定（Azure Functions無料枠内）
 - Cosmos DBパーティションキー最適化: 単一パーティション（PK="game"）
+- 軽量クエリ: Point Read（1 RU）とConditional Update（5 RU）のみ
