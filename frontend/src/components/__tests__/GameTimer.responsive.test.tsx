@@ -28,17 +28,17 @@ describe('GameTimer - レスポンシブレイアウトの調整', () => {
     expect(screen.getByRole('button', { name: 'リセット' })).toBeInTheDocument();
   });
 
-  test('次のプレイヤーボタンがコントロールグリッド内に配置されている', () => {
+  test('次のプレイヤーボタンが主要操作セクション内に配置されている', () => {
     render(<GameTimer />);
 
     const controlsSection = screen.getByRole('heading', { name: '操作', level: 3 }).parentElement;
     expect(controlsSection).toBeTruthy();
 
-    const controlsGrid = controlsSection!.querySelector('.controls-grid');
-    expect(controlsGrid).toBeTruthy();
+    const primaryControls = controlsSection!.querySelector('.primary-controls');
+    expect(primaryControls).toBeTruthy();
 
     const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤーへ/ });
-    expect(controlsGrid).toContainElement(nextPlayerButton);
+    expect(primaryControls).toContainElement(nextPlayerButton);
   });
 
   test('次のプレイヤーボタンに読みやすいフォントサイズが設定されている', () => {

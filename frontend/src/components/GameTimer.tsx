@@ -83,33 +83,43 @@ export function GameTimer() {
           </ul>
         </div>
 
-        <div className="controls-section">
+        <div className="controls-section" data-testid="controls-section">
           <h3>操作</h3>
-          <div className="controls-grid">
+
+          {/* 主要操作セクション（Task 1.2） */}
+          <div className="primary-controls" data-testid="primary-controls">
+            <h4>主要操作</h4>
             <button onClick={switchToNextPlayer} className="next-player-btn">
               次のプレイヤーへ
             </button>
-            <button onClick={() => setPlayerCount(4)}>4人</button>
-            <button onClick={() => setPlayerCount(5)}>5人</button>
-            <button onClick={() => setPlayerCount(6)}>6人</button>
-            <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
-            <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
-            {gameState.timerMode === 'count-down' && (
-              <div className="countdown-control">
-                <input
-                  type="number"
-                  value={countdownSeconds}
-                  onChange={(e) => setCountdownSeconds(Number(e.target.value))}
-                  min="1"
-                  max="3600"
-                />
-                <span>秒</span>
-              </div>
-            )}
             <button onClick={() => setPaused(!gameState.isPaused)}>
               {gameState.isPaused ? '再開' : '一時停止'}
             </button>
-            <button onClick={resetGame}>リセット</button>
+          </div>
+
+          {/* 設定・その他セクション（Task 1.2 & 1.3） */}
+          <div className="settings-controls" data-testid="settings-controls">
+            <h4>設定・その他</h4>
+            <div className="settings-grid">
+              <button onClick={() => setPlayerCount(4)}>4人</button>
+              <button onClick={() => setPlayerCount(5)}>5人</button>
+              <button onClick={() => setPlayerCount(6)}>6人</button>
+              <button onClick={() => setTimerMode('count-up')}>カウントアップ</button>
+              <button onClick={() => setTimerMode('count-down', countdownSeconds)}>カウントダウン</button>
+              {gameState.timerMode === 'count-down' && (
+                <div className="countdown-control">
+                  <input
+                    type="number"
+                    value={countdownSeconds}
+                    onChange={(e) => setCountdownSeconds(Number(e.target.value))}
+                    min="1"
+                    max="3600"
+                  />
+                  <span>秒</span>
+                </div>
+              )}
+              <button onClick={resetGame}>リセット</button>
+            </div>
           </div>
         </div>
 
