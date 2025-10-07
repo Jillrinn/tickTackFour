@@ -7,7 +7,7 @@
 
 - [ ] 1. バックエンド基盤とデータ層の構築
 
-- [ ] 1.1 Cosmos DB接続設定とTableClientの初期化
+- [x] 1.1 Cosmos DB接続設定とTableClientの初期化
   - Azure Cosmos DBアカウントとTable APIデータベースの環境変数設定
   - TableClientの初期化と接続テスト
   - エラーハンドリング（接続失敗時のフォールバック準備）
