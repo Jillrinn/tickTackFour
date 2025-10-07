@@ -15,7 +15,7 @@ interface SettingsControlsProps {
  * - 低頻度の設定変更操作（プレイヤー人数、カウントモード、リセット）を提供
  * - Requirement 1.3: 設定・その他セクションの実装
  */
-export function SettingsControls({ onReset, isGameInProgress, children }: SettingsControlsProps) {
+export function SettingsControls({ onReset, children }: SettingsControlsProps) {
   return (
     <div className="settings-controls" data-testid="settings-controls">
       <h3>設定・その他</h3>
