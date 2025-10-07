@@ -62,22 +62,37 @@ Note: Optional for new features or small additions. You can proceed directly to 
 - 実装前にテストケースを作成（RED phase）
 - 最小限の実装でテストをパス（GREEN phase）
 - 必要に応じてリファクタリング（REFACTOR phase）
-- `npm test`で全テストが成功することを確認
+- `npm test`で全ユニットテストが成功することを確認
 
-### 2. Chrome DevTools Verification (実機検証)
-実装完了後、**必ず**Chrome DevTools MCP（`mcp__chrome-devtools__*`ツール）を使用した実機検証を実施：
+### 2. E2E Test Implementation (E2Eテスト実装)
+実装完了後、**必ず**E2Eテストを追加して実機検証を自動化：
 
-**検証手順**:
-1. `npm run dev`で開発サーバー起動
-2. `mcp__chrome-devtools__navigate_page`でアプリケーションにアクセス
-3. `mcp__chrome-devtools__take_snapshot`で初期状態確認
-4. 実装した機能の操作（`click`, `fill`, `evaluate_script`等）
-5. 各操作後に`take_snapshot`で状態変化を確認
-6. タイマー動作は`Bash(sleep N)`後にスナップショットで時間経過を確認
+**E2Eテスト作成手順**:
+1. `e2e/specs/`ディレクトリに新規テストファイルを作成（または既存ファイルに追加）
+2. 実装した機能の主要なユーザーフローをテストケースとして記述
+3. Page Object Modelパターンを使用して要素を識別
+4. `data-testid`属性を使用して要素を確実に特定
+5. 各操作後に状態変化を検証（expect文で確認）
+
+**E2Eテスト実行**:
+```bash
+# 全E2Eテスト実行
+npx playwright test
+
+# 特定のテストファイルのみ実行
+npx playwright test e2e/specs/[test-file].spec.ts
+
+# UIモードで実行（デバッグ用）
+npx playwright test --ui
+
+# ブラウザ表示モードで実行
+npx playwright test --headed
+```
 
 **検証完了の基準**:
-- 全ての単体テストが成功
-- Chrome DevToolsで実装した全機能が想定通り動作
+- 全てのユニットテストが成功
+- 全てのE2Eテストが成功
+- 実装した機能が想定通りに動作
 - エラーや予期しない動作が発生しない
 
 詳細な検証プロセスは`.kiro/specs/[feature-name]/design.md`の「フロントエンド実装の検証プロセス（必須）」を参照。
@@ -97,10 +112,11 @@ Task [番号]完了: [タスク名]
 - [変更したファイルと主要な変更点]
 
 ## テスト結果
-- 全[N]テストパス（[新規テスト名]含む）
-- 全[総数]テスト（既存含む）パス、リグレッションなし
+- 全[N]ユニットテストパス（[新規テスト名]含む）
+- 全[M]E2Eテストパス（[新規E2Eテスト名]含む）
+- 全テスト（既存含む）パス、リグレッションなし
 
-## Chrome DevTools検証完了
+## E2Eテスト検証完了
 1. ✅ [検証項目1]
 2. ✅ [検証項目2]
 ...
@@ -123,15 +139,15 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 タスク開始
   ↓
-TDD: テスト作成 (RED)
+TDD: ユニットテスト作成 (RED)
   ↓
 TDD: 実装 (GREEN)
   ↓
-TDD: npm test → 全テストパス確認
+TDD: npm test → 全ユニットテストパス確認
   ↓
-Chrome DevTools検証: 実機で動作確認
+E2Eテスト作成: ユーザーフローをテストケース化
   ↓
-検証結果記録: スクリーンショット・ログ保存
+E2Eテスト実行: npx playwright test → 全E2Eテストパス確認
   ↓
 tasks.md更新: [x] チェック
   ↓
@@ -145,6 +161,7 @@ Gitコミット: 詳細なコミットメッセージで記録
 - 問題発生時に容易にロールバック可能
 - レビュー時に変更内容が理解しやすい
 - 実装履歴が詳細に残る
+- E2Eテストにより実機動作が自動検証される
 
 ## Steering Configuration
 
