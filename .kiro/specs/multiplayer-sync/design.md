@@ -2,13 +2,13 @@
 
 ## 概要
 
-本機能は、既存のインメモリータイマー（multiplayer-game-timer Phase 1完了）に、マルチプレイヤー同期機能を追加します。Phase 1ではCosmos DB Table APIによる永続化とポーリング同期を実装し、Phase 2ではSignalR Serviceによるリアルタイム双方向通信（<1秒同期）を実装します。
+本機能は、既存のインメモリータイマー（multiplayer-game-timer Phase 1完了）に、Cosmos DB永続化とポーリング同期機能を追加します。バックエンド主導のタイマー管理により、複数デバイス間での状態共有を実現します。
 
 **対象ユーザー**: 複数デバイスからゲームタイマーを共有したいボードゲームプレイヤー
 
 **実現価値**:
 - ブラウザリロード後も状態復元可能
-- 複数デバイス間での状態共有（Phase 1: 手動リロード、Phase 2: リアルタイム）
+- 複数デバイス間での状態共有（5秒間隔ポーリング同期）
 - Azure無料層での完全無料運用
 
 **既存システムへの影響**:
@@ -17,14 +17,16 @@
 - 既存のUIとタイマーロジックは維持、同期機能を追加レイヤーとして実装
 
 ### 目標
-- Phase 1: Cosmos DB永続化と5秒ポーリング同期の実装
-- Phase 2: SignalR接続による1秒以内のリアルタイム同期の実装
-- Azure無料層制約内での安定動作（Cosmos DB 1000 RU/s、SignalR 20接続・20K msg/日）
+- Cosmos DB Table APIによる永続化と状態復元
+- 5秒間隔のポーリング同期による複数デバイス間の状態共有
+- バックエンド主導の時間計算による正確性と一貫性の保証
+- Azure無料層制約内での安定動作（Cosmos DB 1000 RU/s）
 
 ### 非目標
 - 認証・認可機能（無料層でのシンプル運用）
 - ゲーム履歴の保存（ステートレス設計）
-- リアルタイム更新の1秒未満保証（無料層の制約を考慮）
+- リアルタイム同期（SignalRは別仕様signalr-realtime-syncで実装）
+- 複雑なクエリや集計機能
 
 ## アーキテクチャ
 
@@ -42,8 +44,6 @@
 - UIとタイマーロジックは既存コードを最大限再利用
 
 ### 全体アーキテクチャ
-
-#### Phase 1: Cosmos DB統合（ポーリング同期）
 
 ```mermaid
 graph TB
@@ -64,29 +64,10 @@ graph TB
     style C fill:#f3e5f5
 ```
 
-#### Phase 2: SignalRリアルタイム同期
-
-```mermaid
-graph TB
-    A[Device A] <-->|WebSocket| D[SignalR Service]
-    B[Device B] <-->|WebSocket| D
-    C[Device C] <-->|WebSocket| D
-
-    D <-->|Negotiate & Events| E[Azure Functions]
-    E <-->|CRUD| F[Cosmos DB]
-
-    A -->|操作| E
-    E -->|Broadcast| D
-    D -->|Event| B
-    D -->|Event| C
-
-    style A fill:#e1f5fe
-    style B fill:#e1f5fe
-    style C fill:#e1f5fe
-    style D fill:#fce4ec
-    style E fill:#fff3e0
-    style F fill:#f3e5f5
-```
+**アーキテクチャの特徴**:
+- **バックエンド主導時間計算**: フロントエンドは時間を送信せず、バックエンドがturnStartedAtから経過時間を計算
+- **ETag楽観的ロック**: Cosmos DBのETagで競合検出、最大3回自動再試行
+- **5秒ポーリング同期**: フロントエンドが定期的にGET /api/gameで最新状態を取得
 
 ### 技術スタック調整
 
@@ -101,12 +82,8 @@ graph TB
   - 選定理由: Managed Functions（Static Web Apps統合）で必須
   - 代替案: なし（Azure環境での標準）
 
-- `@microsoft/signalr` (9.0.x): SignalRクライアント（Phase 2）
-  - 選定理由: リアルタイム双方向通信、自動再接続機能
-  - 代替案: WebSocket直接実装（再接続ロジック複雑化のため不採用）
-
 **既存技術スタックとの統合**:
-- React 19: SignalR HubConnectionをuseEffectで管理
+- React 19: useEffectでポーリングタイマー管理
 - TypeScript 5.9: Azure SDKの型定義を活用
 - Vite 7: 環境変数でAzure接続文字列を管理
 
@@ -137,30 +114,30 @@ graph TB
 - 獲得: 無料層での十分なRU/s、シンプルなデータアクセス、楽観的ロック
 - 犠牲: 複雑なクエリ機能、リレーショナルデータモデリング
 
-#### 決定2: Phase 1ポーリング → Phase 2 SignalR段階的移行
+#### 決定2: 5秒ポーリング間隔の選定
 
-**決定**: Phase 1でポーリング同期、Phase 2でSignalRリアルタイム同期の2段階実装
+**決定**: 5秒間隔のポーリング同期を採用
 
-**コンテキスト**: リアルタイム同期機能を実装するにあたり、段階的な検証とリスク軽減が必要
+**コンテキスト**: 複数デバイス間での状態同期頻度とAzure Functions実行コストのバランス
 
 **代替案**:
-1. SignalR直接実装: Phase 1なしでリアルタイム同期のみ実装
-2. WebSocket直接実装: SignalRを使わず低レベル実装
-3. Server-Sent Events (SSE): 片方向通信のみ
+1. 1秒ポーリング: より頻繁な同期だがAzure Functions実行回数増加
+2. 10秒ポーリング: コスト削減だがUX低下
+3. 可変間隔: アクティブ時1秒、非アクティブ時10秒（複雑度増加）
 
-**選定アプローチ**: 2段階移行（ポーリング → SignalR）
-- Phase 1: Cosmos DB統合 + 5秒ポーリング（手動リロード不要）
-- Phase 2: SignalR接続 + リアルタイムイベント配信（<1秒同期）
-- SignalR切断時はPhase 1ポーリングにフォールバック
+**選定アプローチ**: 5秒固定間隔
+- Azure Functions月100万リクエスト無料枠に余裕あり
+- ボードゲームタイマー用途として十分なレスポンス
+- シンプルな実装（可変間隔の複雑さ回避）
 
 **根拠**:
-- 段階的検証でリスク軽減（Cosmos DB統合を先行検証）
-- フォールバック機能による高可用性
-- 無料層制約（SignalR 20K msg/日）への対応
+- 無料層制約内での安定動作（月100万リクエスト = 約200回/秒まで可能）
+- ユーザー体験とコストのバランス
+- 実装シンプル性の維持
 
 **トレードオフ**:
-- 獲得: 段階的リスク軽減、フォールバック機能、無料層最適化
-- 犠牲: 実装工数増加（2段階開発）
+- 獲得: 無料層最適化、シンプル実装、十分なUX
+- 犠牲: 即座の同期ではない（リアルタイム同期はSignalR仕様で実現）
 
 #### 決定3: ETagによる楽観的ロック制御
 
@@ -262,39 +239,7 @@ sequenceDiagram
     D2->>D2: バックエンド時間でUI同期完了
 ```
 
-### フロー3: SignalRリアルタイム同期（Phase 2）
-
-```mermaid
-sequenceDiagram
-    participant D1 as Device 1
-    participant S as SignalR Service
-    participant F as Azure Functions
-    participant C as Cosmos DB
-    participant D2 as Device 2
-    participant D3 as Device 3
-
-    D1->>F: GET /api/negotiate
-    F->>S: Get Connection Info
-    S->>F: Connection URL + Token
-    F->>D1: Connection Info
-    D1->>S: WebSocket Connect
-    S->>D1: Connected
-
-    Note over D1: ターン切り替え操作
-    D1->>F: POST /api/switchTurn
-    F->>C: Update State
-    C->>F: Success
-    F->>S: Broadcast "TurnSwitched" Event
-    S->>D2: TurnSwitched Event
-    S->>D3: TurnSwitched Event
-
-    D2->>D2: UI即座に更新
-    D3->>D3: UI即座に更新
-
-    Note over D1,D3: <1秒以内に全デバイス同期完了
-```
-
-### フロー4: 一時停止/再開操作（Phase 1）
+### フロー3: 一時停止/再開操作
 
 ```mermaid
 sequenceDiagram
@@ -338,9 +283,7 @@ sequenceDiagram
 | 1.3 | ゲーム状態保存 | GameStateService, UpdateGameFunction | POST /api/updateGame | フロー2 |
 | 2.1 | 5秒ポーリング | PollingService (React useEffect) | GET /api/game | フロー2 |
 | 3.1-3.3 | 楽観的ロック | GameStateService (ETag処理) | Cosmos DB条件付き更新 | フロー2 |
-| 4.1 | SignalR接続 | SignalRService, NegotiateFunction | GET /api/negotiate | フロー3 |
-| 4.3 | イベント配信 | SignalRHubService | SignalRブロードキャスト | フロー3 |
-| 5.1 | 自動再接続 | SignalRService (withAutomaticReconnect) | SignalR再接続ロジック | - |
+| 4.1 | 一時停止/再開 | GameStateService, PauseGameFunction, ResumeGameFunction | POST /api/pause, POST /api/resume | フロー3 |
 
 ## コンポーネントとインターフェース
 
@@ -431,39 +374,9 @@ type GameStateError =
 - **並行制御**: 楽観的ロック（ETag一致確認）
 - **時間計算**: バックエンドがturnStartedAtから現在時刻で計算
 
-#### SignalRHubService (Phase 2)
-
-**責任と境界**
-- **主要責任**: SignalR Serviceを通じたイベントブロードキャスト
-- **ドメイン境界**: リアルタイムイベント配信
-- **データ所有**: なし（イベント配信のみ）
-- **トランザクション境界**: なし（イベント送信）
-
-**依存関係**
-- **Inbound**: SwitchTurnFunction, UpdateTimerFunction
-- **Outbound**: Azure SignalR Service
-- **External**: SignalR Service Free Tier（20接続, 20K msg/日）
-
-**契約定義**
-
-**イベント契約**:
-- **Published Events**:
-  - `TurnSwitched`: { activePlayerIndex: number } - ターン切り替え時
-  - `TimerUpdated`: { playerIndex: number, elapsedSeconds: number } - タイマー更新時
-  - `GameReset`: { gameState: GameState } - ゲームリセット時
-  - `PlayersUpdated`: { playerCount: number, players: Player[] } - プレイヤー変更時
-
-- **配信順序**: 保証なし（イベント独立性前提）
-- **配信保証**: At-least-once（SignalR Service仕様）
-
-**API契約**:
-| メソッド | エンドポイント | リクエスト | レスポンス | エラー |
-|----------|----------------|------------|------------|--------|
-| POST | /api/messages | EventPayload | 200 OK | 500, 503 |
-
 ### フロントエンド層（React）
 
-#### PollingService (Phase 1)
+#### PollingService
 
 **責任と境界**
 - **主要責任**: 5秒ごとのバックエンド計算済み時間の同期
@@ -492,21 +405,20 @@ const [serverTime, setServerTime] = useState(0);     // バックエンド計算
 const [displayTime, setDisplayTime] = useState(0);   // 表示用時間（滑らか）
 const [lastSyncTime, setLastSyncTime] = useState(Date.now());
 
+// 5秒ごとにバックエンドから最新状態を取得
 useEffect(() => {
-  if (!signalRConnected) {
-    const intervalId = setInterval(async () => {
-      const response = await fetch('/api/game');
-      const state = await response.json();
+  const intervalId = setInterval(async () => {
+    const response = await fetch('/api/game');
+    const state = await response.json();
 
-      // バックエンド計算済みの時間を基準に設定
-      const serverElapsed = state.players[activePlayerIndex].elapsedSeconds;
-      setServerTime(serverElapsed);
-      setLastSyncTime(Date.now());
-    }, 5000);
+    // バックエンド計算済みの時間を基準に設定
+    const serverElapsed = state.players[activePlayerIndex].elapsedSeconds;
+    setServerTime(serverElapsed);
+    setLastSyncTime(Date.now());
+  }, 5000);
 
-    return () => clearInterval(intervalId);
-  }
-}, [signalRConnected, activePlayerIndex]);
+  return () => clearInterval(intervalId);
+}, [activePlayerIndex]);
 
 // 表示用ローカルタイマー（滑らかなUI更新のみ）
 useEffect(() => {
@@ -522,52 +434,6 @@ useEffect(() => {
   return () => clearInterval(displayTimer);
 }, [serverTime, lastSyncTime, isPaused]);
 ```
-
-#### SignalRService (Phase 2)
-
-**責任と境界**
-- **主要責任**: SignalR接続管理とイベントリスナー登録
-- **ドメイン境界**: リアルタイム双方向通信
-- **データ所有**: HubConnection インスタンス
-
-**依存関係**
-- **Outbound**: Azure SignalR Service (`@microsoft/signalr`)
-- **External**: SignalR Service Free Tier
-
-**外部依存関係調査** (@microsoft/signalr 9.0):
-- HubConnectionBuilder API: 接続構築、自動再接続設定
-- withAutomaticReconnect([0, 2000, 5000, 10000]): 再接続遅延設定
-- on(eventName, callback): イベントリスナー登録
-- invoke(methodName, ...args): サーバーメソッド呼び出し
-- 接続状態: Disconnected, Connecting, Connected, Reconnecting
-- エラー型: HubException, TimeoutError
-
-**契約定義**
-
-```typescript
-interface SignalRService {
-  // SignalR接続開始
-  connect(): Promise<Result<void, SignalRError>>;
-
-  // イベントリスナー登録
-  on(eventName: SignalREventType, callback: (payload: any) => void): void;
-
-  // 接続状態確認
-  getConnectionState(): ConnectionState;
-
-  // 切断
-  disconnect(): Promise<void>;
-}
-
-type SignalREventType = 'TurnSwitched' | 'TimerUpdated' | 'GameReset' | 'PlayersUpdated';
-type ConnectionState = 'Disconnected' | 'Connecting' | 'Connected' | 'Reconnecting';
-type SignalRError = { type: 'ConnectionFailed'; message: string };
-```
-
-**自動再接続戦略**:
-- 再接続遅延: [0ms, 2s, 5s, 10s]（最大4回試行）
-- 再接続成功時: GET /api/gameで最新状態同期
-- 再接続失敗時: PollingServiceにフォールバック
 
 ## データモデル
 
@@ -622,56 +488,6 @@ interface Player {
 - 更新時に前回取得したETagを指定
 - ETag不一致時はRestError (statusCode: 412)
 
-### データ契約とイベントスキーマ（Phase 2）
-
-#### SignalRイベントスキーマ
-
-```typescript
-// ターン切り替えイベント
-interface TurnSwitchedEvent {
-  eventType: 'TurnSwitched';
-  payload: {
-    activePlayerIndex: number;
-  };
-}
-
-// タイマー更新イベント
-interface TimerUpdatedEvent {
-  eventType: 'TimerUpdated';
-  payload: {
-    playerIndex: number;
-    elapsedSeconds: number;
-  };
-}
-
-// ゲームリセットイベント
-interface GameResetEvent {
-  eventType: 'GameReset';
-  payload: {
-    gameState: GameState;
-  };
-}
-
-// プレイヤー更新イベント
-interface PlayersUpdatedEvent {
-  eventType: 'PlayersUpdated';
-  payload: {
-    playerCount: number;
-    players: Player[];
-  };
-}
-
-type SignalREvent = TurnSwitchedEvent | TimerUpdatedEvent | GameResetEvent | PlayersUpdatedEvent;
-```
-
-**スキーマバージョニング**:
-- 現状: バージョン管理なし（Phase 1実装）
-- 将来: eventTypeにバージョン追加（例: "TurnSwitched.v2"）
-
-**後方互換性**:
-- 新フィールド追加時: オプショナルプロパティで追加
-- 既存フィールド削除時: 非推奨マーク → 次バージョンで削除
-
 ## エラーハンドリング
 
 ### エラー戦略
@@ -687,12 +503,11 @@ type SignalREvent = TurnSwitchedEvent | TimerUpdatedEvent | GameResetEvent | Pla
 
 #### システムエラー (5xx)
 - **500 Internal Server Error**: Azure Functions障害 → インメモリーモードにフォールバック
-- **503 Service Unavailable**: Cosmos DB/SignalR一時停止 → ローカルストレージ保存、ポーリング再開
+- **503 Service Unavailable**: Cosmos DB一時停止 → ローカルストレージ保存、ポーリング再開
 - **Timeout**: API応答遅延 → 5秒タイムアウト後エラー表示、再試行ボタン提供
 
 #### ビジネスロジックエラー (422)
 - **楽観的ロック競合**: 3回再試行後も失敗 → 手動リロード促進メッセージ
-- **SignalR切断**: 自動再接続（0ms, 2s, 5s, 10s遅延）→ 失敗時ポーリング切り替え
 
 **エラーフロー** (楽観的ロック競合時):
 
@@ -715,17 +530,17 @@ graph TB
 **エラートラッキング**: Azure Application Insights統合
 - エラー率: HTTP 5xx応答の割合
 - 楽観的ロック競合率: 412エラーの頻度
-- SignalR切断率: 再接続試行回数
+- ポーリング失敗率: GET /api/gameエラー頻度
 
 **ログ出力**:
 - Info: ゲーム状態取得、更新成功
-- Warning: 楽観的ロック競合、SignalR再接続試行
-- Error: Cosmos DB接続失敗、SignalR接続失敗
+- Warning: 楽観的ロック競合、ポーリングタイムアウト
+- Error: Cosmos DB接続失敗、API応答エラー
 
 **ヘルスモニタリング**:
 - Cosmos DB RU/s使用率（目標: <100 RU/s、上限: 1000 RU/s）
-- SignalRメッセージ数（目標: <10K/日、上限: 20K/日）
 - Azure Functions実行回数（目標: <50K/月、上限: 100万/月）
+- ポーリング成功率（目標: >95%）
 
 ## テスト戦略
 

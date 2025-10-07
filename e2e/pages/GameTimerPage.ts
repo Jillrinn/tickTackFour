@@ -27,6 +27,14 @@ export class GameTimerPage {
   readonly pauseResumeButton: Locator;
   readonly resetButton: Locator;
 
+  // Task 2-6: 新規UIコンポーネント
+  readonly stickyHeader: Locator;
+  readonly stickyHeaderInfo: Locator;
+  readonly playerCountDropdown: Locator;
+  readonly timerModeToggle: Locator;
+  readonly primaryControls: Locator;
+  readonly settingsControls: Locator;
+
   constructor(page: Page) {
     this.page = page;
     this.gameTimer = page.locator('.game-timer');
@@ -45,6 +53,14 @@ export class GameTimerPage {
     this.countdownSecondsInput = page.locator('.countdown-control input[type="number"]');
     this.pauseResumeButton = page.locator('button:has-text("一時停止"), button:has-text("再開")');
     this.resetButton = page.locator('button:has-text("リセット")');
+
+    // Task 2-6: 新規UIコンポーネント
+    this.stickyHeader = page.getByTestId('sticky-header');
+    this.stickyHeaderInfo = page.getByTestId('active-player-info');
+    this.playerCountDropdown = page.getByTestId('player-count-dropdown');
+    this.timerModeToggle = page.getByTestId('timer-mode-toggle');
+    this.primaryControls = page.getByTestId('primary-controls');
+    this.settingsControls = page.getByTestId('settings-controls');
   }
 
   /**
@@ -64,20 +80,10 @@ export class GameTimerPage {
   }
 
   /**
-   * プレイヤー数を変更
+   * プレイヤー数を変更（Task 3: ドロップダウンに更新）
    */
   async setPlayerCount(count: 4 | 5 | 6): Promise<void> {
-    switch (count) {
-      case 4:
-        await this.player4Button.click();
-        break;
-      case 5:
-        await this.player5Button.click();
-        break;
-      case 6:
-        await this.player6Button.click();
-        break;
-    }
+    await this.playerCountDropdown.selectOption({ value: count.toString() });
     // プレイヤーカード数が変更されるまで待機
     await this.page.waitForFunction(
       (expectedCount) => {
@@ -110,25 +116,32 @@ export class GameTimerPage {
   }
 
   /**
-   * タイマーモードをカウントアップに設定
+   * タイマーモードをカウントアップに設定（Task 4: トグルスイッチに更新）
    */
   async setTimerModeCountUp(): Promise<void> {
-    await this.countUpButton.click();
+    const isChecked = await this.timerModeToggle.isChecked();
+    if (isChecked) {
+      // トグルスイッチのラベル要素（親）をクリック
+      const toggleLabel = this.timerModeToggle.locator('..');
+      await toggleLabel.click({ force: true });
+    }
   }
 
   /**
-   * タイマーモードをカウントダウンに設定
+   * タイマーモードをカウントダウンに設定（Task 4: トグルスイッチに更新）
    */
   async setTimerModeCountDown(seconds?: number): Promise<void> {
-    // カウントダウンボタンをクリックして入力フィールドを表示
-    await this.countDownButton.click();
+    const isChecked = await this.timerModeToggle.isChecked();
+    if (!isChecked) {
+      // トグルスイッチのラベル要素（親）をクリック
+      const toggleLabel = this.timerModeToggle.locator('..');
+      await toggleLabel.click({ force: true });
+    }
 
     // 秒数が指定されている場合は入力
     if (seconds !== undefined) {
       await this.countdownSecondsInput.waitFor({ state: 'visible' });
       await this.countdownSecondsInput.fill(seconds.toString());
-      // 再度カウントダウンボタンをクリックして適用
-      await this.countDownButton.click();
     }
   }
 
@@ -245,5 +258,47 @@ export class GameTimerPage {
     const playerCard = this.getPlayerCardByIndex(index);
     const setActiveButton = playerCard.locator('button:has-text("アクティブに設定")');
     return await setActiveButton.isDisabled();
+  }
+
+  /**
+   * プレイヤー人数ドロップダウンが無効化されているかを確認（Task 3）
+   */
+  async isPlayerCountDropdownDisabled(): Promise<boolean> {
+    return await this.playerCountDropdown.isDisabled();
+  }
+
+  /**
+   * カウントモードトグルが無効化されているかを確認（Task 4）
+   */
+  async isTimerModeToggleDisabled(): Promise<boolean> {
+    return await this.timerModeToggle.isDisabled();
+  }
+
+  /**
+   * 固定ヘッダーが表示されているかを確認（Task 2）
+   */
+  async isStickyHeaderVisible(): Promise<boolean> {
+    return await this.stickyHeader.isVisible();
+  }
+
+  /**
+   * 固定ヘッダーのアクティブプレイヤー情報テキストを取得（Task 2）
+   */
+  async getStickyHeaderInfoText(): Promise<string> {
+    return await this.stickyHeaderInfo.textContent() || '';
+  }
+
+  /**
+   * カウントダウン設定UIが表示されているかを確認（Task 4）
+   */
+  async isCountdownControlVisible(): Promise<boolean> {
+    return await this.countdownSecondsInput.isVisible();
+  }
+
+  /**
+   * ビューポートサイズを変更（Task 6: レスポンシブUI検証）
+   */
+  async setViewportSize(width: number, height: number = 800): Promise<void> {
+    await this.page.setViewportSize({ width, height });
   }
 }
