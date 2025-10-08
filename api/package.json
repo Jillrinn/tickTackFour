@@ -2,7 +2,6 @@
   "name": "ticktackfour-api",
   "version": "1.0.0",
   "description": "Azure Functions backend for TickTackFour multiplayer game timer",
-  "main": "src/functions/*.js",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
