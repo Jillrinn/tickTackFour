@@ -35,10 +35,10 @@ async function getGame(request, context) {
 
     return {
       status: 200,
+      jsonBody: response,
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(response)
+      }
     };
   } catch (error) {
     context.error('GET /api/game - エラー発生', error);
@@ -51,10 +51,10 @@ async function getGame(request, context) {
 
     return {
       status: 500,
+      jsonBody: errorResponse,
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(errorResponse)
+      }
     };
   }
 }
