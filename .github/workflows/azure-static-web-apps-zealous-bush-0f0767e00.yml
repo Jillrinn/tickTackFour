@@ -38,7 +38,6 @@ jobs:
           app_build_command: "npm run build"
           output_location: "dist"
           api_location: "/api"
-          api_build_command: "npm run build"
         env:
           FUNCTIONS_WORKER_RUNTIME: node
           AzureWebJobsFeatureFlags: EnableWorkerIndexing
