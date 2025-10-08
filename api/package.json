@@ -2,7 +2,7 @@
   "name": "ticktackfour-api",
   "version": "1.0.0",
   "description": "Azure Functions backend for TickTackFour multiplayer game timer",
-  "main": "dist/functions/*.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
