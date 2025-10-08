@@ -28,6 +28,12 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 ## Development Guidelines
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
 - **Commit messages must be written in Japanese** (コミットメッセージは日本語で記述すること)
+- **Code Exploration with Serena MCP**: Always use Serena MCP tools for code navigation and exploration
+  - Use `mcp__serena__get_symbols_overview` to understand file structure
+  - Use `mcp__serena__find_symbol` to locate functions, classes, and methods
+  - Use `mcp__serena__search_for_pattern` for pattern-based searches
+  - Use `mcp__serena__find_referencing_symbols` to trace dependencies
+  - Prefer Serena's semantic tools over basic grep/find commands for code analysis
 
 ## Workflow
 
