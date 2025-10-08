@@ -1,7 +1,6 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { getGameState } from '../services/gameStateService';
-import { calculateAllPlayerTimes } from '../services/timeCalculation';
-import { GameStateWithTime, ApiErrorResponse } from '../models/apiTypes';
+const { app } = require('@azure/functions');
+const { getGameState } = require('../services/gameStateService');
+const { calculateAllPlayerTimes } = require('../services/timeCalculation');
 
 /**
  * GET /api/game
@@ -11,10 +10,7 @@ import { GameStateWithTime, ApiErrorResponse } from '../models/apiTypes';
  * - 200: GameStateWithTime（計算済み経過時間とETag含む）
  * - 500: エラー発生時（Cosmos DB接続エラー等）
  */
-async function getGame(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<HttpResponseInit> {
+async function getGame(request, context) {
   try {
     context.log('GET /api/game - ゲーム状態取得開始');
 
@@ -25,7 +21,7 @@ async function getGame(
     const calculatedTimes = calculateAllPlayerTimes(result.state);
 
     // レスポンスを生成
-    const response: GameStateWithTime = {
+    const response = {
       ...result.state,
       calculatedTimes,
       etag: result.etag
@@ -47,7 +43,7 @@ async function getGame(
   } catch (error) {
     context.error('GET /api/game - エラー発生', error);
 
-    const errorResponse: ApiErrorResponse = {
+    const errorResponse = {
       error: 'InternalServerError',
       message: 'ゲーム状態の取得に失敗しました',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -70,3 +66,5 @@ app.http('getGame', {
   route: 'game',
   handler: getGame
 });
+
+module.exports = { getGame };

@@ -1,23 +1,23 @@
-import { RestError } from '@azure/data-tables';
-import { GameState } from '../models/gameState';
-import { GameStateResult } from './gameStateService';
+const { RestError } = require('@azure/data-tables');
 
 /**
  * 指定されたミリ秒数待機する
+ * @param {number} ms
+ * @returns {Promise<void>}
  */
-function sleep(ms: number): Promise<void> {
+function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
  * ETag楽観的ロック再試行メカニズム
  *
- * @param state 更新するゲーム状態
- * @param etag 現在のETag
- * @param updateFn 更新関数（state, etagを受け取りGameStateResultを返す）
- * @param getLatestFn 最新状態取得関数（GameStateResultを返す）
- * @param maxRetries 最大再試行回数（デフォルト: 3）
- * @returns 更新結果
+ * @param {Object} state - 更新するゲーム状態
+ * @param {string} etag - 現在のETag
+ * @param {Function} updateFn - 更新関数（state, etagを受け取りGameStateResultを返す）
+ * @param {Function} getLatestFn - 最新状態取得関数（GameStateResultを返す）
+ * @param {number} [maxRetries=3] - 最大再試行回数
+ * @returns {Promise<Object>} 更新結果
  * @throws 3回再試行後も失敗した場合、または412以外のエラーの場合
  *
  * 再試行ロジック:
@@ -30,13 +30,13 @@ function sleep(ms: number): Promise<void> {
  * 4. 3回失敗後はConflictエラーをスロー
  * 5. 412以外のエラーは即座にスロー
  */
-export async function retryUpdateWithETag(
-  state: GameState,
-  etag: string,
-  updateFn: (state: GameState, etag: string) => Promise<GameStateResult>,
-  getLatestFn: () => Promise<GameStateResult>,
-  maxRetries: number = 3
-): Promise<GameStateResult> {
+async function retryUpdateWithETag(
+  state,
+  etag,
+  updateFn,
+  getLatestFn,
+  maxRetries = 3
+) {
   let currentETag = etag;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -68,3 +68,7 @@ export async function retryUpdateWithETag(
   // この行には到達しないはず（ループ内でreturnまたはthrowするため）
   throw new Error('Update failed after 3 retries due to conflicts');
 }
+
+module.exports = {
+  retryUpdateWithETag
+};

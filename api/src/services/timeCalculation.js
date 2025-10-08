@@ -1,18 +1,16 @@
-import { GameState } from '../models/gameState';
-
 /**
  * プレイヤーの経過時間を計算
  *
- * @param state ゲーム状態
- * @param playerIndex プレイヤーインデックス
- * @returns 経過時間（秒）
+ * @param {Object} state - ゲーム状態
+ * @param {number} playerIndex - プレイヤーインデックス
+ * @returns {number} 経過時間（秒）
  *
  * 計算ロジック:
  * 1. 一時停止中の場合 → 累積時間のみ返す
  * 2. 非アクティブプレイヤーの場合 → 累積時間のみ返す
  * 3. アクティブプレイヤー AND 一時停止していない → 累積時間 + (現在時刻 - ターン開始時刻)
  */
-export function calculateElapsedTime(state: GameState, playerIndex: number): number {
+function calculateElapsedTime(state, playerIndex) {
   const player = state.players[playerIndex];
   const accumulatedSeconds = player.accumulatedSeconds;
 
@@ -43,9 +41,14 @@ export function calculateElapsedTime(state: GameState, playerIndex: number): num
 /**
  * 全プレイヤーの経過時間を計算
  *
- * @param state ゲーム状態
- * @returns プレイヤーごとの経過時間配列
+ * @param {Object} state - ゲーム状態
+ * @returns {number[]} プレイヤーごとの経過時間配列
  */
-export function calculateAllPlayerTimes(state: GameState): number[] {
+function calculateAllPlayerTimes(state) {
   return state.players.map((_, index) => calculateElapsedTime(state, index));
 }
+
+module.exports = {
+  calculateElapsedTime,
+  calculateAllPlayerTimes
+};

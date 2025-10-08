@@ -1,30 +1,28 @@
-import { RestError } from '@azure/data-tables';
-import { getTableClient } from './cosmosClient';
-import {
-  GameState,
-  GameStateEntity,
+const { RestError } = require('@azure/data-tables');
+const { getTableClient } = require('./cosmosClient');
+const {
   createDefaultGameState,
   toEntity,
   fromEntity
-} from '../models/gameState';
+} = require('../models/gameState');
 
 /**
  * ゲーム状態取得結果
+ * @typedef {Object} GameStateResult
+ * @property {Object} state
+ * @property {string} etag
  */
-export interface GameStateResult {
-  state: GameState;
-  etag: string;
-}
 
 /**
  * ゲーム状態を取得（存在しない場合はデフォルト状態を作成）
+ * @returns {Promise<GameStateResult>}
  */
-export async function getGameState(): Promise<GameStateResult> {
+async function getGameState() {
   const client = getTableClient();
 
   try {
     // 既存のゲーム状態を取得
-    const entity = await client.getEntity<GameStateEntity>('game', 'default');
+    const entity = await client.getEntity('game', 'default');
 
     return {
       state: fromEntity(entity),
@@ -44,8 +42,9 @@ export async function getGameState(): Promise<GameStateResult> {
 
 /**
  * デフォルトゲーム状態を作成
+ * @returns {Promise<GameStateResult>}
  */
-export async function createGameState(): Promise<GameStateResult> {
+async function createGameState() {
   const client = getTableClient();
   const defaultState = createDefaultGameState();
   const entity = toEntity(defaultState);
@@ -60,11 +59,11 @@ export async function createGameState(): Promise<GameStateResult> {
 
 /**
  * ゲーム状態を更新（ETag楽観的ロック）
+ * @param {Object} state
+ * @param {string} etag
+ * @returns {Promise<GameStateResult>}
  */
-export async function updateGameState(
-  state: GameState,
-  etag: string
-): Promise<GameStateResult> {
+async function updateGameState(state, etag) {
   const client = getTableClient();
   const entity = toEntity(state);
 
@@ -75,3 +74,9 @@ export async function updateGameState(
     etag: response.etag || ''
   };
 }
+
+module.exports = {
+  getGameState,
+  createGameState,
+  updateGameState
+};

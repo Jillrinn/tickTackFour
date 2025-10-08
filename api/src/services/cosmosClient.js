@@ -1,13 +1,12 @@
-import { TableClient } from '@azure/data-tables';
+const { TableClient } = require('@azure/data-tables');
 
 /**
  * Cosmos DB設定の検証結果
+ * @typedef {Object} CosmosDBConfigValidation
+ * @property {boolean} isValid
+ * @property {string} [connectionString]
+ * @property {string} [error]
  */
-export interface CosmosDBConfigValidation {
-  isValid: boolean;
-  connectionString?: string;
-  error?: string;
-}
 
 /**
  * Cosmos DB接続文字列の検証
@@ -16,7 +15,7 @@ export interface CosmosDBConfigValidation {
  *
  * @returns {CosmosDBConfigValidation} 検証結果
  */
-export function validateCosmosDBConfig(): CosmosDBConfigValidation {
+function validateCosmosDBConfig() {
   const connectionString = process.env.CosmosDBConnectionString;
 
   if (!connectionString || connectionString.trim() === '') {
@@ -41,7 +40,7 @@ export function validateCosmosDBConfig(): CosmosDBConfigValidation {
  * @returns {TableClient} GameStateテーブルのTableClientインスタンス
  * @throws {Error} 接続文字列が未設定の場合
  */
-export function getTableClient(): TableClient {
+function getTableClient() {
   const validation = validateCosmosDBConfig();
 
   if (!validation.isValid) {
@@ -50,9 +49,14 @@ export function getTableClient(): TableClient {
 
   // GameStateテーブルのTableClientを作成
   const client = TableClient.fromConnectionString(
-    validation.connectionString!,
+    validation.connectionString,
     'GameState'
   );
 
   return client;
 }
+
+module.exports = {
+  validateCosmosDBConfig,
+  getTableClient
+};
