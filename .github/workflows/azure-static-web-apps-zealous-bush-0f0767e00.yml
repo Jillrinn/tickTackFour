@@ -41,7 +41,7 @@ jobs:
         env:
           FUNCTIONS_WORKER_RUNTIME: node
           AzureWebJobsFeatureFlags: EnableWorkerIndexing
-          CosmosDBConnectionString: COSMOSDBCONNECTIONSTRING
+          CosmosDBConnectionString:  ${{ secrets.COSMOSDBCONNECTIONSTRING }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
