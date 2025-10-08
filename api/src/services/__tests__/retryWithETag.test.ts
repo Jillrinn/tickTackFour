@@ -135,7 +135,7 @@ describe('ETag Retry Mechanism', () => {
         etag: 'latest-etag'
       });
 
-      // Act
+      // Act & Assert
       const promise = retryUpdateWithETag(
         mockState,
         'initial-etag',
@@ -143,11 +143,14 @@ describe('ETag Retry Mechanism', () => {
         mockGetLatestFn
       );
 
-      // タイマーを進める
+      // Promiseとタイマーを同時に処理
+      const resultPromise = expect(promise).rejects.toThrow('Update failed after 3 retries due to conflicts');
+
+      // 全てのタイマーを実行
       await jest.runAllTimersAsync();
 
-      // Assert
-      await expect(promise).rejects.toThrow('Update failed after 3 retries due to conflicts');
+      // Promiseの完了を待つ
+      await resultPromise;
 
       expect(mockUpdateFn).toHaveBeenCalledTimes(3);
       expect(mockGetLatestFn).toHaveBeenCalledTimes(2); // 最後の失敗後はgetLatestを呼ばない
@@ -187,8 +190,14 @@ describe('ETag Retry Mechanism', () => {
         mockGetLatestFn
       );
 
+      // Promiseとタイマーを同時に処理
+      const resultPromise = expect(promise).rejects.toThrow();
+
+      // 全てのタイマーを実行
       await jest.runAllTimersAsync();
-      await expect(promise).rejects.toThrow();
+
+      // Promiseの完了を待つ
+      await resultPromise;
 
       // Assert
       expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 100);
