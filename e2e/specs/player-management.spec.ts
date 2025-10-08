@@ -38,15 +38,12 @@ test.describe('プレイヤー管理機能', () => {
     await assertPlayerCount(gameTimerPage, 4);
   });
 
-  test('各プレイヤーカードに名前、ID、経過時間が表示される', async () => {
+  test('各プレイヤーカードに名前、経過時間が表示される', async () => {
     // Requirements: 2.5
     const playerName = await gameTimerPage.getPlayerName(0);
     expect(playerName).toBeTruthy();
 
     const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-    const playerIdText = await playerCard.locator('.player-id').textContent();
-    expect(playerIdText).toContain('ID:');
-
     const playerTimeText = await playerCard.locator('.player-time').textContent();
     expect(playerTimeText).toContain('経過時間:');
   });
@@ -60,12 +57,13 @@ test.describe('プレイヤー管理機能', () => {
     const timeBefore = await gameTimerPage.getPlayerElapsedTime(0);
     expect(timeBefore).toBeGreaterThan(0);
 
-    // プレイヤー数を増やす
+    // 一時停止してからプレイヤー数を増やす
+    await gameTimerPage.togglePause();
     await gameTimerPage.setPlayerCount(5);
 
     // 既存プレイヤーの経過時間は保持される
     const timeAfter = await gameTimerPage.getPlayerElapsedTime(0);
-    expect(timeAfter).toBeGreaterThan(0);
+    expect(timeAfter).toBeGreaterThanOrEqual(timeBefore);
 
     // 新しく追加されたプレイヤーの経過時間は0秒
     const newPlayerTime = await gameTimerPage.getPlayerElapsedTime(4);

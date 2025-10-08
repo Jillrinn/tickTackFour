@@ -105,14 +105,14 @@ test.describe('アクティブプレイヤー操作機能', () => {
 
   test('タイムアウト時にtimeoutクラスが付与される', async () => {
     // Requirements: 4.7
-    // カウントダウンモードで3秒に設定
-    await gameTimerPage.setTimerModeCountDown(3);
+    // カウントダウンモードで2秒に設定
+    await gameTimerPage.setTimerModeCountDown(2);
 
     // プレイヤー0をアクティブに設定
     await gameTimerPage.setPlayerActive(0);
 
-    // タイムアウトまで待機
-    await gameTimerPage.page.waitForTimeout(4000);
+    // タイムアウトまで待機（2秒 + 余裕）
+    await gameTimerPage.page.waitForTimeout(3000);
 
     // タイムアウト状態を確認（timeoutクラスが付与されている）
     const isTimedOut = await gameTimerPage.isPlayerTimedOut(0);

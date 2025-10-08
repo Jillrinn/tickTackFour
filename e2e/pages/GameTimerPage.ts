@@ -129,19 +129,46 @@ export class GameTimerPage {
 
   /**
    * タイマーモードをカウントダウンに設定（Task 4: トグルスイッチに更新）
+   *
+   * 重要: 秒数を指定する場合、以下の手順で設定されます：
+   * 1. 一度カウントアップに切り替え（秒数入力UIを非表示）
+   * 2. カウントダウンに切り替え（デフォルト600秒で初期化）
+   * 3. 秒数入力フィールドに値を設定
+   * 4. 再度カウントアップに切り替え
+   * 5. 再度カウントダウンに切り替え（指定秒数で初期化）
    */
   async setTimerModeCountDown(seconds?: number): Promise<void> {
-    const isChecked = await this.timerModeToggle.isChecked();
-    if (!isChecked) {
-      // トグルスイッチのラベル要素（親）をクリック
+    if (seconds !== undefined) {
+      // カスタム秒数を設定する場合は、一度カウントアップに戻してから再設定
+      const isChecked = await this.timerModeToggle.isChecked();
+
+      // カウントアップに戻す
+      if (isChecked) {
+        const toggleLabel = this.timerModeToggle.locator('..');
+        await toggleLabel.click({ force: true });
+        await this.page.waitForTimeout(100);
+      }
+
+      // カウントダウンに切り替え
       const toggleLabel = this.timerModeToggle.locator('..');
       await toggleLabel.click({ force: true });
-    }
-
-    // 秒数が指定されている場合は入力
-    if (seconds !== undefined) {
       await this.countdownSecondsInput.waitFor({ state: 'visible' });
       await this.countdownSecondsInput.fill(seconds.toString());
+
+      // 再度カウントアップに戻す
+      await toggleLabel.click({ force: true });
+      await this.page.waitForTimeout(100);
+
+      // 最終的にカウントダウンに設定（指定秒数で初期化される）
+      await toggleLabel.click({ force: true });
+      await this.page.waitForTimeout(100);
+    } else {
+      // 秒数指定なしの場合は単純に切り替え
+      const isChecked = await this.timerModeToggle.isChecked();
+      if (!isChecked) {
+        const toggleLabel = this.timerModeToggle.locator('..');
+        await toggleLabel.click({ force: true });
+      }
     }
   }
 

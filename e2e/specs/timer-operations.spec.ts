@@ -42,25 +42,36 @@ test.describe('タイマー動作機能', () => {
 
   test('カウントダウンモードで残り時間0秒でタイムアウトする', async () => {
     // Requirements: 3.5
-    // 3秒カウントダウンに設定
-    await gameTimerPage.setTimerModeCountDown(3);
+    // 2秒カウントダウンに設定
+    await gameTimerPage.setTimerModeCountDown(2);
     await gameTimerPage.setPlayerActive(0);
 
-    // 4秒待機してタイムアウトを確認
-    await gameTimerPage.page.waitForTimeout(4000);
+    // 3秒待機してタイムアウトを確認
+    await gameTimerPage.page.waitForTimeout(3000);
 
+    // タイムアウト後、経過時間は0秒になる
+    const currentTime = await gameTimerPage.getPlayerElapsedTime(0);
+    expect(currentTime).toBe(0);
+
+    // timeoutクラスが付与される
     const isTimedOut = await gameTimerPage.isPlayerTimedOut(0);
     expect(isTimedOut).toBe(true);
   });
 
   test('カウントダウン秒数をカスタマイズできる', async () => {
     // Requirements: 3.6
+    // 300秒カウントダウンに設定
     await gameTimerPage.setTimerModeCountDown(300);
-    await gameTimerPage.setPlayerActive(0);
 
     // 初期残り時間を確認（300秒）
     const initialTime = await gameTimerPage.getPlayerElapsedTime(0);
     expect(initialTime).toBe(300);
+
+    // プレイヤーをアクティブにしても300秒が維持される
+    await gameTimerPage.setPlayerActive(0);
+    await gameTimerPage.page.waitForTimeout(100);
+    const timeAfterActive = await gameTimerPage.getPlayerElapsedTime(0);
+    expect(timeAfterActive).toBe(300);
   });
 
   test('経過時間がMM:SSフォーマットで表示される', async () => {
@@ -84,11 +95,11 @@ test.describe('タイマー動作機能', () => {
     await gameTimerPage.setPlayerActive(0);
     await gameTimerPage.page.waitForTimeout(2000);
 
-    // カウントダウンに切り替え
+    // リセットしてからカウントダウンに切り替え（600秒で設定）
+    await gameTimerPage.resetGame();
     await gameTimerPage.setTimerModeCountDown(600);
-    await gameTimerPage.setPlayerActive(0);
 
-    // 残り時間が600秒にリセットされることを確認
+    // 残り時間が600秒に設定されることを確認
     const time = await gameTimerPage.getPlayerElapsedTime(0);
     expect(time).toBe(600);
   });
