@@ -43,7 +43,6 @@ describe('GameTimer - UI簡素化', () => {
     render(<GameTimer />);
 
     // プレイヤーカードの数で分かる（デフォルト4人）
-    const playerCards = screen.getAllByRole('listitem');
     // プレイヤーカードのみをカウント（他のlistitemを除外）
     const playerNameInputs = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
     expect(playerNameInputs).toHaveLength(4);

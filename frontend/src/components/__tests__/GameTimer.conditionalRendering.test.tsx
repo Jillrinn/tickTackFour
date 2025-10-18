@@ -62,7 +62,6 @@ describe('GameTimer - 条件付きレンダリング', () => {
   });
 
   test('カウントアップモード時にカウントダウン専用設定項目を一切表示しない', async () => {
-    const user = userEvent.setup();
     render(<GameTimer />);
 
     // 初期状態はカウントアップモード

@@ -209,7 +209,6 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
       if (slider && slider.classList.contains('slider')) {
         // スライダー要素が存在し、hover時のスタイルが定義されている
-        const styles = window.getComputedStyle(slider);
         // CSSでホバースタイルが定義されていることを確認（background-colorの変化等）
         expect(slider).toBeInTheDocument();
       }
