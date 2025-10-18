@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Azure Functions backend for TickTackFour multiplayer game timer",
   "scripts": {
+    "build": "tsc && npm run copy-config",
+    "copy-config": "cp host.json dist/host.json",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prestart": "npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
