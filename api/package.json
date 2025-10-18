@@ -2,23 +2,29 @@
   "name": "ticktackfour-api",
   "version": "1.0.0",
   "description": "Azure Functions backend for TickTackFour multiplayer game timer",
-  "main": "src/functions/*.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "echo 'No build step required for JavaScript'",
-    "watch": "echo 'Watch mode not available for JavaScript'",
-    "clean": "echo 'No build artifacts to clean'",
-    "prestart": "echo 'No pre-start build required'",
-    "test": "jest --passWithNoTests",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --passWithNoTests",
+    "test:coverage": "jest --coverage",
     "start": "func start"
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.0",
-    "@azure/functions": "^4.0.0"
+    "@azure/functions": "^4.8.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "jest": "^29.7.0"
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
