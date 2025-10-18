@@ -1,3 +1,4 @@
+const { app } = require('@azure/functions');
 const { getGameState } = require('../shared/services/gameStateService');
 const { calculateAllPlayerTimes } = require('../shared/services/timeCalculation');
 
@@ -9,7 +10,7 @@ const { calculateAllPlayerTimes } = require('../shared/services/timeCalculation'
  * - 200: GameStateWithTime（計算済み経過時間とETag含む）
  * - 500: エラー発生時（Cosmos DB接続エラー等）
  */
-module.exports = async function (context, req) {
+async function getGameHandler(request, context) {
   try {
     context.log('GET /api/game - ゲーム状態取得開始');
 
@@ -32,9 +33,9 @@ module.exports = async function (context, req) {
       isPaused: response.isPaused
     });
 
-    context.res = {
+    return {
       status: 200,
-      body: response,
+      jsonBody: response,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -48,12 +49,22 @@ module.exports = async function (context, req) {
       details: error instanceof Error ? error.message : 'Unknown error'
     };
 
-    context.res = {
+    return {
       status: 500,
-      body: errorResponse,
+      jsonBody: errorResponse,
       headers: {
         'Content-Type': 'application/json'
       }
     };
   }
-};
+}
+
+// HTTP Trigger: GET /api/game
+app.http('getGame', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'game',
+  handler: getGameHandler
+});
+
+module.exports = { getGameHandler };

@@ -2,6 +2,7 @@
   "name": "ticktackfour-api",
   "version": "1.0.0",
   "description": "Azure Functions backend for TickTackFour multiplayer game timer",
+  "main": "src/functions/*.js",
   "scripts": {
     "build": "echo 'No build step required for JavaScript'",
     "watch": "echo 'Watch mode not available for JavaScript'",

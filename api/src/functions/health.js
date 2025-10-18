@@ -1,10 +1,12 @@
+const { app } = require('@azure/functions');
+
 /**
  * ヘルスチェックエンドポイント
  * Azure Functions自体の起動確認と環境変数の存在チェック
  *
  * 注意: Cosmos DBへの実際の接続は行わない（起動失敗を防ぐため）
  */
-module.exports = async function (context, req) {
+async function healthHandler(request, context) {
   const startTime = Date.now();
 
   // 環境変数の存在チェック
@@ -36,12 +38,22 @@ module.exports = async function (context, req) {
     duration: healthStatus.details.checkDuration
   });
 
-  context.res = {
+  return {
     status: 200,
-    body: healthStatus,
+    jsonBody: healthStatus,
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache'
     }
   };
-};
+}
+
+// HTTP Trigger: GET /api/health
+app.http('health', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'health',
+  handler: healthHandler
+});
+
+module.exports = { healthHandler };
