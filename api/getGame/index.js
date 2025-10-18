@@ -1,6 +1,5 @@
-const { app } = require('@azure/functions');
-const { getGameState } = require('../services/gameStateService');
-const { calculateAllPlayerTimes } = require('../services/timeCalculation');
+const { getGameState } = require('../shared/services/gameStateService');
+const { calculateAllPlayerTimes } = require('../shared/services/timeCalculation');
 
 /**
  * GET /api/game
@@ -10,7 +9,7 @@ const { calculateAllPlayerTimes } = require('../services/timeCalculation');
  * - 200: GameStateWithTime（計算済み経過時間とETag含む）
  * - 500: エラー発生時（Cosmos DB接続エラー等）
  */
-async function getGame(request, context) {
+module.exports = async function (context, req) {
   try {
     context.log('GET /api/game - ゲーム状態取得開始');
 
@@ -33,9 +32,9 @@ async function getGame(request, context) {
       isPaused: response.isPaused
     });
 
-    return {
+    context.res = {
       status: 200,
-      jsonBody: response,
+      body: response,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -49,22 +48,12 @@ async function getGame(request, context) {
       details: error instanceof Error ? error.message : 'Unknown error'
     };
 
-    return {
+    context.res = {
       status: 500,
-      jsonBody: errorResponse,
+      body: errorResponse,
       headers: {
         'Content-Type': 'application/json'
       }
     };
   }
-}
-
-// HTTPトリガー登録
-app.http('getGame', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'game',
-  handler: getGame
-});
-
-module.exports = { getGame };
+};
