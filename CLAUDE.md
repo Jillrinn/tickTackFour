@@ -23,6 +23,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `e2e-testing`: E2Eテスト環境構築（将来的なバックエンド・SignalR統合を考慮した拡張可能なテスト構成）
 - `ui-controls-enhancement`: UIコントロール強化（ドロップダウン、トグルスイッチ、セクション分割、固定表示）
 - `turn-time-tracking`: ターン時間トラッキング（現在のターンでの経過時間表示、ゲーム全体のプレイ時間表示）
+- `game-history-statistics`: ゲーム履歴統計画面（1ゲーム1レコード、プレイ時間順位表示、カウントアップ/ダウン判定、全体最多/最少時間プレイヤー表示）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
