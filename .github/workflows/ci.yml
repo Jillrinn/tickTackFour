@@ -24,9 +24,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          cd api && npm ci
+        run: npm ci --workspaces --include-workspace-root
 
       - name: Run frontend unit tests
         run: npm run test:unit
@@ -94,7 +92,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspaces --include-workspace-root
 
       - name: Run linter
         run: npm run lint
@@ -122,7 +120,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspaces --include-workspace-root
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
