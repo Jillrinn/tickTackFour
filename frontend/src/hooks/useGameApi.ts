@@ -12,6 +12,25 @@ export interface UpdateGameParams {
 }
 
 /**
+ * 412 Conflictエラー型
+ *
+ * Requirements: 3.4, 6.3
+ * - 3回再試行後の失敗検出
+ * - ユーザーフレンドリーなエラーメッセージ表示
+ * - 手動リロード促進メッセージとボタン
+ */
+export interface ConflictError {
+  type: 'conflict';
+  message: string;
+  action: 'reload';
+}
+
+/**
+ * API呼び出し結果型
+ */
+export type ApiResult = GameStateWithTime | ConflictError | null;
+
+/**
  * ゲームAPI呼び出し用のカスタムフック
  *
  * Requirements: 1.3, 1.5.8, 4.1-4.6
@@ -30,9 +49,9 @@ export function useGameApi() {
    * POST /api/switchTurn
    *
    * @param etag - 現在のETag
-   * @returns 更新されたゲーム状態、またはエラー時null
+   * @returns 更新されたゲーム状態、またはConflictError、またはエラー時null
    */
-  const switchTurn = useCallback(async (etag: string): Promise<GameStateWithTime | null> => {
+  const switchTurn = useCallback(async (etag: string): Promise<ApiResult> => {
     try {
       const response = await fetch('/api/switchTurn', {
         method: 'POST',
@@ -43,6 +62,22 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
+        // 412 Conflict検出
+        if (response.status === 412) {
+          const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
+          const errorMessage = errorData.error || 'Update failed due to conflicts';
+          console.error('Conflict detected (412):', {
+            endpoint: '/api/switchTurn',
+            status: response.status,
+            message: errorMessage
+          });
+          return {
+            type: 'conflict',
+            message: errorMessage,
+            action: 'reload'
+          };
+        }
+
         console.error(`Failed to switch turn: ${response.status} ${response.statusText}`);
         return null;
       }
@@ -59,9 +94,9 @@ export function useGameApi() {
    * POST /api/pause
    *
    * @param etag - 現在のETag
-   * @returns 更新されたゲーム状態、またはエラー時null
+   * @returns 更新されたゲーム状態、またはConflictError、またはエラー時null
    */
-  const pauseGame = useCallback(async (etag: string): Promise<GameStateWithTime | null> => {
+  const pauseGame = useCallback(async (etag: string): Promise<ApiResult> => {
     try {
       const response = await fetch('/api/pause', {
         method: 'POST',
@@ -72,6 +107,22 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
+        // 412 Conflict検出
+        if (response.status === 412) {
+          const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
+          const errorMessage = errorData.error || 'Update failed due to conflicts';
+          console.error('Conflict detected (412):', {
+            endpoint: '/api/pause',
+            status: response.status,
+            message: errorMessage
+          });
+          return {
+            type: 'conflict',
+            message: errorMessage,
+            action: 'reload'
+          };
+        }
+
         console.error(`Failed to pause game: ${response.status} ${response.statusText}`);
         return null;
       }
@@ -88,9 +139,9 @@ export function useGameApi() {
    * POST /api/resume
    *
    * @param etag - 現在のETag
-   * @returns 更新されたゲーム状態、またはエラー時null
+   * @returns 更新されたゲーム状態、またはConflictError、またはエラー時null
    */
-  const resumeGame = useCallback(async (etag: string): Promise<GameStateWithTime | null> => {
+  const resumeGame = useCallback(async (etag: string): Promise<ApiResult> => {
     try {
       const response = await fetch('/api/resume', {
         method: 'POST',
@@ -101,6 +152,22 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
+        // 412 Conflict検出
+        if (response.status === 412) {
+          const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
+          const errorMessage = errorData.error || 'Update failed due to conflicts';
+          console.error('Conflict detected (412):', {
+            endpoint: '/api/resume',
+            status: response.status,
+            message: errorMessage
+          });
+          return {
+            type: 'conflict',
+            message: errorMessage,
+            action: 'reload'
+          };
+        }
+
         console.error(`Failed to resume game: ${response.status} ${response.statusText}`);
         return null;
       }
@@ -117,9 +184,9 @@ export function useGameApi() {
    * POST /api/reset
    *
    * @param etag - 現在のETag
-   * @returns 更新されたゲーム状態、またはエラー時null
+   * @returns 更新されたゲーム状態、またはConflictError、またはエラー時null
    */
-  const resetGame = useCallback(async (etag: string): Promise<GameStateWithTime | null> => {
+  const resetGame = useCallback(async (etag: string): Promise<ApiResult> => {
     try {
       const response = await fetch('/api/reset', {
         method: 'POST',
@@ -130,6 +197,22 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
+        // 412 Conflict検出
+        if (response.status === 412) {
+          const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
+          const errorMessage = errorData.error || 'Update failed due to conflicts';
+          console.error('Conflict detected (412):', {
+            endpoint: '/api/reset',
+            status: response.status,
+            message: errorMessage
+          });
+          return {
+            type: 'conflict',
+            message: errorMessage,
+            action: 'reload'
+          };
+        }
+
         console.error(`Failed to reset game: ${response.status} ${response.statusText}`);
         return null;
       }
@@ -147,10 +230,10 @@ export function useGameApi() {
    *
    * @param etag - 現在のETag
    * @param params - 更新パラメータ（プレイヤー数、タイマーモード、プレイヤー名等）
-   * @returns 更新されたゲーム状態、またはエラー時null
+   * @returns 更新されたゲーム状態、またはConflictError、またはエラー時null
    */
   const updateGame = useCallback(
-    async (etag: string, params: UpdateGameParams): Promise<GameStateWithTime | null> => {
+    async (etag: string, params: UpdateGameParams): Promise<ApiResult> => {
       try {
         const response = await fetch('/api/updateGame', {
           method: 'POST',
@@ -164,6 +247,22 @@ export function useGameApi() {
         });
 
         if (!response.ok) {
+          // 412 Conflict検出
+          if (response.status === 412) {
+            const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
+            const errorMessage = errorData.error || 'Update failed due to conflicts';
+            console.error('Conflict detected (412):', {
+              endpoint: '/api/updateGame',
+              status: response.status,
+              message: errorMessage
+            });
+            return {
+              type: 'conflict',
+              message: errorMessage,
+              action: 'reload'
+            };
+          }
+
           console.error(`Failed to update game: ${response.status} ${response.statusText}`);
           return null;
         }
