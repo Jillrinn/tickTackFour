@@ -6,6 +6,9 @@ describe('useFetchWithTimeout', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     global.fetch = vi.fn();
+    // console.errorをモックして警告を抑制
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -32,12 +35,16 @@ describe('useFetchWithTimeout', () => {
 
       const { result } = renderHook(() => useFetchWithTimeout());
 
-      const fetchPromise = result.current.fetchWithTimeout('/api/test');
+      // エラーを明示的にキャッチしてPromiseのrejectionを処理
+      const fetchPromise = result.current.fetchWithTimeout('/api/test').catch(err => err);
 
       // 5秒経過（タイムアウト）
       await vi.advanceTimersByTimeAsync(5000);
 
-      await expect(fetchPromise).rejects.toThrow('Request timeout after 5000ms');
+      // エラーが発生したことを確認
+      const error = await fetchPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Request timeout after 5000ms');
     });
 
     it('カスタムタイムアウト時間を設定できること', async () => {
@@ -58,36 +65,53 @@ describe('useFetchWithTimeout', () => {
 
       const { result } = renderHook(() => useFetchWithTimeout({ timeout: 3000 }));
 
-      const fetchPromise = result.current.fetchWithTimeout('/api/test');
+      // エラーを明示的にキャッチしてPromiseのrejectionを処理
+      const fetchPromise = result.current.fetchWithTimeout('/api/test').catch(err => err);
 
       // 3秒経過（タイムアウト）
       await vi.advanceTimersByTimeAsync(3000);
 
-      await expect(fetchPromise).rejects.toThrow('Request timeout after 3000ms');
+      // エラーが発生したことを確認
+      const error = await fetchPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Request timeout after 3000ms');
     });
   });
 
   describe('AbortController使用', () => {
     it('タイムアウト時にfetchリクエストがキャンセルされること', async () => {
-      // 実際のAbortControllerを使用してabort()が呼ばれることを確認
-      let controllerInstance: AbortController | null = null;
-      const OriginalAbortController = global.AbortController;
+      // abort()呼び出しを追跡するスパイ
+      const abortSpy = vi.fn();
+      let abortHandler: (() => void) | null = null;
 
-      global.AbortController = class extends OriginalAbortController {
-        constructor() {
-          super();
-          controllerInstance = this;
-        }
-      } as any;
+      // カスタムAbortControllerでabort()呼び出しを追跡
+      const mockSignal = {
+        aborted: false,
+        addEventListener: vi.fn((event: string, handler: () => void) => {
+          if (event === 'abort') {
+            abortHandler = handler;
+          }
+        }),
+        removeEventListener: vi.fn()
+      };
 
-      const abortSpy = vi.spyOn(OriginalAbortController.prototype, 'abort');
+      global.AbortController = vi.fn(function(this: any) {
+        this.signal = mockSignal;
+        this.abort = function() {
+          abortSpy();
+          mockSignal.aborted = true;
+          if (abortHandler) {
+            abortHandler();
+          }
+        };
+      }) as any;
 
       // fetchがAbortErrorを発生させるようモック
       (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
         (_url: string, options?: RequestInit) => {
           return new Promise((_, reject) => {
             if (options?.signal) {
-              options.signal.addEventListener('abort', () => {
+              (options.signal as any).addEventListener('abort', () => {
                 const error = new Error('The operation was aborted');
                 error.name = 'AbortError';
                 reject(error);
@@ -99,17 +123,17 @@ describe('useFetchWithTimeout', () => {
 
       const { result } = renderHook(() => useFetchWithTimeout());
 
-      const fetchPromise = result.current.fetchWithTimeout('/api/test');
+      // エラーを明示的にキャッチしてPromiseのrejectionを処理
+      const fetchPromise = result.current.fetchWithTimeout('/api/test').catch(err => err);
 
       // 5秒経過してタイムアウト
       await vi.advanceTimersByTimeAsync(5000);
 
-      await expect(fetchPromise).rejects.toThrow();
+      // エラーが発生したことを確認
+      const error = await fetchPromise;
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Request timeout after 5000ms');
       expect(abortSpy).toHaveBeenCalled();
-
-      // クリーンアップ
-      global.AbortController = OriginalAbortController;
-      abortSpy.mockRestore();
     });
 
     it('正常完了時はAbortControllerが呼ばれないこと', async () => {
