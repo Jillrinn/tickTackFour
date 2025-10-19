@@ -76,7 +76,7 @@
   - ETag楽観的ロック更新
   - _Requirements: 1.5.6, 4.5_
 
-- [ ] 2.5 ゲームリセットエンドポイントの実装（POST /api/reset）
+- [x] 2.5 ゲームリセットエンドポイントの実装（POST /api/reset）
   - HTTPトリガーの設定（POST メソッド、/api/resetパス）
   - デフォルトゲーム状態の生成（4人、カウントアップモード、全タイマー0:00）
   - 全プレイヤーのaccumulatedSecondsを0にリセット
