@@ -47,6 +47,19 @@ export const PLAYER_COUNT_MAX = 6;
 export const DEFAULT_PLAYER_COUNT = 4;
 
 /**
+ * バックエンドから返されるゲーム状態（時間計算済み）
+ * multiplayer-sync仕様で使用
+ */
+export interface GameStateWithTime {
+  players: Array<{ name: string; elapsedSeconds: number }>;
+  activePlayerIndex: number;
+  timerMode: 'count-up' | 'count-down';
+  countdownSeconds: number;
+  isPaused: boolean;
+  etag: string;
+}
+
+/**
  * ビジネスルール検証ユーティリティ
  */
 export class GameStateValidator {

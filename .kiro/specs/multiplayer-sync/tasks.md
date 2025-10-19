@@ -97,7 +97,7 @@
 
 - [ ] 3. フロントエンド統合とポーリング同期の実装
 
-- [ ] 3.1 ポーリング同期サービスの実装
+- [x] 3.1 ポーリング同期サービスの実装
   - React useEffectで5秒間隔のsetInterval設定
   - GET /api/gameへのfetchリクエスト
   - レスポンスからGameStateWithTimeを取得
