@@ -1,12 +1,14 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
+import { usePollingSync } from '../hooks/usePollingSync';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
+import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
 
 /**
- * GameTimerルートコンポーネント（Phase 1: インメモリー版）
- * - useStateのみで状態管理
- * - DB/SignalR接続なし
+ * GameTimerルートコンポーネント（Phase 1→2移行中）
+ * - Phase 1: useStateによるインメモリー状態管理（既存）
+ * - Phase 2: バックエンドAPI連携とポーリング同期（追加中）
  */
 export function GameTimer() {
   const {
@@ -27,6 +29,21 @@ export function GameTimer() {
 
   // カウントダウンモード用の初期時間設定（秒単位）
   const [countdownSeconds, setCountdownSeconds] = React.useState(600);
+
+  // Task 3.1: ポーリング同期サービスの実装
+  // バックエンドから取得したゲーム状態とETagを管理
+  const [serverGameState, setServerGameState] = React.useState<GameStateWithTime | null>(null);
+  const [etag, setEtag] = React.useState<string | null>(null);
+
+  // 5秒ごとにバックエンドからゲーム状態を取得
+  // テスト環境では無効化（jsdomで相対URLが使えないため）
+  usePollingSync((state: GameStateWithTime) => {
+    console.log('[PollingSync] Server state updated:', state);
+    setServerGameState(state);
+    setEtag(state.etag);
+  }, {
+    enabled: import.meta.env.MODE !== 'test'
+  });
 
   // タイムアウトしたプレイヤーID（Task 12.2）
   const timedOutPlayerId = getTimedOutPlayerId();
