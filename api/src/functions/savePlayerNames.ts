@@ -22,6 +22,22 @@ async function savePlayerNames(
   try {
     context.log('POST /api/player-names - プレイヤー名保存開始');
 
+    // Content-Type検証
+    const contentType = request.headers.get('Content-Type');
+    if (!contentType || !contentType.includes('application/json')) {
+      context.log('POST /api/player-names - Content-Typeエラー');
+      return {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          error: 'BadRequest',
+          message: 'Content-Type must be application/json'
+        })
+      };
+    }
+
     // リクエストボディを取得
     const requestBody = await request.json() as SavePlayerNamesRequest;
 
@@ -31,11 +47,14 @@ async function savePlayerNames(
     if (validatedNames.length === 0) {
       context.log('POST /api/player-names - 有効な名前がありません');
       return {
-        status: 200,
+        status: 400,
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ savedCount: 0 })
+        body: JSON.stringify({
+          error: 'BadRequest',
+          message: '有効なプレイヤー名が含まれていません'
+        })
       };
     }
 
@@ -100,6 +119,23 @@ async function savePlayerNames(
     };
   } catch (error) {
     context.error('POST /api/player-names - エラー発生', error);
+
+    // RU/s制限エラー（429 Too Many Requests）の場合は503を返す
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      if (errorObj.code === 429 || errorObj.statusCode === 429) {
+        return {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            error: 'ServiceUnavailable',
+            message: 'サービスが一時的に利用できません。しばらくしてから再度お試しください'
+          })
+        };
+      }
+    }
 
     return {
       status: 500,

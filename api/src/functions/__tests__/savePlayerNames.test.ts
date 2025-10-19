@@ -20,16 +20,34 @@ async function savePlayerNames(
   context: InvocationContext
 ): Promise<any> {
   try {
+    // Content-Type検証
+    const contentType = request.headers.get('Content-Type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          error: 'BadRequest',
+          message: 'Content-Type must be application/json'
+        })
+      };
+    }
+
     const requestBody = await request.json() as SavePlayerNamesRequest;
     const validatedNames = validatePlayerNames(requestBody.names);
 
     if (validatedNames.length === 0) {
       return {
-        status: 200,
+        status: 400,
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ savedCount: 0 })
+        body: JSON.stringify({
+          error: 'BadRequest',
+          message: '有効なプレイヤー名が含まれていません'
+        })
       };
     }
 
@@ -84,6 +102,23 @@ async function savePlayerNames(
     };
   } catch (error) {
     context.error('POST /api/player-names - エラー発生', error);
+
+    // RU/s制限エラー（429 Too Many Requests）の場合は503を返す
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      if (errorObj.code === 429 || errorObj.statusCode === 429) {
+        return {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            error: 'ServiceUnavailable',
+            message: 'サービスが一時的に利用できません。しばらくしてから再度お試しください'
+          })
+        };
+      }
+    }
 
     return {
       status: 500,
@@ -247,7 +282,7 @@ describe('POST /api/player-names', () => {
       expect(body.savedCount).toBe(3); // 重複除外後の件数
     });
 
-    it('全て無効な名前の場合はsavedCount=0を返す', async () => {
+    it('全て無効な名前の場合は400エラーを返す', async () => {
       // Arrange
       const requestBody: SavePlayerNamesRequest = {
         names: ['', '  ', 'A'.repeat(51)]
@@ -260,9 +295,10 @@ describe('POST /api/player-names', () => {
       const response = await savePlayerNames(mockRequest, mockContext);
 
       // Assert
-      expect(response.status).toBe(200);
-      const body: SavePlayerNamesResponse = JSON.parse(response.body);
-      expect(body.savedCount).toBe(0);
+      expect(response.status).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('BadRequest');
+      expect(body.message).toBe('有効なプレイヤー名が含まれていません');
       expect(mockTableClient.createEntity).not.toHaveBeenCalled();
     });
   });
@@ -303,6 +339,59 @@ describe('POST /api/player-names', () => {
       expect(response.status).toBe(500);
       const body = JSON.parse(response.body);
       expect(body.error).toBe('InternalServerError');
+    });
+
+    it('Content-Typeがapplication/jsonでない場合は400エラーを返す', async () => {
+      // Arrange
+      const requestWithWrongContentType = {
+        ...mockRequest,
+        headers: new Headers({ 'Content-Type': 'text/plain' })
+      } as unknown as HttpRequest;
+
+      // Act
+      const response = await savePlayerNames(requestWithWrongContentType, mockContext);
+
+      // Assert
+      expect(response.status).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('BadRequest');
+      expect(body.message).toBe('Content-Type must be application/json');
+    });
+
+    it('RU/s制限超過時は503エラーを返す', async () => {
+      // Arrange
+      const requestBody: SavePlayerNamesRequest = {
+        names: ['Alice']
+      };
+
+      (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
+      mockValidatePlayerNames.mockReturnValue(['Alice']);
+
+      // listEntitiesのモックを追加（既存エンティティなし）
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {
+          // 空のイテレーター
+        }
+      });
+
+      // Cosmos DBのRU/s制限エラー（429 Too Many Requests）をシミュレート
+      const ruError = new Error('Request rate is large');
+      (ruError as any).code = 429;
+      (ruError as any).statusCode = 429;
+      mockTableClient.createEntity.mockRejectedValue(ruError);
+
+      // Act
+      const response = await savePlayerNames(mockRequest, mockContext);
+
+      // Assert
+      expect(response.status).toBe(503);
+      const body = JSON.parse(response.body);
+      expect(body.error).toBe('ServiceUnavailable');
+      expect(body.message).toBe('サービスが一時的に利用できません。しばらくしてから再度お試しください');
+      expect(mockContext.error).toHaveBeenCalledWith(
+        'POST /api/player-names - エラー発生',
+        expect.any(Error)
+      );
     });
   });
 
