@@ -1,7 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { GameTimer } from '../GameTimer';
+
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
 
 describe('GameTimer - 条件付きレンダリング', () => {
   test('カウントアップモード選択時にカウントダウン秒数設定UIが非表示', async () => {

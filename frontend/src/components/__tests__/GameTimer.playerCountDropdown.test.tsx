@@ -1,7 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { GameTimer } from '../GameTimer';
+
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
 
 describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', () => {
   it('プレイヤー人数ドロップダウンが存在すること', () => {

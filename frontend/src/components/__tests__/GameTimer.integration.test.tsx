@@ -3,6 +3,18 @@ import { render, screen, within, waitFor } from '@testing-library/react';
 import { GameTimer } from '../GameTimer';
 import userEvent from '@testing-library/user-event';
 
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
+
 /**
  * Task 5.1 & 5.2: GameTimer統合テスト
  * - セクション構造の正しさ

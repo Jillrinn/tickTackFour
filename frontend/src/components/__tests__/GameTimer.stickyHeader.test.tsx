@@ -1,7 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { GameTimer } from '../GameTimer';
+
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
 
 describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
   it('固定ヘッダー（sticky-header）が存在すること', () => {
@@ -15,8 +27,16 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
     const gameMain = screen.getByRole('main');
     const stickyHeader = screen.getByTestId('sticky-header');
 
-    // game-mainの最初の子要素が固定ヘッダーであることを確認
-    expect(gameMain.firstChild).toBe(stickyHeader);
+    // フォールバックモード警告の有無に関わらず、sticky-headerがgame-main内の上部に配置されていることを確認
+    // フォールバックモード時: 警告 → sticky-header（2番目）
+    // 通常モード時: sticky-header（1番目）
+    expect(gameMain.contains(stickyHeader)).toBe(true);
+
+    // sticky-headerがトップタイマーインジケーターより前に配置されていることを確認
+    const topTimeIndicator = screen.queryByText(/最も時間を使っているプレイヤー/i);
+    if (topTimeIndicator) {
+      expect(stickyHeader.compareDocumentPosition(topTimeIndicator)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    }
   });
 
   it('固定ヘッダー内に「次のプレイヤー」ボタンが配置されていること', () => {

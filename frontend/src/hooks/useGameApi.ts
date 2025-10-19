@@ -62,7 +62,7 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
-        // 412 Conflict検出
+        // 412 Precondition Failed検出（Cosmos DBの楽観的ロック競合時のステータスコード）
         if (response.status === 412) {
           const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
           const errorMessage = errorData.error || 'Update failed due to conflicts';
@@ -107,7 +107,7 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
-        // 412 Conflict検出
+        // 412 Precondition Failed検出（Cosmos DBの楽観的ロック競合時のステータスコード）
         if (response.status === 412) {
           const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
           const errorMessage = errorData.error || 'Update failed due to conflicts';
@@ -152,7 +152,7 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
-        // 412 Conflict検出
+        // 412 Precondition Failed検出（Cosmos DBの楽観的ロック競合時のステータスコード）
         if (response.status === 412) {
           const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
           const errorMessage = errorData.error || 'Update failed due to conflicts';
@@ -197,7 +197,7 @@ export function useGameApi() {
       });
 
       if (!response.ok) {
-        // 412 Conflict検出
+        // 412 Precondition Failed検出（Cosmos DBの楽観的ロック競合時のステータスコード）
         if (response.status === 412) {
           const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
           const errorMessage = errorData.error || 'Update failed due to conflicts';
@@ -247,8 +247,8 @@ export function useGameApi() {
         });
 
         if (!response.ok) {
-          // 412 Conflict検出
-          if (response.status === 412) {
+          // 409 Conflict検出（バックエンドがETag競合時に409を返却）
+          if (response.status === 409) {
             const errorData = await response.json().catch(() => ({ error: 'Conflict occurred' }));
             const errorMessage = errorData.error || 'Update failed due to conflicts';
             console.error('Conflict detected (412):', {

@@ -24,10 +24,22 @@ async function getGame(
     // 全プレイヤーの経過時間を計算
     const calculatedTimes = calculateAllPlayerTimes(result.state);
 
-    // レスポンスを生成
+    // プレイヤー配列を統合（name + elapsedSeconds形式）
+    const playersWithTime = result.state.players.map((player, index) => {
+      const calculated = calculatedTimes.find(ct => ct.playerId === index + 1);
+      return {
+        name: player.name,
+        elapsedSeconds: calculated?.elapsedSeconds || 0
+      };
+    });
+
+    // レスポンスを生成（設計書準拠の形式）
     const response: GameStateWithTime = {
-      ...result.state,
-      calculatedTimes,
+      players: playersWithTime,
+      activePlayerIndex: result.state.activePlayerIndex,
+      timerMode: result.state.timerMode,
+      countdownSeconds: result.state.countdownSeconds,
+      isPaused: result.state.isPaused,
       etag: result.etag
     };
 

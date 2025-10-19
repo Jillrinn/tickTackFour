@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
+import { useServerGameState } from '../hooks/useServerGameState';
 import { usePollingSync, type PollingErrorInfo } from '../hooks/usePollingSync';
 import { useGameApi } from '../hooks/useGameApi';
 import { useETagManager } from '../hooks/useETagManager';
@@ -9,33 +10,23 @@ import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
 
 /**
- * GameTimerルートコンポーネント（Phase 1→2移行中）
- * - Phase 1: useStateによるインメモリー状態管理（既存）
- * - Phase 2: バックエンドAPI連携とポーリング同期（追加中）
+ * GameTimerルートコンポーネント（Phase 1→2移行完了）
+ * - Phase 1: useGameState() → フォールバックモード専用（インメモリー状態管理）
+ * - Phase 2: useServerGameState() → 通常モード（バックエンドAPI連携とポーリング同期）
+ *
+ * 状態管理の切り替え:
+ * - フォールバックモード時（API接続失敗）: fallbackStateを使用
+ * - 通常モード時（API接続成功）: serverGameStateを使用
  */
 export function GameTimer() {
-  const {
-    gameState,
-    setPlayerCount,
-    updatePlayerTime,
-    updatePlayerName,
-    setActivePlayer,
-    switchToNextPlayer,
-    setPaused,
-    setTimerMode,
-    resetGame,
-    formatTime,
-    getTimedOutPlayerId,
-    isPlayerControlDisabled,
-    getLongestTimePlayer
-  } = useGameState();
+  // Phase 1: フォールバックモード専用（インメモリー状態管理）
+  const fallbackState = useGameState();
+
+  // Phase 2: サーバー状態管理（新規hook）
+  const serverGameState = useServerGameState();
 
   // カウントダウンモード用の初期時間設定（秒単位）
   const [countdownSeconds, setCountdownSeconds] = React.useState(600);
-
-  // Task 3.1: ポーリング同期サービスの実装
-  // バックエンドから取得したゲーム状態を管理
-  const [serverGameState, setServerGameState] = React.useState<GameStateWithTime | null>(null);
 
   // Task 3.4: ETag管理と楽観的ロック対応
   const { etag, updateEtag, isConflict, conflictMessage, setConflictMessage, clearConflictMessage, showReloadPrompt, setShowReloadPrompt } = useETagManager();
@@ -49,11 +40,12 @@ export function GameTimer() {
     activateFallbackMode(errorInfo.lastError);
   }, [activateFallbackMode]);
 
-  // 5秒ごとにバックエンドからゲーム状態を取得
+  // Task 3.1: ポーリング同期サービスの実装
+  // 5秒ごとにバックエンドからゲーム状態を取得し、serverGameStateを更新
   // テスト環境では無効化（jsdomで相対URLが使えないため）
   usePollingSync((state: GameStateWithTime) => {
     console.log('[PollingSync] Server state updated:', state);
-    setServerGameState(state);
+    serverGameState.updateFromServer(state);  // 新規hookで状態更新
     updateEtag(state.etag);
 
     // API接続成功時、フォールバックモードから復帰
@@ -68,11 +60,28 @@ export function GameTimer() {
   // Task 3.3: API呼び出し用のカスタムフック
   const { switchTurn, pauseGame: pauseGameApi, resumeGame: resumeGameApi, resetGame: resetGameApi, updateGame } = useGameApi();
 
+  // 現在使用する状態とメソッドを決定（モード切替）
+  // フォールバックモード時: fallbackState、通常モード時: serverGameState
+  const gameState = isInFallbackMode ? fallbackState.gameState : null;
+  const formatTime = isInFallbackMode ? fallbackState.formatTime : serverGameState.formatTime;
+
+  // 一時停止状態を取得（ハンドラ関数で使用）
+  const isPaused = isInFallbackMode ? fallbackState.gameState.isPaused : (serverGameState.serverState?.isPaused ?? false);
+
+  // ゲームがアクティブかどうかを取得（設定の無効化判定で使用）
+  const isGameActive = isInFallbackMode ? (fallbackState.gameState.activePlayerId !== null) : (serverGameState.serverState?.activePlayerIndex !== -1);
+
+  // タイムアウトしたプレイヤーID（Task 12.2） - フォールバックモード時のみ
+  const timedOutPlayerId = isInFallbackMode ? fallbackState.getTimedOutPlayerId() : null;
+
+  // 最長時間プレイヤーを取得
+  const longestPlayer = isInFallbackMode ? fallbackState.getLongestTimePlayer() : serverGameState.getLongestTimePlayer();
+
   // Task 3.3: API呼び出しハンドラ
   // テスト環境またはフォールバックモード時はローカル状態管理を使用、本番環境ではAPI呼び出しを実行
   const handleSwitchTurn = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
-      switchToNextPlayer();
+      fallbackState.switchToNextPlayer();
       return;
     }
     if (!etag) {
@@ -85,18 +94,18 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, switchTurn, switchToNextPlayer, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, switchTurn, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handlePauseResume = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
-      setPaused(!gameState.isPaused);
+      fallbackState.setPaused(!isPaused);
       return;
     }
     if (!etag) {
       console.warn('ETag not available, cannot pause/resume');
       return;
     }
-    const result = gameState.isPaused
+    const result = isPaused
       ? await resumeGameApi(etag)
       : await pauseGameApi(etag);
     if (result) {
@@ -104,11 +113,11 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, gameState.isPaused, pauseGameApi, resumeGameApi, setPaused, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, isPaused, pauseGameApi, resumeGameApi, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handleResetGame = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
-      resetGame();
+      fallbackState.resetGame();
       return;
     }
     if (!etag) {
@@ -121,11 +130,11 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, resetGameApi, resetGame, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
-      setPlayerCount(playerCount);
+      fallbackState.setPlayerCount(playerCount);
       return;
     }
     if (!etag) {
@@ -138,14 +147,14 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, updateGame, setPlayerCount, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, updateGame, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handleTimerModeChange = React.useCallback(async (checked: boolean) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       if (checked) {
-        setTimerMode('count-down', countdownSeconds);
+        fallbackState.setTimerMode('count-down', countdownSeconds);
       } else {
-        setTimerMode('count-up');
+        fallbackState.setTimerMode('count-up');
       }
       return;
     }
@@ -162,13 +171,7 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, countdownSeconds, updateGame, setTimerMode, updateEtag, clearConflictMessage, setShowReloadPrompt]);
-
-  // タイムアウトしたプレイヤーID（Task 12.2）
-  const timedOutPlayerId = getTimedOutPlayerId();
-
-  // 最長時間プレイヤーを取得
-  const longestPlayer = getLongestTimePlayer();
+  }, [isInFallbackMode, etag, countdownSeconds, updateGame, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   return (
     <div className="game-timer">
@@ -189,27 +192,45 @@ export function GameTimer() {
         <div className="sticky-header" data-testid="sticky-header">
           <div className="sticky-header-content" data-testid="sticky-header-content">
             <div className="sticky-header-info" data-testid="active-player-info">
-              {gameState.activePlayerId ? (
-                <>
-                  <span className="sticky-header-label">現在のプレイヤー:</span>
-                  <span className="sticky-header-player">
-                    {gameState.players.find(p => p.id === gameState.activePlayerId)?.name || 'プレイヤー'}
-                  </span>
-                  <span className="sticky-header-time">
-                    {formatTime(gameState.players.find(p => p.id === gameState.activePlayerId)?.elapsedTimeSeconds || 0)}
-                  </span>
-                </>
+              {isInFallbackMode ? (
+                // フォールバックモード: Phase 1ローカル状態
+                gameState && gameState.activePlayerId ? (
+                  <>
+                    <span className="sticky-header-label">現在のプレイヤー:</span>
+                    <span className="sticky-header-player">
+                      {gameState.players.find(p => p.id === gameState.activePlayerId)?.name || 'プレイヤー'}
+                    </span>
+                    <span className="sticky-header-time">
+                      {formatTime(gameState.players.find(p => p.id === gameState.activePlayerId)?.elapsedTimeSeconds || 0)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="sticky-header-status">ゲーム未開始</span>
+                )
               ) : (
-                <span className="sticky-header-status">ゲーム未開始</span>
+                // 通常モード: Phase 2サーバー状態
+                serverGameState.serverState && serverGameState.serverState.activePlayerIndex !== -1 ? (
+                  <>
+                    <span className="sticky-header-label">現在のプレイヤー:</span>
+                    <span className="sticky-header-player">
+                      {serverGameState.serverState.players[serverGameState.serverState.activePlayerIndex]?.name || 'プレイヤー'}
+                    </span>
+                    <span className="sticky-header-time">
+                      {formatTime(serverGameState.displayTime)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="sticky-header-status">ゲーム未開始</span>
+                )
               )}
             </div>
             <div className="sticky-header-actions">
               <button
                 onClick={handlePauseResume}
                 className="pause-btn sticky-header-btn"
-                aria-label={gameState.isPaused ? 'ゲームを再開' : 'ゲームを一時停止'}
+                aria-label={isPaused ? 'ゲームを再開' : 'ゲームを一時停止'}
               >
-                {gameState.isPaused ? '▶️ 再開' : '⏸️ 一時停止'}
+                {isPaused ? '▶️ 再開' : '⏸️ 一時停止'}
               </button>
               <button
                 onClick={handleSwitchTurn}
@@ -228,38 +249,53 @@ export function GameTimer() {
         <div className="players-section">
           <h3>プレイヤー一覧</h3>
           <ul className="players-grid">
-            {gameState.players.map((player) => {
-              const isTimedOut = player.id === timedOutPlayerId;
-              const isDisabled = isPlayerControlDisabled(player.id);
-              return (
-              <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${isTimedOut ? 'timeout' : ''}`}>
-                <div className="player-info">
-                  <input
-                    type="text"
-                    className="player-name-input"
-                    value={player.name}
-                    onChange={(e) => updatePlayerName(player.id, e.target.value)}
-                    aria-label="プレイヤー名"
-                  />
-                </div>
-                <div className="player-time">経過時間: {formatTime(player.elapsedTimeSeconds)}</div>
-                <div className="player-actions">
-                  <button
-                    onClick={() => updatePlayerTime(player.id, player.elapsedTimeSeconds + 10)}
-                    disabled={isDisabled}
-                  >
-                    +10秒
-                  </button>
-                  <button
-                    onClick={() => setActivePlayer(player.id)}
-                    disabled={isDisabled}
-                  >
-                    アクティブに設定
-                  </button>
-                </div>
-              </li>
-              );
-            })}
+            {isInFallbackMode ? (
+              // フォールバックモード: Phase 1ローカル状態
+              gameState && gameState.players.map((player) => {
+                const isTimedOut = player.id === timedOutPlayerId;
+                const isDisabled = fallbackState.isPlayerControlDisabled(player.id);
+                return (
+                  <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${isTimedOut ? 'timeout' : ''}`}>
+                    <div className="player-info">
+                      <input
+                        type="text"
+                        className="player-name-input"
+                        value={player.name}
+                        onChange={(e) => fallbackState.updatePlayerName(player.id, e.target.value)}
+                        aria-label="プレイヤー名"
+                      />
+                    </div>
+                    <div className="player-time">経過時間: {formatTime(player.elapsedTimeSeconds)}</div>
+                    <div className="player-actions">
+                      <button
+                        onClick={() => fallbackState.updatePlayerTime(player.id, player.elapsedTimeSeconds + 10)}
+                        disabled={isDisabled}
+                      >
+                        +10秒
+                      </button>
+                      <button
+                        onClick={() => fallbackState.setActivePlayer(player.id)}
+                        disabled={isDisabled}
+                      >
+                        アクティブに設定
+                      </button>
+                    </div>
+                  </li>
+                );
+              })
+            ) : (
+              // 通常モード: Phase 2サーバー状態
+              (serverGameState.serverState?.players || []).map((player, index) => (
+                <li key={index} className={`player-card ${index === (serverGameState.serverState?.activePlayerIndex ?? -1) ? 'active' : ''}`}>
+                  <div className="player-info">
+                    <span className="player-name">{player.name}</span>
+                  </div>
+                  <div className="player-time">
+                    経過時間: {formatTime(index === (serverGameState.serverState?.activePlayerIndex ?? -1) ? serverGameState.displayTime : player.elapsedSeconds)}
+                  </div>
+                </li>
+              ))
+            )}
           </ul>
         </div>
 
@@ -275,9 +311,9 @@ export function GameTimer() {
                 <select
                   id="player-count"
                   className="styled-select"
-                  value={gameState.players.length}
+                  value={isInFallbackMode ? gameState.players.length : (serverGameState.serverState?.players.length || 4)}
                   onChange={(e) => handlePlayerCountChange(Number(e.target.value))}
-                  disabled={gameState.activePlayerId !== null && !gameState.isPaused}
+                  disabled={isGameActive && !isPaused}
                   data-testid="player-count-dropdown"
                   aria-label="プレイヤー人数選択"
                 >
@@ -293,9 +329,9 @@ export function GameTimer() {
                 <label className="toggle-switch-enhanced">
                   <input
                     type="checkbox"
-                    checked={gameState.timerMode === 'count-down'}
+                    checked={isInFallbackMode ? gameState.timerMode === 'count-down' : serverGameState.serverState?.timerMode === 'count-down'}
                     onChange={(e) => handleTimerModeChange(e.target.checked)}
-                    disabled={gameState.activePlayerId !== null && !gameState.isPaused}
+                    disabled={isGameActive && !isPaused}
                     data-testid="timer-mode-toggle"
                     aria-label="カウントモード切替"
                   />
@@ -305,7 +341,7 @@ export function GameTimer() {
                   </span>
                 </label>
               </div>
-              {gameState.timerMode === 'count-down' && (
+              {(isInFallbackMode ? gameState.timerMode === 'count-down' : serverGameState.serverState?.timerMode === 'count-down') && (
                 <div className="countdown-control">
                   <input
                     type="number"
