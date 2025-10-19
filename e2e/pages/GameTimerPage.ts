@@ -180,6 +180,13 @@ export class GameTimerPage {
   }
 
   /**
+   * ターン切り替え（switchToNextPlayerのエイリアス）
+   */
+  async switchTurn(): Promise<void> {
+    await this.switchToNextPlayer();
+  }
+
+  /**
    * 一時停止/再開トグル
    */
   async togglePause(): Promise<void> {
@@ -222,6 +229,19 @@ export class GameTimerPage {
     const playerCard = this.getPlayerCardByIndex(index);
     const className = await playerCard.getAttribute('class');
     return className?.includes('active') || false;
+  }
+
+  /**
+   * アクティブなプレイヤーのインデックスを取得
+   */
+  async getActivePlayerIndex(): Promise<number> {
+    const playerCount = await this.getPlayerCount();
+    for (let i = 0; i < playerCount; i++) {
+      if (await this.isPlayerActive(i)) {
+        return i;
+      }
+    }
+    return -1; // アクティブなプレイヤーがいない場合
   }
 
   /**
