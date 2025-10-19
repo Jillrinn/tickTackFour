@@ -41,9 +41,16 @@ async function savePlayerNames(
 
     // Cosmos DB PlayerNamesテーブルのクライアント取得
     const tableClient = getPlayerNamesTableClient();
-    let savedCount = 0;
+
+    // 既存エンティティを取得（40件超過時の削除判定用）
+    const existingEntities: PlayerNameEntity[] = [];
+    const iterator = tableClient.listEntities<PlayerNameEntity>();
+    for await (const entity of iterator) {
+      existingEntities.push(entity);
+    }
 
     // 各プレイヤー名をCosmos DBに保存
+    let savedCount = 0;
     for (const name of validatedNames) {
       const entity: PlayerNameEntity = {
         partitionKey: 'global',
@@ -54,6 +61,26 @@ async function savePlayerNames(
 
       await tableClient.createEntity(entity);
       savedCount++;
+    }
+
+    // 40件超過時の自動削除機能
+    const totalCount = existingEntities.length + savedCount;
+    if (totalCount > 40) {
+      const deleteCount = totalCount - 40;
+
+      // 既存エンティティをRowKey昇順でソート（逆順タイムスタンプなので小さいほど古い）
+      existingEntities.sort((a, b) => a.rowKey.localeCompare(b.rowKey));
+
+      // 古いエンティティから削除（配列の最初から = RowKeyが小さい = 古い）
+      const entitiesToDelete = existingEntities.slice(0, deleteCount);
+      for (const entity of entitiesToDelete) {
+        await tableClient.deleteEntity(entity.partitionKey, entity.rowKey);
+      }
+
+      context.log('POST /api/player-names - 古いエンティティを削除', {
+        deleteCount,
+        deletedRowKeys: entitiesToDelete.map(e => e.rowKey)
+      });
     }
 
     context.log('POST /api/player-names - プレイヤー名保存成功', {

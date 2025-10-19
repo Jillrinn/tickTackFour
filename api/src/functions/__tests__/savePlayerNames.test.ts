@@ -34,8 +34,16 @@ async function savePlayerNames(
     }
 
     const tableClient = getPlayerNamesTableClient();
-    let savedCount = 0;
 
+    // 既存エンティティを取得
+    const existingEntities: PlayerNameEntity[] = [];
+    const iterator = tableClient.listEntities<PlayerNameEntity>();
+    for await (const entity of iterator) {
+      existingEntities.push(entity);
+    }
+
+    // 新規エンティティを保存
+    let savedCount = 0;
     for (const name of validatedNames) {
       const entity: PlayerNameEntity = {
         partitionKey: 'global',
@@ -46,6 +54,21 @@ async function savePlayerNames(
 
       await tableClient.createEntity(entity);
       savedCount++;
+    }
+
+    // 40件超過時の自動削除機能
+    const totalCount = existingEntities.length + savedCount;
+    if (totalCount > 40) {
+      const deleteCount = totalCount - 40;
+
+      // 既存エンティティをRowKey昇順でソート（逆順タイムスタンプなので小さいほど古い）
+      existingEntities.sort((a, b) => a.rowKey.localeCompare(b.rowKey));
+
+      // 古いエンティティから削除（配列の最初から = RowKeyが小さい = 古い）
+      const entitiesToDelete = existingEntities.slice(0, deleteCount);
+      for (const entity of entitiesToDelete) {
+        await tableClient.deleteEntity(entity.partitionKey, entity.rowKey);
+      }
     }
 
     const response: SavePlayerNamesResponse = {
@@ -142,7 +165,9 @@ describe('POST /api/player-names', () => {
 
     // Mock TableClient
     mockTableClient = {
-      createEntity: jest.fn().mockResolvedValue({})
+      createEntity: jest.fn().mockResolvedValue({}),
+      listEntities: jest.fn(),
+      deleteEntity: jest.fn().mockResolvedValue({})
     };
 
     mockGetPlayerNamesTableClient.mockReturnValue(mockTableClient);
@@ -157,6 +182,13 @@ describe('POST /api/player-names', () => {
 
       (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
       mockValidatePlayerNames.mockReturnValue(['Alice', 'Bob', 'Charlie']);
+
+      // 既存エンティティなし
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {
+          // 空のイテレーター
+        }
+      });
 
       // Act
       const response = await savePlayerNames(mockRequest, mockContext);
@@ -179,6 +211,10 @@ describe('POST /api/player-names', () => {
       (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
       mockValidatePlayerNames.mockReturnValue(['Alice', '&lt;script&gt;XSS&lt;/script&gt;', 'Bob']);
 
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {}
+      });
+
       // Act
       const response = await savePlayerNames(mockRequest, mockContext);
 
@@ -197,6 +233,10 @@ describe('POST /api/player-names', () => {
 
       (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
       mockValidatePlayerNames.mockReturnValue(['Alice', 'Bob', 'Charlie']); // バリデーションで重複除外
+
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {}
+      });
 
       // Act
       const response = await savePlayerNames(mockRequest, mockContext);
@@ -276,6 +316,10 @@ describe('POST /api/player-names', () => {
       (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
       mockValidatePlayerNames.mockReturnValue(['Alice']);
 
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {}
+      });
+
       // Act
       await savePlayerNames(mockRequest, mockContext);
 
@@ -287,6 +331,138 @@ describe('POST /api/player-names', () => {
       expect(createdEntity.rowKey).toMatch(/^\d+_[a-z0-9]+$/); // 逆順タイムスタンプ + ランダム文字列
       expect(createdEntity.playerName).toBe('Alice');
       expect(createdEntity.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/); // ISO 8601形式
+    });
+  });
+
+  describe('40件超過時の自動削除機能', () => {
+    it('40件以下の場合は削除しない', async () => {
+      // Arrange
+      const requestBody: SavePlayerNamesRequest = {
+        names: ['Alice']
+      };
+
+      const existingEntities: PlayerNameEntity[] = Array.from({ length: 39 }, (_, i) => ({
+        partitionKey: 'global',
+        rowKey: `${9999999999999 - i}_guid${i}`,
+        playerName: `Player${i + 1}`,
+        createdAt: new Date(Date.now() - i * 1000).toISOString()
+      }));
+
+      (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
+      mockValidatePlayerNames.mockReturnValue(['Alice']);
+
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {
+          for (const entity of existingEntities) {
+            yield entity;
+          }
+        }
+      });
+
+      // Act
+      await savePlayerNames(mockRequest, mockContext);
+
+      // Assert
+      expect(mockTableClient.deleteEntity).not.toHaveBeenCalled();
+    });
+
+    it('41件になる場合は古い1件を削除する', async () => {
+      // Arrange
+      const requestBody: SavePlayerNamesRequest = {
+        names: ['Alice']
+      };
+
+      const existingEntities: PlayerNameEntity[] = Array.from({ length: 40 }, (_, i) => ({
+        partitionKey: 'global',
+        rowKey: `${9999999999999 - i}_guid${i}`,
+        playerName: `Player${i + 1}`,
+        createdAt: new Date(Date.now() - i * 1000).toISOString()
+      }));
+
+      (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
+      mockValidatePlayerNames.mockReturnValue(['Alice']);
+
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {
+          for (const entity of existingEntities) {
+            yield entity;
+          }
+        }
+      });
+
+      // Act
+      await savePlayerNames(mockRequest, mockContext);
+
+      // Assert
+      expect(mockTableClient.deleteEntity).toHaveBeenCalledTimes(1);
+      // 最古のエンティティ（RowKeyが最大）が削除される
+      expect(mockTableClient.deleteEntity).toHaveBeenCalledWith(
+        'global',
+        `${9999999999999 - 39}_guid39` // 最古のエンティティのRowKey
+      );
+    });
+
+    it('50件になる場合は古い10件を削除する', async () => {
+      // Arrange
+      const requestBody: SavePlayerNamesRequest = {
+        names: ['Alice']
+      };
+
+      const existingEntities: PlayerNameEntity[] = Array.from({ length: 49 }, (_, i) => ({
+        partitionKey: 'global',
+        rowKey: `${9999999999999 - i}_guid${i}`,
+        playerName: `Player${i + 1}`,
+        createdAt: new Date(Date.now() - i * 1000).toISOString()
+      }));
+
+      (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
+      mockValidatePlayerNames.mockReturnValue(['Alice']);
+
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {
+          for (const entity of existingEntities) {
+            yield entity;
+          }
+        }
+      });
+
+      // Act
+      await savePlayerNames(mockRequest, mockContext);
+
+      // Assert
+      expect(mockTableClient.deleteEntity).toHaveBeenCalledTimes(10);
+    });
+
+    it('複数名保存時も40件制限を維持する', async () => {
+      // Arrange
+      const requestBody: SavePlayerNamesRequest = {
+        names: ['Alice', 'Bob', 'Charlie']
+      };
+
+      const existingEntities: PlayerNameEntity[] = Array.from({ length: 38 }, (_, i) => ({
+        partitionKey: 'global',
+        rowKey: `${9999999999999 - i}_guid${i}`,
+        playerName: `Player${i + 1}`,
+        createdAt: new Date(Date.now() - i * 1000).toISOString()
+      }));
+
+      (mockRequest.json as jest.Mock).mockResolvedValue(requestBody);
+      mockValidatePlayerNames.mockReturnValue(['Alice', 'Bob', 'Charlie']);
+
+      mockTableClient.listEntities.mockReturnValue({
+        [Symbol.asyncIterator]: async function* () {
+          for (const entity of existingEntities) {
+            yield entity;
+          }
+        }
+      });
+
+      // Act
+      await savePlayerNames(mockRequest, mockContext);
+
+      // Assert
+      // 38 + 3 = 41件なので、1件削除される
+      expect(mockTableClient.deleteEntity).toHaveBeenCalledTimes(1);
     });
   });
 });
