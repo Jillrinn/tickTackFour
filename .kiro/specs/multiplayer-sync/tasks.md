@@ -114,7 +114,7 @@
   - アクティブプレイヤー切替時の時間リセット処理
   - _Requirements: 1.5.7_
 
-- [ ] 3.3 既存GameTimerコンポーネントのAPI連携対応
+- [x] 3.3 既存GameTimerコンポーネントのAPI連携対応
   - ターン切り替えボタンクリック時にPOST /api/switchTurn送信
   - 一時停止ボタンクリック時にPOST /api/pause送信
   - 再開ボタンクリック時にPOST /api/resume送信

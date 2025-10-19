@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
 import { usePollingSync } from '../hooks/usePollingSync';
+import { useGameApi } from '../hooks/useGameApi';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
@@ -45,6 +46,95 @@ export function GameTimer() {
     enabled: import.meta.env.MODE !== 'test'
   });
 
+  // Task 3.3: API呼び出し用のカスタムフック
+  const { switchTurn, pauseGame: pauseGameApi, resumeGame: resumeGameApi, resetGame: resetGameApi, updateGame } = useGameApi();
+
+  // Task 3.3: API呼び出しハンドラ
+  // テスト環境ではローカル状態管理を使用、本番環境ではAPI呼び出しを実行
+  const handleSwitchTurn = React.useCallback(async () => {
+    if (import.meta.env.MODE === 'test') {
+      switchToNextPlayer();
+      return;
+    }
+    if (!etag) {
+      console.warn('ETag not available, cannot switch turn');
+      return;
+    }
+    const result = await switchTurn(etag);
+    if (result) {
+      setEtag(result.etag);
+    }
+  }, [etag, switchTurn, switchToNextPlayer]);
+
+  const handlePauseResume = React.useCallback(async () => {
+    if (import.meta.env.MODE === 'test') {
+      setPaused(!gameState.isPaused);
+      return;
+    }
+    if (!etag) {
+      console.warn('ETag not available, cannot pause/resume');
+      return;
+    }
+    const result = gameState.isPaused
+      ? await resumeGameApi(etag)
+      : await pauseGameApi(etag);
+    if (result) {
+      setEtag(result.etag);
+    }
+  }, [etag, gameState.isPaused, pauseGameApi, resumeGameApi, setPaused]);
+
+  const handleResetGame = React.useCallback(async () => {
+    if (import.meta.env.MODE === 'test') {
+      resetGame();
+      return;
+    }
+    if (!etag) {
+      console.warn('ETag not available, cannot reset game');
+      return;
+    }
+    const result = await resetGameApi(etag);
+    if (result) {
+      setEtag(result.etag);
+    }
+  }, [etag, resetGameApi, resetGame]);
+
+  const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
+    if (import.meta.env.MODE === 'test') {
+      setPlayerCount(playerCount);
+      return;
+    }
+    if (!etag) {
+      console.warn('ETag not available, cannot change player count');
+      return;
+    }
+    const result = await updateGame(etag, { playerCount });
+    if (result) {
+      setEtag(result.etag);
+    }
+  }, [etag, updateGame, setPlayerCount]);
+
+  const handleTimerModeChange = React.useCallback(async (checked: boolean) => {
+    if (import.meta.env.MODE === 'test') {
+      if (checked) {
+        setTimerMode('count-down', countdownSeconds);
+      } else {
+        setTimerMode('count-up');
+      }
+      return;
+    }
+    if (!etag) {
+      console.warn('ETag not available, cannot change timer mode');
+      return;
+    }
+    const params = checked
+      ? { timerMode: 'count-down' as const, countdownSeconds }
+      : { timerMode: 'count-up' as const };
+    const result = await updateGame(etag, params);
+    if (result) {
+      setEtag(result.etag);
+    }
+  }, [etag, countdownSeconds, updateGame, setTimerMode]);
+
   // タイムアウトしたプレイヤーID（Task 12.2）
   const timedOutPlayerId = getTimedOutPlayerId();
 
@@ -78,14 +168,14 @@ export function GameTimer() {
             </div>
             <div className="sticky-header-actions">
               <button
-                onClick={() => setPaused(!gameState.isPaused)}
+                onClick={handlePauseResume}
                 className="pause-btn sticky-header-btn"
                 aria-label={gameState.isPaused ? 'ゲームを再開' : 'ゲームを一時停止'}
               >
                 {gameState.isPaused ? '▶️ 再開' : '⏸️ 一時停止'}
               </button>
               <button
-                onClick={switchToNextPlayer}
+                onClick={handleSwitchTurn}
                 className="next-player-btn sticky-header-btn"
                 aria-label="次のプレイヤーに切り替え"
               >
@@ -149,7 +239,7 @@ export function GameTimer() {
                   id="player-count"
                   className="styled-select"
                   value={gameState.players.length}
-                  onChange={(e) => setPlayerCount(Number(e.target.value))}
+                  onChange={(e) => handlePlayerCountChange(Number(e.target.value))}
                   disabled={gameState.activePlayerId !== null && !gameState.isPaused}
                   data-testid="player-count-dropdown"
                   aria-label="プレイヤー人数選択"
@@ -167,13 +257,7 @@ export function GameTimer() {
                   <input
                     type="checkbox"
                     checked={gameState.timerMode === 'count-down'}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setTimerMode('count-down', countdownSeconds);
-                      } else {
-                        setTimerMode('count-up');
-                      }
-                    }}
+                    onChange={(e) => handleTimerModeChange(e.target.checked)}
                     disabled={gameState.activePlayerId !== null && !gameState.isPaused}
                     data-testid="timer-mode-toggle"
                     aria-label="カウントモード切替"
@@ -197,7 +281,7 @@ export function GameTimer() {
                 </div>
               )}
               <div className="setting-item">
-                <button onClick={resetGame} className="reset-btn">リセット</button>
+                <button onClick={handleResetGame} className="reset-btn">リセット</button>
               </div>
             </div>
           </div>
