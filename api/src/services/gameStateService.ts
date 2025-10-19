@@ -1,4 +1,3 @@
-import { RestError } from '@azure/data-tables';
 import { getTableClient } from './cosmosClient';
 import {
   GameState,
@@ -7,6 +6,7 @@ import {
   toEntity,
   fromEntity
 } from '../models/gameState';
+import { hasStatusCodeValue } from '../utils/errorUtils';
 
 /**
  * ゲーム状態取得結果
@@ -30,9 +30,9 @@ export async function getGameState(): Promise<GameStateResult> {
       state: fromEntity(entity),
       etag: entity.etag || ''
     };
-  } catch (error) {
+  } catch (error: unknown) {
     // 404エラーの場合は新規作成
-    if (error instanceof RestError && error.statusCode === 404) {
+    if (hasStatusCodeValue(error, 404)) {
       const result = await createGameState();
       return result;
     }

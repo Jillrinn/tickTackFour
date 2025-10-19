@@ -1,6 +1,6 @@
-import { RestError } from '@azure/data-tables';
 import { GameState } from '../models/gameState';
 import { GameStateResult } from './gameStateService';
+import { hasStatusCodeValue } from '../utils/errorUtils';
 
 /**
  * 指定されたミリ秒数待機する
@@ -44,9 +44,9 @@ export async function retryUpdateWithETag(
       // 更新を試行
       const result = await updateFn(state, currentETag);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       // 412 Conflict以外のエラーは即座にスロー
-      if (!(error instanceof RestError) || error.statusCode !== 412) {
+      if (!hasStatusCodeValue(error, 412)) {
         throw error;
       }
 

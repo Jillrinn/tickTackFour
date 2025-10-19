@@ -3,7 +3,7 @@ import { getGameState, updateGameState } from '../services/gameStateService';
 import { calculateElapsedTime } from '../services/timeCalculation';
 import { retryUpdateWithETag } from '../services/retryWithETag';
 import { GameState } from '../models/gameState';
-import { RestError } from '@azure/data-tables';
+import { hasStatusCodeValue } from '../utils/errorUtils';
 
 /**
  * 一時停止エンドポイント（POST /api/pause）
@@ -79,9 +79,9 @@ async function pause(
         etag: updatedResult.etag
       })
     };
-  } catch (error) {
+  } catch (error: unknown) {
     // ETag競合エラー（412 Precondition Failed）
-    if (error instanceof RestError && error.statusCode === 412) {
+    if (hasStatusCodeValue(error, 412)) {
       return {
         status: 409,
         headers: {

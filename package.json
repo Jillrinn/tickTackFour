@@ -15,7 +15,7 @@
     "test:unit": "npm run test --workspaces",
     "test:frontend": "npm run test --workspace=frontend",
     "test:backend": "npm run test --workspace=api",
-    "test:coverage": "npm run test:coverage --workspaces",
+    "test:coverage": "npm run genntest:coverage --workspaces",
     "test:e2e": "playwright test",
     "test:e2e:phase1": "PHASE=1 playwright test",
     "test:e2e:phase2": "PHASE=2 playwright test",
