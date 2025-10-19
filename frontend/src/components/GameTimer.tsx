@@ -1,8 +1,9 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
-import { usePollingSync } from '../hooks/usePollingSync';
+import { usePollingSync, type PollingErrorInfo } from '../hooks/usePollingSync';
 import { useGameApi } from '../hooks/useGameApi';
 import { useETagManager } from '../hooks/useETagManager';
+import { useFallbackMode } from '../hooks/useFallbackMode';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
@@ -39,14 +40,29 @@ export function GameTimer() {
   // Task 3.4: ETag管理と楽観的ロック対応
   const { etag, updateEtag, isConflict, conflictMessage, setConflictMessage, clearConflictMessage, showReloadPrompt, setShowReloadPrompt } = useETagManager();
 
+  // Task 4.1: インメモリーモードへのフォールバック機能
+  const { isInFallbackMode, lastError, retryCount, activateFallbackMode, deactivateFallbackMode } = useFallbackMode();
+
+  // ポーリング失敗時のエラーハンドラ
+  const handlePollingError = React.useCallback((errorInfo: PollingErrorInfo) => {
+    console.warn('[GameTimer] ポーリング3回連続失敗、フォールバックモードに切り替えます', errorInfo);
+    activateFallbackMode(errorInfo.lastError);
+  }, [activateFallbackMode]);
+
   // 5秒ごとにバックエンドからゲーム状態を取得
   // テスト環境では無効化（jsdomで相対URLが使えないため）
   usePollingSync((state: GameStateWithTime) => {
     console.log('[PollingSync] Server state updated:', state);
     setServerGameState(state);
     updateEtag(state.etag);
+
+    // API接続成功時、フォールバックモードから復帰
+    if (isInFallbackMode) {
+      deactivateFallbackMode();
+    }
   }, {
-    enabled: import.meta.env.MODE !== 'test'
+    enabled: import.meta.env.MODE !== 'test',
+    onError: handlePollingError
   });
 
   // Task 3.3: API呼び出し用のカスタムフック
@@ -161,6 +177,14 @@ export function GameTimer() {
       </header>
 
       <main className="game-main">
+        {/* Task 4.1: フォールバックモード警告 */}
+        {isInFallbackMode && (
+          <div className="fallback-mode-warning" role="alert" aria-live="assertive" data-testid="fallback-warning">
+            ⚠️ API接続が失敗しました。インメモリーモードで動作しています。
+            （再接続試行: {retryCount}回）
+          </div>
+        )}
+
         {/* Task 2.1-2.3: 固定ヘッダー */}
         <div className="sticky-header" data-testid="sticky-header">
           <div className="sticky-header-content" data-testid="sticky-header-content">
