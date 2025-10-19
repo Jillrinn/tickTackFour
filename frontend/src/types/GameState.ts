@@ -8,6 +8,7 @@ export interface GameState {
   timerMode: TimerMode;
   createdAt: Date;
   lastUpdatedAt: Date;
+  pausedAt: Date | null; // 一時停止開始時刻（一時停止中でない場合はnull）
 }
 
 /**
@@ -37,6 +38,7 @@ export interface Player {
   initialTimeSeconds: number; // カウントダウンモード時の初期時間（秒）
   isActive: boolean;
   createdAt: Date;
+  turnStartedAt: Date | null; // アクティブプレイヤーのターン開始時刻（非アクティブの場合はnull）
 }
 
 /**

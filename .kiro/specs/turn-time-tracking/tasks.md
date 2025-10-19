@@ -25,18 +25,18 @@
 
 ## Phase 2: GameStateとPlayer型の拡張
 
-- [ ] 2. ゲーム状態の型定義を拡張する
-- [ ] 2.1 GameState型の拡張
+- [x] 2. ゲーム状態の型定義を拡張する
+- [x] 2.1 GameState型の拡張
   - pausedAtフィールド（Date | null）を追加
   - 一時停止開始時刻を記録できるようにする
   - _Requirements: 4.1, 4.6_
 
-- [ ] 2.2 Player型の拡張
+- [x] 2.2 Player型の拡張
   - turnStartedAtフィールド（Date | null）を追加
   - アクティブプレイヤーのターン開始時刻を記録できるようにする
   - _Requirements: 4.1, 4.2_
 
-- [ ] 2.3 型定義のユニットテストを作成
+- [x] 2.3 型定義のユニットテストを作成
   - GameState型のpausedAtフィールドがnullableであることを検証
   - Player型のturnStartedAtフィールドがnullableであることを検証
   - _Requirements: 5.1_

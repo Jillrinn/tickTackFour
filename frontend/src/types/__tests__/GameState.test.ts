@@ -5,7 +5,9 @@ import {
   DEFAULT_TIMER_MODE,
   DEFAULT_INITIAL_TIME_SECONDS,
   PLAYER_COUNT_MIN,
-  PLAYER_COUNT_MAX
+  PLAYER_COUNT_MAX,
+  type GameState,
+  type Player
 } from '../GameState';
 
 describe('GameStateValidator', () => {
@@ -118,5 +120,49 @@ describe('Constants', () => {
 
   it('プレイヤー数最大値は6', () => {
     expect(PLAYER_COUNT_MAX).toBe(6);
+  });
+});
+
+describe('Type Definitions', () => {
+  describe('GameState type', () => {
+    it('pausedAtフィールドはnullableである', () => {
+      const gameState: GameState = {
+        players: [],
+        activePlayerId: null,
+        isPaused: false,
+        timerMode: 'count-up',
+        createdAt: new Date(),
+        lastUpdatedAt: new Date(),
+        pausedAt: null
+      };
+      expect(gameState.pausedAt).toBeNull();
+
+      const pausedGameState: GameState = {
+        ...gameState,
+        pausedAt: new Date()
+      };
+      expect(pausedGameState.pausedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('Player type', () => {
+    it('turnStartedAtフィールドはnullableである', () => {
+      const player: Player = {
+        id: '1',
+        name: 'Player 1',
+        elapsedTimeSeconds: 0,
+        initialTimeSeconds: 600,
+        isActive: false,
+        createdAt: new Date(),
+        turnStartedAt: null
+      };
+      expect(player.turnStartedAt).toBeNull();
+
+      const activePlayer: Player = {
+        ...player,
+        turnStartedAt: new Date()
+      };
+      expect(activePlayer.turnStartedAt).toBeInstanceOf(Date);
+    });
   });
 });
