@@ -40,7 +40,7 @@ export function usePollingSync(
   const { enabled = true, interval = 5000, onError } = options;
   const onUpdateRef = useRef(onUpdate);
   const onErrorRef = useRef(onError);
-  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+  const [_consecutiveFailures, setConsecutiveFailures] = useState<number>(0);
   const lastErrorRef = useRef<Error | null>(null);
 
   // コールバック関数の最新版を保持

@@ -29,10 +29,10 @@ export function GameTimer() {
   const [countdownSeconds, setCountdownSeconds] = React.useState(600);
 
   // Task 3.4: ETag管理と楽観的ロック対応
-  const { etag, updateEtag, isConflict, conflictMessage, setConflictMessage, clearConflictMessage, showReloadPrompt, setShowReloadPrompt } = useETagManager();
+  const { etag, updateEtag, clearConflictMessage } = useETagManager();
 
   // Task 4.1: インメモリーモードへのフォールバック機能
-  const { isInFallbackMode, lastError, retryCount, activateFallbackMode, deactivateFallbackMode } = useFallbackMode();
+  const { isInFallbackMode, activateFallbackMode, deactivateFallbackMode } = useFallbackMode();
 
   // ポーリング失敗時のエラーハンドラ
   const handlePollingError = React.useCallback((errorInfo: PollingErrorInfo) => {
@@ -89,12 +89,11 @@ export function GameTimer() {
       return;
     }
     const result = await switchTurn(etag);
-    if (result) {
+    if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
-      setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, switchTurn, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, switchTurn, fallbackState, updateEtag, clearConflictMessage]);
 
   const handlePauseResume = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
@@ -108,12 +107,11 @@ export function GameTimer() {
     const result = isPaused
       ? await resumeGameApi(etag)
       : await pauseGameApi(etag);
-    if (result) {
+    if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
-      setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, isPaused, pauseGameApi, resumeGameApi, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, isPaused, pauseGameApi, resumeGameApi, fallbackState, updateEtag, clearConflictMessage]);
 
   const handleResetGame = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
@@ -125,12 +123,11 @@ export function GameTimer() {
       return;
     }
     const result = await resetGameApi(etag);
-    if (result) {
+    if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
-      setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage]);
 
   const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
@@ -142,12 +139,11 @@ export function GameTimer() {
       return;
     }
     const result = await updateGame(etag, { playerCount });
-    if (result) {
+    if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
-      setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, updateGame, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, updateGame, fallbackState, updateEtag, clearConflictMessage]);
 
   const handleTimerModeChange = React.useCallback(async (checked: boolean) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
@@ -166,12 +162,11 @@ export function GameTimer() {
       ? { timerMode: 'count-down' as const, countdownSeconds }
       : { timerMode: 'count-up' as const };
     const result = await updateGame(etag, params);
-    if (result) {
+    if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
-      setShowReloadPrompt(false);
     }
-  }, [isInFallbackMode, etag, countdownSeconds, updateGame, fallbackState, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, countdownSeconds, updateGame, fallbackState, updateEtag, clearConflictMessage]);
 
   return (
     <div className="game-timer">
@@ -184,7 +179,6 @@ export function GameTimer() {
         {isInFallbackMode && (
           <div className="fallback-mode-warning" role="alert" aria-live="assertive" data-testid="fallback-warning">
             ⚠️ API接続が失敗しました。インメモリーモードで動作しています。
-            （再接続試行: {retryCount}回）
           </div>
         )}
 
@@ -311,7 +305,7 @@ export function GameTimer() {
                 <select
                   id="player-count"
                   className="styled-select"
-                  value={isInFallbackMode ? gameState.players.length : (serverGameState.serverState?.players.length || 4)}
+                  value={isInFallbackMode ? (gameState?.players.length || 4) : (serverGameState.serverState?.players.length || 4)}
                   onChange={(e) => handlePlayerCountChange(Number(e.target.value))}
                   disabled={isGameActive && !isPaused}
                   data-testid="player-count-dropdown"
@@ -329,7 +323,7 @@ export function GameTimer() {
                 <label className="toggle-switch-enhanced">
                   <input
                     type="checkbox"
-                    checked={isInFallbackMode ? gameState.timerMode === 'count-down' : serverGameState.serverState?.timerMode === 'count-down'}
+                    checked={isInFallbackMode ? (gameState?.timerMode === 'count-down') : (serverGameState.serverState?.timerMode === 'count-down')}
                     onChange={(e) => handleTimerModeChange(e.target.checked)}
                     disabled={isGameActive && !isPaused}
                     data-testid="timer-mode-toggle"
@@ -341,7 +335,7 @@ export function GameTimer() {
                   </span>
                 </label>
               </div>
-              {(isInFallbackMode ? gameState.timerMode === 'count-down' : serverGameState.serverState?.timerMode === 'count-down') && (
+              {(isInFallbackMode ? (gameState?.timerMode === 'count-down') : (serverGameState.serverState?.timerMode === 'count-down')) && (
                 <div className="countdown-control">
                   <input
                     type="number"

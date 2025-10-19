@@ -17,8 +17,13 @@ import './TopTimePlayerIndicator.css';
  * - 要件2.3: 視覚的に目立つスタイル
  * - 要件2.4: プレイヤー名または番号表示
  */
+/**
+ * サーバー側とクライアント側の両方の型に対応
+ */
+type LongestPlayer = Player | { index: number; name: string; elapsedSeconds: number };
+
 interface TopTimePlayerIndicatorProps {
-  longestPlayer: Player | null;
+  longestPlayer: LongestPlayer | null;
 }
 
 export function TopTimePlayerIndicator({ longestPlayer }: TopTimePlayerIndicatorProps) {
@@ -29,7 +34,10 @@ export function TopTimePlayerIndicator({ longestPlayer }: TopTimePlayerIndicator
 
   // 時間をHH:MM:SS形式にフォーマット
   // formatTime()はMM:SS形式なので、HH:MM:SS形式に変換
-  const totalSeconds = longestPlayer.elapsedTimeSeconds;
+  // elapsedTimeSeconds (Phase 1) または elapsedSeconds (Phase 2) を使用
+  const totalSeconds = 'elapsedTimeSeconds' in longestPlayer
+    ? longestPlayer.elapsedTimeSeconds
+    : longestPlayer.elapsedSeconds;
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;

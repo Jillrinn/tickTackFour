@@ -29,7 +29,7 @@ export function useFallbackMode() {
     retryCount: 0
   });
 
-  const retryIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const retryIntervalRef = useRef<number | null>(null);
 
   /**
    * 3回連続失敗時にフォールバックモードに切り替え

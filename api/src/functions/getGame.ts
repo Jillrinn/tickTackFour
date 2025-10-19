@@ -44,7 +44,7 @@ async function getGame(
     };
 
     context.log('GET /api/game - ゲーム状態取得成功', {
-      playerCount: response.playerCount,
+      playerCount: response.players.length,
       activePlayerIndex: response.activePlayerIndex,
       isPaused: response.isPaused
     });
