@@ -4,27 +4,33 @@
   "description": "マルチプレイヤー・ゲームタイマー - ボードゲーム用の4〜6人対応タイマーアプリケーション",
   "private": true,
   "workspaces": [
-    "frontend"
+    "frontend",
+    "api"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=frontend",
+    "dev": "concurrently \"npm run dev --workspace=frontend\" \"npm run dev --workspace=api\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:api": "npm run dev --workspace=api",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "npm test --workspace=frontend -- --run",
-    "test:backend": "(cd api && npm test)",
-    "test:coverage": "npm run test:coverage --workspace=frontend && cd api && npm run test:coverage",
+    "test:unit": "npm run test --workspaces",
+    "test:frontend": "npm run test --workspace=frontend",
+    "test:backend": "npm run test --workspace=api",
+    "test:coverage": "npm run test:coverage --workspaces",
     "test:e2e": "playwright test",
     "test:e2e:phase1": "PHASE=1 playwright test",
     "test:e2e:phase2": "PHASE=2 playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "build": "npm run build --workspace=frontend",
+    "build": "npm run build --workspaces",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:api": "npm run build --workspace=api",
     "lint": "npm run lint --workspace=frontend",
-    "clean": "rm -rf frontend/dist"
+    "clean": "npm run clean --workspaces"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0"
+    "@playwright/test": "^1.56.0",
+    "concurrently": "^9.2.1"
   },
   "engines": {
     "node": ">=20.0.0",
