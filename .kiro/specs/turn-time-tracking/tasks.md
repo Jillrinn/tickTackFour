@@ -44,7 +44,7 @@
 ## Phase 3: useGameStateフックの拡張
 
 - [ ] 3. ゲーム状態管理ロジックを拡張する
-- [ ] 3.1 getCurrentTurnTime関数の実装
+- [x] 3.1 getCurrentTurnTime関数の実装
   - アクティブプレイヤーのターン経過時間を秒単位で計算する関数を作成
   - turnStartedAtがnullの場合は0を返す安全性チェックを実装
   - 一時停止中の時間を除外するロジックを実装

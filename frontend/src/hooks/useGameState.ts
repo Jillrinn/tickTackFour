@@ -24,7 +24,8 @@ function createDefaultPlayer(index: number): Player {
     elapsedTimeSeconds: 0,
     initialTimeSeconds: DEFAULT_INITIAL_TIME_SECONDS,
     isActive: false,
-    createdAt: new Date()
+    createdAt: new Date(),
+    turnStartedAt: null // Phase 2で追加: ターン開始時刻
   };
 }
 
@@ -40,7 +41,8 @@ function createDefaultGameState(playerCount: number = DEFAULT_PLAYER_COUNT): Gam
     isPaused: false,
     timerMode: DEFAULT_TIMER_MODE,
     createdAt: new Date(),
-    lastUpdatedAt: new Date()
+    lastUpdatedAt: new Date(),
+    pausedAt: null // Phase 2で追加: 一時停止開始時刻
   };
 }
 
@@ -115,17 +117,22 @@ export function useGameState() {
   }, []);
 
   /**
-   * アクティブプレイヤーを設定
+   * アクティブプレイヤーを設定（Task 3.4で拡張）
+   * - 新しいアクティブプレイヤーのturnStartedAtに現在時刻を設定
+   * - 前のアクティブプレイヤーのturnStartedAtをnullにクリア
    */
   const setActivePlayer = useCallback((playerId: string | null) => {
+    const now = new Date();
     setGameState((prev) => ({
       ...prev,
       activePlayerId: playerId,
       players: prev.players.map(p => ({
         ...p,
-        isActive: p.id === playerId
+        isActive: p.id === playerId,
+        // 新しいアクティブプレイヤーにはturnStartedAtを設定、それ以外はnull
+        turnStartedAt: p.id === playerId ? now : null
       })),
-      lastUpdatedAt: new Date()
+      lastUpdatedAt: now
     }));
   }, []);
 
@@ -133,11 +140,48 @@ export function useGameState() {
    * 一時停止状態を設定
    */
   const setPaused = useCallback((isPaused: boolean) => {
-    setGameState((prev) => ({
-      ...prev,
-      isPaused,
-      lastUpdatedAt: new Date()
-    }));
+    const now = new Date();
+    setGameState((prev) => {
+      // 一時停止する場合: pausedAtに現在時刻を記録
+      if (isPaused) {
+        return {
+          ...prev,
+          isPaused: true,
+          pausedAt: now,
+          lastUpdatedAt: now
+        };
+      }
+
+      // 再開する場合: 一時停止期間をターン開始時刻から除外
+      if (prev.pausedAt && prev.activePlayerId) {
+        const pauseDuration = now.getTime() - prev.pausedAt.getTime();
+
+        return {
+          ...prev,
+          isPaused: false,
+          pausedAt: null,
+          players: prev.players.map(p => {
+            // アクティブプレイヤーのturnStartedAtを調整
+            if (p.id === prev.activePlayerId && p.turnStartedAt) {
+              return {
+                ...p,
+                turnStartedAt: new Date(p.turnStartedAt.getTime() + pauseDuration)
+              };
+            }
+            return p;
+          }),
+          lastUpdatedAt: now
+        };
+      }
+
+      // pausedAtがnullの場合は通常の再開処理
+      return {
+        ...prev,
+        isPaused: false,
+        pausedAt: null,
+        lastUpdatedAt: now
+      };
+    });
   }, []);
 
   /**
@@ -391,6 +435,51 @@ export function useGameState() {
     return longestPlayer;
   }, [gameState.timerMode, gameState.players]);
 
+  /**
+   * 現在のアクティブプレイヤーのターン経過時間を計算（Task 3.1）
+   * - アクティブプレイヤーのターン開始時刻からの経過時間を秒単位で返す
+   * - turnStartedAtがnullの場合は0を返す
+   * - 一時停止中の時間を除外する
+   *
+   * 要件トレーサビリティ:
+   * - 要件1.3: ターン開始時刻からの経過時間を1秒間隔で計算
+   * - 要件1.4: 一時停止時にターン時間の計測を停止
+   * - 要件1.5: 再開時にターン時間の計測を再開（一時停止中の時間を除外）
+   */
+  const getCurrentTurnTime = useCallback((): number => {
+    // アクティブプレイヤーがいない場合は0を返す
+    if (!gameState.activePlayerId) {
+      return 0;
+    }
+
+    // アクティブプレイヤーを取得
+    const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
+    if (!activePlayer) {
+      return 0;
+    }
+
+    // turnStartedAtがnullの場合は0を返す
+    if (!activePlayer.turnStartedAt) {
+      return 0;
+    }
+
+    // 現在時刻を取得
+    const now = new Date();
+
+    // 一時停止中の場合、pausedAtからの経過時間を除外
+    let effectiveNow = now;
+    if (gameState.isPaused && gameState.pausedAt) {
+      // 一時停止中は、一時停止開始時点での経過時間を返す
+      effectiveNow = gameState.pausedAt;
+    }
+
+    // ターン開始からの経過時間を計算（秒単位）
+    const elapsedMs = effectiveNow.getTime() - activePlayer.turnStartedAt.getTime();
+    const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+    return Math.max(0, elapsedSeconds);
+  }, [gameState.activePlayerId, gameState.players, gameState.isPaused, gameState.pausedAt]);
+
   return {
     gameState,
     setPlayerCount,
@@ -406,6 +495,7 @@ export function useGameState() {
     isPlayerControlDisabled,
     validatePlayerCount,
     getPlayerCountError,
-    getLongestTimePlayer
+    getLongestTimePlayer,
+    getCurrentTurnTime
   };
 }
