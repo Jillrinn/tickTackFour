@@ -24,12 +24,17 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `ui-controls-enhancement`: UIコントロール強化（ドロップダウン、トグルスイッチ、セクション分割、固定表示）
 - `turn-time-tracking`: ターン時間トラッキング（現在のターンでの経過時間表示、ゲーム全体のプレイ時間表示）
 - `game-history-statistics`: ゲーム履歴統計画面（1ゲーム1レコード、プレイ時間順位表示、カウントアップ/ダウン判定、全体最多/最少時間プレイヤー表示）
-- `player-name-persistence`: プレイヤー名永続化機能（プルダウンで履歴選択、ローカルストレージ保存、UI統合検討）
+- `player-name-persistence`: プレイヤー名永続化機能（Azure Functions API + Cosmos DB Table API、プルダウン履歴選択、最大20件保存）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
 - **Commit messages must be written in Japanese** (コミットメッセージは日本語で記述すること)
+- **Git Commit Best Practice**:
+  - **DO NOT use `git add -A` or `git add .`** - これらは無関係な変更も含めてしまう
+  - **DO use selective staging** - 現在の作業に関連するファイルのみを明示的に指定してコミット
+  - 例: `git add frontend/src/components/PlayerList.tsx frontend/src/hooks/useGameState.ts`
+  - タスク完了ごとに、そのタスクに関連する変更のみをコミットする
 - **Code Exploration with Serena MCP**: Always use Serena MCP tools for code navigation and exploration
   - Use `mcp__serena__get_symbols_overview` to understand file structure
   - Use `mcp__serena__find_symbol` to locate functions, classes, and methods
