@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useFetchWithTimeout } from '../useFetchWithTimeout';
 
 describe('useFetchWithTimeout', () => {
@@ -95,6 +95,7 @@ describe('useFetchWithTimeout', () => {
         removeEventListener: vi.fn()
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       global.AbortController = vi.fn(function(this: any) {
         this.signal = mockSignal;
         this.abort = function() {
@@ -104,6 +105,7 @@ describe('useFetchWithTimeout', () => {
             abortHandler();
           }
         };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any;
 
       // fetchがAbortErrorを発生させるようモック
@@ -111,6 +113,7 @@ describe('useFetchWithTimeout', () => {
         (_url: string, options?: RequestInit) => {
           return new Promise((_, reject) => {
             if (options?.signal) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (options.signal as any).addEventListener('abort', () => {
                 const error = new Error('The operation was aborted');
                 error.name = 'AbortError';
@@ -142,6 +145,7 @@ describe('useFetchWithTimeout', () => {
         signal: { aborted: false },
         abort: abortSpy
       };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       global.AbortController = vi.fn(() => mockAbortController) as any;
 
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({

@@ -373,9 +373,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer(mockState);
       });
 
-      const displayBeforeUnmount = result.current.displayTime;
-
-      // アンマウント
+      // アンマウント（displayTimeの値は検証不要のためconst削除）
       unmount();
 
       // タイマー進行
