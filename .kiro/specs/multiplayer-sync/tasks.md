@@ -85,7 +85,7 @@
   - ETag楽観的ロック更新
   - _Requirements: 4.6_
 
-- [ ] 2.6 汎用更新エンドポイントの実装（POST /api/updateGame）
+- [x] 2.6 汎用更新エンドポイントの実装（POST /api/updateGame）
   - HTTPトリガーの設定（POST メソッド、/api/updateGameパス）
   - プレイヤー数変更機能（4-6人の範囲バリデーション）
   - タイマーモード変更機能（countup/countdown切替）
