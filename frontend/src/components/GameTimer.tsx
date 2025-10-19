@@ -69,9 +69,9 @@ export function GameTimer() {
   const { switchTurn, pauseGame: pauseGameApi, resumeGame: resumeGameApi, resetGame: resetGameApi, updateGame } = useGameApi();
 
   // Task 3.3: API呼び出しハンドラ
-  // テスト環境ではローカル状態管理を使用、本番環境ではAPI呼び出しを実行
+  // テスト環境またはフォールバックモード時はローカル状態管理を使用、本番環境ではAPI呼び出しを実行
   const handleSwitchTurn = React.useCallback(async () => {
-    if (import.meta.env.MODE === 'test') {
+    if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       switchToNextPlayer();
       return;
     }
@@ -85,10 +85,10 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [etag, switchTurn, switchToNextPlayer, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, switchTurn, switchToNextPlayer, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handlePauseResume = React.useCallback(async () => {
-    if (import.meta.env.MODE === 'test') {
+    if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       setPaused(!gameState.isPaused);
       return;
     }
@@ -104,10 +104,10 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [etag, gameState.isPaused, pauseGameApi, resumeGameApi, setPaused, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, gameState.isPaused, pauseGameApi, resumeGameApi, setPaused, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handleResetGame = React.useCallback(async () => {
-    if (import.meta.env.MODE === 'test') {
+    if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       resetGame();
       return;
     }
@@ -121,10 +121,10 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [etag, resetGameApi, resetGame, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, resetGameApi, resetGame, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
-    if (import.meta.env.MODE === 'test') {
+    if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       setPlayerCount(playerCount);
       return;
     }
@@ -138,10 +138,10 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [etag, updateGame, setPlayerCount, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, updateGame, setPlayerCount, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handleTimerModeChange = React.useCallback(async (checked: boolean) => {
-    if (import.meta.env.MODE === 'test') {
+    if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       if (checked) {
         setTimerMode('count-down', countdownSeconds);
       } else {
@@ -162,7 +162,7 @@ export function GameTimer() {
       clearConflictMessage();
       setShowReloadPrompt(false);
     }
-  }, [etag, countdownSeconds, updateGame, setTimerMode, updateEtag, clearConflictMessage, setShowReloadPrompt]);
+  }, [isInFallbackMode, etag, countdownSeconds, updateGame, setTimerMode, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   // タイムアウトしたプレイヤーID（Task 12.2）
   const timedOutPlayerId = getTimedOutPlayerId();
