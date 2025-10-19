@@ -1,4 +1,4 @@
-import { TableClient, RestError } from '@azure/data-tables';
+import { TableClient } from '@azure/data-tables';
 import { getGameState, createGameState, updateGameState } from '../gameStateService';
 import { GameState, GameStateEntity } from '../../models/gameState';
 
@@ -56,7 +56,7 @@ describe('GameStateService', () => {
 
     it('ゲーム状態が存在しない場合、デフォルト状態を作成して返す', async () => {
       // Arrange
-      const notFoundError = new RestError('Not Found', { statusCode: 404 });
+      const notFoundError = { statusCode: 404, message: 'Not Found' };
       (mockTableClient.getEntity as jest.Mock).mockRejectedValue(notFoundError);
 
       const mockCreatedEntity: GameStateEntity = {

@@ -2,7 +2,7 @@ import { HttpRequest, InvocationContext } from '@azure/functions';
 import { getGameState, updateGameState } from '../../services/gameStateService';
 import { retryUpdateWithETag } from '../../services/retryWithETag';
 import { GameState, Player } from '../../models/gameState';
-import { RestError } from '@azure/data-tables';
+import { hasStatusCodeValue } from "../../utils/errorUtils";
 
 // updateGame関数をテスト用にインポート
 // Note: app.httpで登録されているため、直接インポートできないので再実装
@@ -153,7 +153,7 @@ async function updateGame(
       })
     };
   } catch (error) {
-    if (error instanceof RestError && error.statusCode === 412) {
+    if (hasStatusCodeValue(error, 412)) {
       return {
         status: 409,
         headers: { 'Content-Type': 'application/json' },
@@ -592,7 +592,7 @@ describe('POST /api/updateGame', () => {
         })
       } as HttpRequest;
 
-      const restError = new RestError('Precondition failed', { statusCode: 412 });
+      const restError = { statusCode: 412, message: "Precondition failed" };
       mockRetryUpdateWithETag.mockRejectedValue(restError);
 
       const response = await updateGame(request, context);

@@ -3,7 +3,7 @@ import { getGameState, updateGameState } from '../../services/gameStateService';
 import { calculateElapsedTime } from '../../services/timeCalculation';
 import { retryUpdateWithETag } from '../../services/retryWithETag';
 import { GameState } from '../../models/gameState';
-import { RestError } from '@azure/data-tables';
+import { hasStatusCodeValue } from "../../utils/errorUtils";
 
 // switchTurn関数をテスト用にインポート
 // Note: app.httpで登録されているため、直接インポートできないので再実装
@@ -79,7 +79,7 @@ async function switchTurn(
       })
     };
   } catch (error) {
-    if (error instanceof RestError && error.statusCode === 412) {
+    if (hasStatusCodeValue(error, 412)) {
       return {
         status: 409,
         headers: { 'Content-Type': 'application/json' },
@@ -396,7 +396,7 @@ describe('POST /api/switchTurn', () => {
       mockCalculateElapsedTime.mockReturnValue(125);
 
       // 3回再試行後も412エラー
-      const conflictError = new RestError('Precondition failed', { statusCode: 412 });
+      const conflictError = { statusCode: 412, message: "Precondition failed" };
       mockRetryUpdateWithETag.mockRejectedValue(conflictError);
 
       // Act

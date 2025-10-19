@@ -1,4 +1,3 @@
-import { RestError } from '@azure/data-tables';
 import { retryUpdateWithETag } from '../retryWithETag';
 import { GameState } from '../../models/gameState';
 
@@ -53,7 +52,7 @@ describe('ETag Retry Mechanism', () => {
 
     it('412 Conflictが1回発生した場合、最新状態を取得して再試行し成功する', async () => {
       // Arrange
-      const conflictError = new RestError('Conflict', { statusCode: 412 });
+      const conflictError = { statusCode: 412, message: 'Conflict' };
       const mockUpdateFn = jest
         .fn()
         .mockRejectedValueOnce(conflictError)
@@ -89,7 +88,7 @@ describe('ETag Retry Mechanism', () => {
 
     it('412 Conflictが2回発生した場合、指数バックオフで待機して再試行する', async () => {
       // Arrange
-      const conflictError = new RestError('Conflict', { statusCode: 412 });
+      const conflictError = { statusCode: 412, message: 'Conflict' };
       const mockUpdateFn = jest
         .fn()
         .mockRejectedValueOnce(conflictError) // 1回目失敗
@@ -127,7 +126,7 @@ describe('ETag Retry Mechanism', () => {
 
     it('3回連続で412 Conflictが発生した場合、Conflictエラーをスローする', async () => {
       // Arrange
-      const conflictError = new RestError('Conflict', { statusCode: 412 });
+      const conflictError = { statusCode: 412, message: 'Conflict' };
       const mockUpdateFn = jest.fn().mockRejectedValue(conflictError);
 
       const mockGetLatestFn = jest.fn().mockResolvedValue({
@@ -156,14 +155,14 @@ describe('ETag Retry Mechanism', () => {
 
     it('412以外のエラーが発生した場合、即座にエラーをスローする', async () => {
       // Arrange
-      const serverError = new RestError('Internal Server Error', { statusCode: 500 });
+      const serverError = { statusCode: 500, message: 'Internal Server Error' };
       const mockUpdateFn = jest.fn().mockRejectedValue(serverError);
       const mockGetLatestFn = jest.fn();
 
       // Act & Assert
       await expect(
         retryUpdateWithETag(mockState, 'initial-etag', mockUpdateFn, mockGetLatestFn)
-      ).rejects.toThrow('Internal Server Error');
+      ).rejects.toEqual(serverError);
 
       expect(mockUpdateFn).toHaveBeenCalledTimes(1);
       expect(mockGetLatestFn).not.toHaveBeenCalled();
@@ -171,7 +170,7 @@ describe('ETag Retry Mechanism', () => {
 
     it('指数バックオフの待機時間が正しい（100ms, 200ms）', async () => {
       // Arrange
-      const conflictError = new RestError('Conflict', { statusCode: 412 });
+      const conflictError = { statusCode: 412, message: 'Conflict' };
       const mockUpdateFn = jest.fn().mockRejectedValue(conflictError);
       const mockGetLatestFn = jest.fn().mockResolvedValue({
         state: mockState,

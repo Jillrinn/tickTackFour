@@ -2,7 +2,7 @@ import { HttpRequest, InvocationContext } from '@azure/functions';
 import { getGameState, updateGameState } from '../../services/gameStateService';
 import { retryUpdateWithETag } from '../../services/retryWithETag';
 import { GameState, createDefaultGameState } from '../../models/gameState';
-import { RestError } from '@azure/data-tables';
+import { hasStatusCodeValue } from "../../utils/errorUtils";
 
 // reset関数をテスト用にインポート
 // Note: app.httpで登録されているため、直接インポートできないので再実装
@@ -57,7 +57,7 @@ async function reset(
       })
     };
   } catch (error) {
-    if (error instanceof RestError && error.statusCode === 412) {
+    if (hasStatusCodeValue(error, 412)) {
       return {
         status: 409,
         headers: { 'Content-Type': 'application/json' },
@@ -315,7 +315,7 @@ describe('POST /api/reset', () => {
       });
 
       // 3回再試行後も412エラー
-      const conflictError = new RestError('Precondition failed', { statusCode: 412 });
+      const conflictError = { statusCode: 412, message: "Precondition failed" };
       mockRetryUpdateWithETag.mockRejectedValue(conflictError);
 
       // Act

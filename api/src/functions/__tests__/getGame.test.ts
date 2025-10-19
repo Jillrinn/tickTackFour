@@ -24,8 +24,14 @@ async function getGame(
     const calculatedTimes = calculateAllPlayerTimes(result.state);
 
     const response: GameStateWithTime = {
-      ...result.state,
-      calculatedTimes,
+      players: result.state.players.map((player, index) => ({
+        name: player.name,
+        elapsedSeconds: calculatedTimes[index].elapsedSeconds
+      })),
+      activePlayerIndex: result.state.activePlayerIndex,
+      timerMode: result.state.timerMode,
+      countdownSeconds: result.state.countdownSeconds,
+      isPaused: result.state.isPaused,
       etag: result.etag
     };
 
@@ -134,9 +140,8 @@ describe('GET /api/game', () => {
       expect(response.headers['Content-Type']).toBe('application/json');
 
       const body: GameStateWithTime = JSON.parse(response.body);
-      expect(body.playerCount).toBe(4);
       expect(body.players).toHaveLength(4);
-      expect(body.calculatedTimes).toEqual(mockCalculatedTimes);
+      expect(body.players[0].elapsedSeconds).toBe(mockCalculatedTimes[0].elapsedSeconds);
       expect(body.etag).toBe(mockETag);
       expect(body.activePlayerIndex).toBe(0);
       expect(body.isPaused).toBe(false);
@@ -184,10 +189,8 @@ describe('GET /api/game', () => {
       expect(response.status).toBe(200);
 
       const body: GameStateWithTime = JSON.parse(response.body);
-      expect(body.playerCount).toBe(4);
       expect(body.players).toHaveLength(4);
-      expect(body.players[0].accumulatedSeconds).toBe(0);
-      expect(body.calculatedTimes).toEqual(mockCalculatedTimes);
+      expect(body.players[0].elapsedSeconds).toBe(0);
       expect(body.etag).toBe('W/"initial-etag"');
     });
 
@@ -231,8 +234,7 @@ describe('GET /api/game', () => {
 
       const body: GameStateWithTime = JSON.parse(response.body);
       expect(body.isPaused).toBe(true);
-      expect(body.pausedAt).toBe('2025-01-01T00:05:00.000Z');
-      expect(body.calculatedTimes[1].elapsedSeconds).toBe(250);
+      expect(body.players[1].elapsedSeconds).toBe(250);
     });
   });
 
@@ -331,7 +333,12 @@ describe('GET /api/game', () => {
         etag: expectedETag
       });
 
-      mockCalculateAllPlayerTimes.mockReturnValue([]);
+      mockCalculateAllPlayerTimes.mockReturnValue([
+        { playerId: 1, elapsedSeconds: 0, isActive: true },
+        { playerId: 2, elapsedSeconds: 0, isActive: false },
+        { playerId: 3, elapsedSeconds: 0, isActive: false },
+        { playerId: 4, elapsedSeconds: 0, isActive: false }
+      ]);
 
       // Act
       const response = await getGame(mockRequest, mockContext);
