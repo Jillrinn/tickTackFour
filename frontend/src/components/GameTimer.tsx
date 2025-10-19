@@ -2,6 +2,7 @@ import React from 'react';
 import { useGameState } from '../hooks/useGameState';
 import { usePollingSync } from '../hooks/usePollingSync';
 import { useGameApi } from '../hooks/useGameApi';
+import { useETagManager } from '../hooks/useETagManager';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
@@ -32,16 +33,18 @@ export function GameTimer() {
   const [countdownSeconds, setCountdownSeconds] = React.useState(600);
 
   // Task 3.1: ポーリング同期サービスの実装
-  // バックエンドから取得したゲーム状態とETagを管理
+  // バックエンドから取得したゲーム状態を管理
   const [serverGameState, setServerGameState] = React.useState<GameStateWithTime | null>(null);
-  const [etag, setEtag] = React.useState<string | null>(null);
+
+  // Task 3.4: ETag管理と楽観的ロック対応
+  const { etag, updateEtag, isConflict, conflictMessage, setConflictMessage, clearConflictMessage, showReloadPrompt, setShowReloadPrompt } = useETagManager();
 
   // 5秒ごとにバックエンドからゲーム状態を取得
   // テスト環境では無効化（jsdomで相対URLが使えないため）
   usePollingSync((state: GameStateWithTime) => {
     console.log('[PollingSync] Server state updated:', state);
     setServerGameState(state);
-    setEtag(state.etag);
+    updateEtag(state.etag);
   }, {
     enabled: import.meta.env.MODE !== 'test'
   });
@@ -62,9 +65,11 @@ export function GameTimer() {
     }
     const result = await switchTurn(etag);
     if (result) {
-      setEtag(result.etag);
+      updateEtag(result.etag);
+      clearConflictMessage();
+      setShowReloadPrompt(false);
     }
-  }, [etag, switchTurn, switchToNextPlayer]);
+  }, [etag, switchTurn, switchToNextPlayer, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handlePauseResume = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test') {
@@ -79,9 +84,11 @@ export function GameTimer() {
       ? await resumeGameApi(etag)
       : await pauseGameApi(etag);
     if (result) {
-      setEtag(result.etag);
+      updateEtag(result.etag);
+      clearConflictMessage();
+      setShowReloadPrompt(false);
     }
-  }, [etag, gameState.isPaused, pauseGameApi, resumeGameApi, setPaused]);
+  }, [etag, gameState.isPaused, pauseGameApi, resumeGameApi, setPaused, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handleResetGame = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test') {
@@ -94,9 +101,11 @@ export function GameTimer() {
     }
     const result = await resetGameApi(etag);
     if (result) {
-      setEtag(result.etag);
+      updateEtag(result.etag);
+      clearConflictMessage();
+      setShowReloadPrompt(false);
     }
-  }, [etag, resetGameApi, resetGame]);
+  }, [etag, resetGameApi, resetGame, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
     if (import.meta.env.MODE === 'test') {
@@ -109,9 +118,11 @@ export function GameTimer() {
     }
     const result = await updateGame(etag, { playerCount });
     if (result) {
-      setEtag(result.etag);
+      updateEtag(result.etag);
+      clearConflictMessage();
+      setShowReloadPrompt(false);
     }
-  }, [etag, updateGame, setPlayerCount]);
+  }, [etag, updateGame, setPlayerCount, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   const handleTimerModeChange = React.useCallback(async (checked: boolean) => {
     if (import.meta.env.MODE === 'test') {
@@ -131,9 +142,11 @@ export function GameTimer() {
       : { timerMode: 'count-up' as const };
     const result = await updateGame(etag, params);
     if (result) {
-      setEtag(result.etag);
+      updateEtag(result.etag);
+      clearConflictMessage();
+      setShowReloadPrompt(false);
     }
-  }, [etag, countdownSeconds, updateGame, setTimerMode]);
+  }, [etag, countdownSeconds, updateGame, setTimerMode, updateEtag, clearConflictMessage, setShowReloadPrompt]);
 
   // タイムアウトしたプレイヤーID（Task 12.2）
   const timedOutPlayerId = getTimedOutPlayerId();
