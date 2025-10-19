@@ -68,7 +68,7 @@
   - ETag楽観的ロック更新
   - _Requirements: 1.5.5, 4.4_
 
-- [ ] 2.4 再開エンドポイントの実装（POST /api/resume）
+- [x] 2.4 再開エンドポイントの実装（POST /api/resume）
   - HTTPトリガーの設定（POST メソッド、/api/resumeパス）
   - turnStartedAtに現在時刻を設定（新しいターン開始）
   - pausedAtをnullに設定
