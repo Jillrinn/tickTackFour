@@ -64,9 +64,9 @@ Azure Static Web Apps (Hosting)
 - **@azure/functions 4.8**: Azure Functions SDK
 
 ### テストツール
-- **Jest 30.2**: テストフレームワーク
-- **ts-jest 29.4**: TypeScript対応
-- **tsx 4.20**: TypeScript実行環境
+- **Jest 29.7**: テストフレームワーク
+- **ts-jest 29.1**: TypeScript対応
+- **tsx 4.7**: TypeScript実行環境
 
 ## Azure無料層サービス
 
