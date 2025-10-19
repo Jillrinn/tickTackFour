@@ -187,9 +187,9 @@
   - インメモリーモードフォールバックのテスト（API停止シミュレーション）
   - _Requirements: 全要件のエンドツーエンド検証_
 
-- [ ] 5.4 Azure Static Web Appsへのデプロイ
-  - ローカルビルドの最終確認（frontend + api）
-  - mainブランチへのpush
-  - GitHub Actions CI/CDパイプライン実行確認
-  - デプロイ成功確認
-  - 本番環境での動作確認
+- [x] 5.4 Azure Static Web Appsへのデプロイ
+  - [x] ローカルビルドの最終確認（frontend + api）
+  - [x] mainブランチへのpush
+  - [x] GitHub Actions CI/CDパイプライン実行確認（Frontend/Backend/Quality全成功）
+  - [x] デプロイ成功確認（Azure Static Web Apps CI/CD成功）
+  - [x] 本番環境での動作確認
