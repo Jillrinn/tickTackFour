@@ -97,7 +97,7 @@
 
 - [ ] 3. フロントエンド統合とポーリング同期の実装
 
-- [x] 3.1 ポーリング同期サービスの実装
+- [ ] 3.1 ポーリング同期サービスの実装
   - React useEffectで5秒間隔のsetInterval設定
   - GET /api/gameへのfetchリクエスト
   - レスポンスからGameStateWithTimeを取得
@@ -114,7 +114,7 @@
   - アクティブプレイヤー切替時の時間リセット処理
   - _Requirements: 1.5.7_
 
-- [x] 3.3 既存GameTimerコンポーネントのAPI連携対応
+- [ ] 3.3 既存GameTimerコンポーネントのAPI連携対応
   - ターン切り替えボタンクリック時にPOST /api/switchTurn送信
   - 一時停止ボタンクリック時にPOST /api/pause送信
   - 再開ボタンクリック時にPOST /api/resume送信
@@ -123,7 +123,7 @@
   - リクエストにETagを含める（経過時間は含めない）
   - _Requirements: 1.3, 1.5.8_
 
-- [x] 3.4 ETag管理と楽観的ロック対応の実装
+- [ ] 3.4 ETag管理と楽観的ロック対応の実装
   - レスポンスからETagを抽出してuseStateで保持
   - POSTリクエスト送信時にETagをヘッダーまたはボディに含める
   - 412 Conflictレスポンス検出
