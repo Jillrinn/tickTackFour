@@ -62,7 +62,7 @@
   - formatTime関数を再利用してコードの重複を避ける
   - _Requirements: 2.3_
 
-- [ ] 3.4 setActivePlayer関数の拡張
+- [x] 3.4 setActivePlayer関数の拡張
   - 新しいアクティブプレイヤーのturnStartedAtに現在時刻を設定
   - 前のアクティブプレイヤーのturnStartedAtをnullにクリア
   - _Requirements: 1.1, 1.2_
