@@ -98,6 +98,28 @@ export function GameTimer() {
     }
   }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
 
+  // Task 8: ブラウザ閉じる前（beforeunload）にプレイヤー名を保存
+  React.useEffect(() => {
+    const handleBeforeUnload = () => {
+      const players = isInFallbackMode ? gameState?.players : serverGameState.serverState?.players;
+      if (players) {
+        const nonDefaultNames = players
+          .map(p => p.name)
+          .filter(name => !name.match(/^プレイヤー\d+$/)); // デフォルト名（「プレイヤー1」等）を除外
+
+        if (nonDefaultNames.length > 0) {
+          // navigator.sendBeacon()を使ってブラウザ閉じる前に確実に送信
+          // ただし、usePlayerNameHistoryのsaveNamesはasync関数なので、
+          // テスト環境ではfetchを使って検証可能にする
+          playerNameHistory.saveNames(nonDefaultNames);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isInFallbackMode, gameState, serverGameState.serverState?.players, playerNameHistory]);
+
   // Task 3.3: API呼び出しハンドラ
   // テスト環境またはフォールバックモード時はローカル状態管理を使用、本番環境ではAPI呼び出しを実行
   const handleSwitchTurn = React.useCallback(async () => {
@@ -135,6 +157,18 @@ export function GameTimer() {
   }, [isInFallbackMode, etag, isPaused, pauseGameApi, resumeGameApi, fallbackState, updateEtag, clearConflictMessage]);
 
   const handleResetGame = React.useCallback(async () => {
+    // Task 8: リセット前にデフォルト名以外のプレイヤー名を保存
+    const players = isInFallbackMode ? gameState?.players : serverGameState.serverState?.players;
+    if (players) {
+      const nonDefaultNames = players
+        .map(p => p.name)
+        .filter(name => !name.match(/^プレイヤー\d+$/)); // デフォルト名（「プレイヤー1」等）を除外
+
+      if (nonDefaultNames.length > 0) {
+        await playerNameHistory.saveNames(nonDefaultNames);
+      }
+    }
+
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       fallbackState.resetGame();
       return;
@@ -148,7 +182,7 @@ export function GameTimer() {
       updateEtag(result.etag);
       clearConflictMessage();
     }
-  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage]);
+  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage, gameState, serverGameState.serverState?.players, playerNameHistory]);;
 
   const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
