@@ -5,6 +5,7 @@ import { usePollingSync, type PollingErrorInfo } from '../hooks/usePollingSync';
 import { useGameApi } from '../hooks/useGameApi';
 import { useETagManager } from '../hooks/useETagManager';
 import { useFallbackMode } from '../hooks/useFallbackMode';
+import { usePlayerNameHistory } from '../hooks/usePlayerNameHistory';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
@@ -33,6 +34,14 @@ export function GameTimer() {
 
   // Task 4.1: インメモリーモードへのフォールバック機能
   const { isInFallbackMode, activateFallbackMode, deactivateFallbackMode } = useFallbackMode();
+
+  // Task 7.1: プレイヤー名履歴管理
+  const playerNameHistory = usePlayerNameHistory();
+
+  // プレイヤー名入力フィールドのフォーカス時に履歴を取得
+  const handlePlayerNameFocus = React.useCallback(() => {
+    playerNameHistory.fetchNames();
+  }, [playerNameHistory]);
 
   // ポーリング失敗時のエラーハンドラ
   const handlePollingError = React.useCallback((errorInfo: PollingErrorInfo) => {
@@ -76,6 +85,18 @@ export function GameTimer() {
 
   // 最長時間プレイヤーを取得
   const longestPlayer = isInFallbackMode ? fallbackState.getLongestTimePlayer() : serverGameState.getLongestTimePlayer();
+
+  // Task 4.1: ターン時間表示の1秒ごと更新（フォールバックモードのみ）
+  // 強制的に再レンダリングしてgetCurrentTurnTime()の表示を更新
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  React.useEffect(() => {
+    if (isInFallbackMode && !isPaused && gameState?.activePlayerId) {
+      const interval = setInterval(() => {
+        forceUpdate();
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
 
   // Task 3.3: API呼び出しハンドラ
   // テスト環境またはフォールバックモード時はローカル状態管理を使用、本番環境ではAPI呼び出しを実行
@@ -243,7 +264,7 @@ export function GameTimer() {
         <div className="players-section">
           <h3>プレイヤー一覧</h3>
           <ul className="players-grid">
-            {isInFallbackMode ? (
+            {(import.meta.env.MODE === 'test' || isInFallbackMode) ? (
               // フォールバックモード: Phase 1ローカル状態
               gameState && gameState.players.map((player) => {
                 const isTimedOut = player.id === timedOutPlayerId;
@@ -256,10 +277,22 @@ export function GameTimer() {
                         className="player-name-input"
                         value={player.name}
                         onChange={(e) => fallbackState.updatePlayerName(player.id, e.target.value)}
+                        onFocus={handlePlayerNameFocus}
+                        list={`player-name-history-${player.id}`}
                         aria-label="プレイヤー名"
                       />
+                      <datalist id={`player-name-history-${player.id}`}>
+                        {playerNameHistory.names.map((name, index) => (
+                          <option key={index} value={name} />
+                        ))}
+                      </datalist>
                     </div>
                     <div className="player-time">経過時間: {formatTime(player.elapsedTimeSeconds)}</div>
+                    {player.isActive && player.turnStartedAt && (
+                      <div className="turn-time" data-testid="turn-time">
+                        現在のターン: {formatTime(fallbackState.getCurrentTurnTime())}
+                      </div>
+                    )}
                     <div className="player-actions">
                       <button
                         onClick={() => fallbackState.updatePlayerTime(player.id, player.elapsedTimeSeconds + 10)}
