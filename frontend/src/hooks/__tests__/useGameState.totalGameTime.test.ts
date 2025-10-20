@@ -51,8 +51,8 @@ describe('useGameState - ゲーム全体のプレイ時間（Task 3.2）', () =>
         result.current.setTimerMode('count-down', 600);
       });
 
-      // カウントダウンでは、elapsedTimeSecondsは残り時間を表す
-      // プレイヤー1: 残り500秒（使用100秒）、プレイヤー2: 残り400秒（使用200秒）
+      // カウントダウンモードでも、elapsedTimeSecondsの合計を返す（design.md line 363）
+      // プレイヤー1: 500秒、プレイヤー2: 400秒、プレイヤー3: 550秒、プレイヤー4: 450秒
       act(() => {
         result.current.updatePlayerTime(result.current.gameState.players[0].id, 500);
         result.current.updatePlayerTime(result.current.gameState.players[1].id, 400);
@@ -61,13 +61,9 @@ describe('useGameState - ゲーム全体のプレイ時間（Task 3.2）', () =>
       });
 
       const totalTime = result.current.getTotalGameTime();
-      // カウントダウンモードでは: (initialTime - elapsedTime)の合計
-      // プレイヤー1: 600 - 500 = 100秒使用
-      // プレイヤー2: 600 - 400 = 200秒使用
-      // プレイヤー3: 600 - 550 = 50秒使用
-      // プレイヤー4: 600 - 450 = 150秒使用
-      // 合計: 100 + 200 + 50 + 150 = 500秒
-      expect(totalTime).toBe(500);
+      // getTotalGameTimeは全プレイヤーのelapsedTimeSecondsの合計を返す
+      // 合計: 500 + 400 + 550 + 450 = 1900秒
+      expect(totalTime).toBe(1900);
     });
 
     it('プレイヤー数が変更された後も正しく計算する', () => {
