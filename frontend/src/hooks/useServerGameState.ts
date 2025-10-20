@@ -124,11 +124,48 @@ export function useServerGameState() {
     };
   }, [serverState]);
 
+  /**
+   * Task 5.1: ゲーム全体のプレイ時間を秒単位で取得
+   *
+   * Requirements: turn-time-tracking spec 2.2
+   * - 全プレイヤーのelapsedSecondsの合計を計算
+   * - プレイヤーが0人の場合は0を返す
+   */
+  const getTotalGameTime = useCallback((): number => {
+    if (!serverState || serverState.players.length === 0) return 0;
+
+    return serverState.players.reduce((total, player) => total + player.elapsedSeconds, 0);
+  }, [serverState]);
+
+  /**
+   * Task 5.1: ゲーム全体時間をフォーマット（HH:MM:SSまたはMM:SS）
+   *
+   * Requirements: turn-time-tracking spec 2.3
+   * - 1時間未満: MM:SS形式
+   * - 1時間以上: HH:MM:SS形式
+   */
+  const formatGameTime = useCallback((seconds: number): string => {
+    const totalSeconds = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (hours > 0) {
+      // 1時間以上: HH:MM:SS形式
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    } else {
+      // 1時間未満: MM:SS形式
+      return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+  }, []);
+
   return {
     serverState,
     displayTime,
     updateFromServer,
     formatTime,
-    getLongestTimePlayer
+    getLongestTimePlayer,
+    getTotalGameTime,
+    formatGameTime
   };
 }

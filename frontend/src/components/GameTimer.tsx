@@ -273,6 +273,32 @@ export function GameTimer() {
                 )
               )}
             </div>
+            {/* Task 5.1-5.2: ゲーム全体のプレイ時間表示 */}
+            <div className="total-game-time" data-testid="total-game-time">
+              <span className="total-game-time-label">ゲーム全体:</span>
+              <span
+                className={`total-game-time-value ${
+                  (() => {
+                    const totalSeconds = isInFallbackMode
+                      ? fallbackState.getTotalGameTime()
+                      : serverGameState.getTotalGameTime();
+
+                    // Task 5.2: 時間の長さに応じて色を変更
+                    // 1時間未満（<3600秒）: normal（緑系）
+                    // 1-2時間（3600-7200秒）: warning（オレンジ系）
+                    // 2時間以上（>7200秒）: danger（赤系）
+                    if (totalSeconds < 3600) return 'normal';
+                    if (totalSeconds < 7200) return 'warning';
+                    return 'danger';
+                  })()
+                }`}
+              >
+                {isInFallbackMode
+                  ? fallbackState.formatGameTime(fallbackState.getTotalGameTime())
+                  : serverGameState.formatGameTime(serverGameState.getTotalGameTime())
+                }
+              </span>
+            </div>
             <div className="sticky-header-actions">
               <button
                 onClick={handlePauseResume}

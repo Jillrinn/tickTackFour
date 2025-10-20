@@ -592,6 +592,70 @@ select {
   }
 }
 
+/* Task 5.2: ゲーム全体のプレイ時間表示のスタイル */
+.total-game-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.total-game-time-label {
+  color: #667eea;
+}
+
+.total-game-time-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+/* 1時間未満: 通常色（緑系） */
+.total-game-time-value.normal {
+  color: #2e7d32;
+  background: rgba(46, 125, 50, 0.1);
+}
+
+/* 1-2時間: 警告色（オレンジ系） */
+.total-game-time-value.warning {
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+/* 2時間以上: 危険色（赤系） */
+.total-game-time-value.danger {
+  color: #f44336;
+  background: rgba(244, 67, 54, 0.1);
+}
+
+/* レスポンシブ対応: モバイル（≤768px）では縦並び */
+@media (max-width: 768px) {
+  .total-game-time {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .total-game-time-label {
+    font-size: 0.9rem;
+  }
+
+  .total-game-time-value {
+    font-size: 1.2rem;
+  }
+}
+
+/* レスポンシブ対応: タブレット・PC（>768px）では横並び */
+@media (min-width: 769px) {
+  .total-game-time {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
 .player-actions {
   display: flex;
   gap: 0.5rem;
