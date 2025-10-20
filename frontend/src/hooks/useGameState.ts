@@ -504,6 +504,28 @@ export function useGameState() {
     }, 0);
   }, [gameState.players, gameState.timerMode]);
 
+  /**
+   * ゲーム全体時間を適切な形式でフォーマット
+   * 1時間未満: MM:SS形式、1時間以上: HH:MM:SS形式
+   * @param seconds - フォーマットする秒数
+   * @returns フォーマットされた時間文字列
+   */
+  const formatGameTime = useCallback((seconds: number): string => {
+    // 負の値は0として扱う
+    const validSeconds = Math.max(0, seconds);
+
+    // 1時間未満はformatTimeを再利用（MM:SS形式）
+    if (validSeconds < 3600) {
+      return formatTime(validSeconds);
+    }
+
+    // 1時間以上はHH:MM:SS形式
+    const hours = Math.floor(validSeconds / 3600);
+    const minutes = Math.floor((validSeconds % 3600) / 60);
+    const secs = validSeconds % 60;
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, [formatTime]);
+
   return {
     gameState,
     setPlayerCount,
@@ -521,6 +543,7 @@ export function useGameState() {
     getPlayerCountError,
     getLongestTimePlayer,
     getCurrentTurnTime,
-    getTotalGameTime
+    getTotalGameTime,
+    formatGameTime
   };
 }
