@@ -555,6 +555,43 @@ select {
   font-weight: 500;
 }
 
+/* Task 4.2: ターン時間表示のスタイル */
+.turn-time {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #424242;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* アクティブプレイヤーカード内のターン時間（強調表示） */
+.player-card.active .turn-time {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  font-weight: 600;
+  font-style: normal;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+/* レスポンシブ対応: モバイル（≤768px）では縦並び */
+@media (max-width: 768px) {
+  .turn-time {
+    display: block;
+    margin-top: 0.5rem;
+  }
+}
+
+/* レスポンシブ対応: タブレット・PC（>768px）では横並びも可能 */
+@media (min-width: 769px) {
+  .turn-time {
+    display: block;
+    margin-top: 0.25rem;
+  }
+}
+
 .player-actions {
   display: flex;
   gap: 0.5rem;
