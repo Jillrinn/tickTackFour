@@ -67,7 +67,7 @@
   - 前のアクティブプレイヤーのturnStartedAtをnullにクリア
   - _Requirements: 1.1, 1.2_
 
-- [ ] 3.5 setPaused関数の拡張
+- [x] 3.5 setPaused関数の拡張
   - 一時停止時にpausedAtに現在時刻を設定
   - 再開時にturnStartedAtを調整して一時停止期間を除外
   - 再開時にpausedAtをnullにクリア
