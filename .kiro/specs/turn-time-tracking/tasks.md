@@ -147,19 +147,19 @@
 
 ## Phase 6: GameTimerコンポーネントへの統合
 
-- [ ] 6. 既存のGameTimerコンポーネントに新機能を統合する
-- [ ] 6.1 プレイヤーカードへのTurnTimer統合
+- [x] 6. 既存のGameTimerコンポーネントに新機能を統合する
+- [x] 6.1 プレイヤーカードへのTurnTimer統合
   - 各プレイヤーカード内にTurnTimerコンポーネントを配置
   - 累計時間表示の下または横に「現在のターン」表示を追加
   - アクティブプレイヤーのみにTurnTimerを表示
   - _Requirements: 3.1_
 
-- [ ] 6.2 固定ヘッダーへのTotalPlayTime統合
+- [x] 6.2 固定ヘッダーへのTotalPlayTime統合
   - 固定ヘッダー内にTotalPlayTimeコンポーネントを配置
   - 目立つ位置に「ゲーム全体のプレイ時間」を表示
   - _Requirements: 3.2_
 
-- [ ] 6.3 統合テストを実行
+- [x] 6.3 統合テストを実行
   - GameTimerコンポーネント全体のテストを実行
   - TurnTimerとTotalPlayTimeが正しく統合されていることを検証
   - _Requirements: 5.3, 5.4_
