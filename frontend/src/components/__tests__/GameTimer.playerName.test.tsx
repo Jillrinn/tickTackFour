@@ -20,7 +20,7 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     render(<GameTimer />);
 
     // プレイヤー名入力フィールドを取得
-    const nameInputs = screen.getAllByRole('textbox', { name: /プレイヤー名/i });
+    const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
 
     // デフォルトで4人のプレイヤーが表示される
     expect(nameInputs).toHaveLength(4);
@@ -36,7 +36,7 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     render(<GameTimer />);
 
     const firstPlayerCard = screen.getAllByRole('listitem')[0];
-    const input = within(firstPlayerCard).getByRole('textbox', { name: /プレイヤー名/i });
+    const input = within(firstPlayerCard).getByRole('combobox', { name: /プレイヤー名/i });
 
     // クリックしてフォーカス
     await user.click(input);
@@ -50,7 +50,7 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     render(<GameTimer />);
 
     const firstPlayerCard = screen.getAllByRole('listitem')[0];
-    const input = within(firstPlayerCard).getByRole('textbox', { name: /プレイヤー名/i });
+    const input = within(firstPlayerCard).getByRole('combobox', { name: /プレイヤー名/i });
 
     // 名前を変更
     await user.clear(input);
@@ -66,10 +66,10 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     const playerCards = screen.getAllByRole('listitem');
 
     // デフォルト名が表示されていることを確認
-    expect(within(playerCards[0]).getByRole('textbox')).toHaveValue('プレイヤー1');
-    expect(within(playerCards[1]).getByRole('textbox')).toHaveValue('プレイヤー2');
-    expect(within(playerCards[2]).getByRole('textbox')).toHaveValue('プレイヤー3');
-    expect(within(playerCards[3]).getByRole('textbox')).toHaveValue('プレイヤー4');
+    expect(within(playerCards[0]).getByRole('combobox')).toHaveValue('プレイヤー1');
+    expect(within(playerCards[1]).getByRole('combobox')).toHaveValue('プレイヤー2');
+    expect(within(playerCards[2]).getByRole('combobox')).toHaveValue('プレイヤー3');
+    expect(within(playerCards[3]).getByRole('combobox')).toHaveValue('プレイヤー4');
   });
 
   test('複数のプレイヤー名を個別に変更できる', async () => {
@@ -79,19 +79,19 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     const playerCards = screen.getAllByRole('listitem');
 
     // 1人目の名前を変更
-    const input1 = within(playerCards[0]).getByRole('textbox', { name: /プレイヤー名/i });
+    const input1 = within(playerCards[0]).getByRole('combobox', { name: /プレイヤー名/i });
     await user.clear(input1);
     await user.type(input1, 'アリス');
 
     // 2人目の名前を変更
-    const input2 = within(playerCards[1]).getByRole('textbox', { name: /プレイヤー名/i });
+    const input2 = within(playerCards[1]).getByRole('combobox', { name: /プレイヤー名/i });
     await user.clear(input2);
     await user.type(input2, 'ボブ');
 
     // それぞれ正しく反映されていることを確認
     expect(input1).toHaveValue('アリス');
     expect(input2).toHaveValue('ボブ');
-    expect(within(playerCards[2]).getByRole('textbox')).toHaveValue('プレイヤー3');
+    expect(within(playerCards[2]).getByRole('combobox')).toHaveValue('プレイヤー3');
   });
 
   test('プレイヤー数を変更しても名前が保持される', async () => {
@@ -99,7 +99,7 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     render(<GameTimer />);
 
     // 1人目の名前を変更
-    const nameInputs = screen.getAllByRole('textbox', { name: /プレイヤー名/i });
+    const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     await user.clear(nameInputs[0]);
     await user.type(nameInputs[0], 'アリス');
 
@@ -108,7 +108,7 @@ describe('GameTimer - プレイヤー名入力UI', () => {
     await user.selectOptions(dropdown, '5');
 
     // 1人目の名前が保持されていることを確認
-    const updatedInputs = screen.getAllByRole('textbox', { name: /プレイヤー名/i });
+    const updatedInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     expect(updatedInputs).toHaveLength(5);
     expect(updatedInputs[0]).toHaveValue('アリス');
 
@@ -119,7 +119,7 @@ describe('GameTimer - プレイヤー名入力UI', () => {
   test('入力フィールドに適切なスタイリングが適用される', () => {
     render(<GameTimer />);
 
-    const input = within(screen.getAllByRole('listitem')[0]).getByRole('textbox', { name: /プレイヤー名/i });
+    const input = within(screen.getAllByRole('listitem')[0]).getByRole('combobox', { name: /プレイヤー名/i });
 
     // クラス名が適用されていることを確認
     expect(input).toHaveClass('player-name-input');

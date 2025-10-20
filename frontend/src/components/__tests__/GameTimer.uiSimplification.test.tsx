@@ -56,7 +56,7 @@ describe('GameTimer - UI簡素化', () => {
 
     // プレイヤーカードの数で分かる（デフォルト4人）
     // プレイヤーカードのみをカウント（他のlistitemを除外）
-    const playerNameInputs = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const playerNameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(playerNameInputs).toHaveLength(4);
   });
 

@@ -70,14 +70,14 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     // 初期状態: 4人
-    const initialPlayerCards = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const initialPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(initialPlayerCards).toHaveLength(4);
 
     // 5人を選択
     await user.selectOptions(dropdown, '5');
 
     // プレイヤー数が5人に変更される
-    const updatedPlayerCards = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const updatedPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(updatedPlayerCards).toHaveLength(5);
     expect(dropdown.value).toBe('5');
   });
@@ -89,14 +89,14 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     // 初期状態: 4人
-    const initialPlayerCards = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const initialPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(initialPlayerCards).toHaveLength(4);
 
     // 6人を選択
     await user.selectOptions(dropdown, '6');
 
     // プレイヤー数が6人に変更される
-    const updatedPlayerCards = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const updatedPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(updatedPlayerCards).toHaveLength(6);
     expect(dropdown.value).toBe('6');
   });
@@ -109,7 +109,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
 
     // 4人から6人に増やす
     await user.selectOptions(dropdown, '6');
-    const playerCardsAfterIncrease = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const playerCardsAfterIncrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(playerCardsAfterIncrease).toHaveLength(6);
 
     // プレイヤー1に10秒追加
@@ -123,7 +123,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
 
     // 6人から4人に減らす
     await user.selectOptions(dropdown, '4');
-    const playerCardsAfterDecrease = screen.getAllByRole('textbox', { name: /プレイヤー名/ });
+    const playerCardsAfterDecrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(playerCardsAfterDecrease).toHaveLength(4);
 
     // プレイヤー1の時間が保持されていることを確認
