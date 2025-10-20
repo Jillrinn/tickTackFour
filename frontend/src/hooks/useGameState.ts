@@ -480,6 +480,30 @@ export function useGameState() {
     return Math.max(0, elapsedSeconds);
   }, [gameState.activePlayerId, gameState.players, gameState.isPaused, gameState.pausedAt]);
 
+  /**
+   * ゲーム全体のプレイ時間を秒単位で計算
+   * カウントアップモード: 全プレイヤーのelapsedTimeSecondsの合計
+   * カウントダウンモード: 全プレイヤーの(initialTimeSeconds - elapsedTimeSeconds)の合計
+   * @returns ゲーム全体のプレイ時間（秒）
+   */
+  const getTotalGameTime = useCallback((): number => {
+    // プレイヤーが0人の場合は0を返す
+    if (gameState.players.length === 0) {
+      return 0;
+    }
+
+    // カウントアップモード: elapsedTimeSecondsの合計
+    if (gameState.timerMode === 'count-up') {
+      return gameState.players.reduce((total, player) => total + player.elapsedTimeSeconds, 0);
+    }
+
+    // カウントダウンモード: (initialTimeSeconds - elapsedTimeSeconds)の合計
+    return gameState.players.reduce((total, player) => {
+      const usedTime = player.initialTimeSeconds - player.elapsedTimeSeconds;
+      return total + usedTime;
+    }, 0);
+  }, [gameState.players, gameState.timerMode]);
+
   return {
     gameState,
     setPlayerCount,
@@ -496,6 +520,7 @@ export function useGameState() {
     validatePlayerCount,
     getPlayerCountError,
     getLongestTimePlayer,
-    getCurrentTurnTime
+    getCurrentTurnTime,
+    getTotalGameTime
   };
 }

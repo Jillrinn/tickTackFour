@@ -50,7 +50,7 @@
   - 一時停止中の時間を除外するロジックを実装
   - _Requirements: 1.3, 4.3_
 
-- [ ] 3.2 getTotalGameTime関数の実装
+- [x] 3.2 getTotalGameTime関数の実装
   - 全プレイヤーのelapsedTimeSecondsの合計を計算する関数を作成
   - プレイヤーが0人の場合は0を返す安全性チェックを実装
   - カウントダウンモードで正しい時間を返すロジックを実装
