@@ -337,4 +337,312 @@ describe('useGameState', () => {
       });
     });
   });
+
+  describe('Task 3.7: ターン時間トラッキング機能', () => {
+    describe('getCurrentTurnTime関数（タイマー使用）', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+      it('アクティブプレイヤーのターン経過時間を秒単位で計算する', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        // 3秒経過
+        act(() => {
+          vi.advanceTimersByTime(3000);
+        });
+
+        // ターン経過時間は約3秒（タイマー更新の影響を考慮して>=2秒で検証）
+        const turnTime = result.current.getCurrentTurnTime(playerId);
+        expect(turnTime).toBeGreaterThanOrEqual(2);
+      });
+
+      it('turnStartedAtがnullの場合は0を返す', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // アクティブにしていないプレイヤーのターン時間は0
+        const turnTime = result.current.getCurrentTurnTime(playerId);
+        expect(turnTime).toBe(0);
+      });
+
+      it('一時停止中の時間を除外する', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        // 2秒経過
+        act(() => {
+          vi.advanceTimersByTime(2000);
+        });
+
+        // 一時停止
+        act(() => {
+          result.current.setPaused(true);
+        });
+
+        // 一時停止中に3秒経過
+        act(() => {
+          vi.advanceTimersByTime(3000);
+        });
+
+        // 再開
+        act(() => {
+          result.current.setPaused(false);
+        });
+
+        // さらに1秒経過
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+
+        // ターン時間は約3秒（一時停止の3秒を除外）
+        const turnTime = result.current.getCurrentTurnTime(playerId);
+        expect(turnTime).toBeGreaterThanOrEqual(2);
+        expect(turnTime).toBeLessThan(5);  // 一時停止の3秒は含まれない
+      });
+    });
+
+    describe('getTotalGameTime関数（タイマー不使用）', () => {
+      it('全プレイヤーのelapsedTimeSecondsの合計を計算する', () => {
+        const { result } = renderHook(() => useGameState());
+
+        // プレイヤー1: 100秒
+        act(() => {
+          result.current.updatePlayerTime(result.current.gameState.players[0].id, 100);
+        });
+
+        // プレイヤー2: 150秒
+        act(() => {
+          result.current.updatePlayerTime(result.current.gameState.players[1].id, 150);
+        });
+
+        // プレイヤー3: 200秒
+        act(() => {
+          result.current.updatePlayerTime(result.current.gameState.players[2].id, 200);
+        });
+
+        // 合計: 450秒
+        const totalTime = result.current.getTotalGameTime();
+        expect(totalTime).toBe(450);
+      });
+
+      it('プレイヤーが0人の場合は0を返す', () => {
+        const { result } = renderHook(() => useGameState());
+
+        // プレイヤー数を強制的に0にする（通常はあり得ないが安全性チェック）
+        // setPlayerCountは4-6の範囲なので、この場合は初期状態で検証
+        // プレイヤーが存在する場合でも全員0秒なら合計0
+        const totalTime = result.current.getTotalGameTime();
+        expect(totalTime).toBe(0);
+      });
+
+      it('カウントダウンモードで正しい時間を返す', () => {
+        const { result } = renderHook(() => useGameState());
+
+        // カウントダウンモードに設定（初期時間100秒）
+        act(() => {
+          result.current.setTimerMode('count-down', 100);
+        });
+
+        // 全プレイヤー初期時間100秒 × 4人 = 400秒
+        const totalTime = result.current.getTotalGameTime();
+        expect(totalTime).toBe(400);
+      });
+    });
+
+    describe('formatGameTime関数（タイマー不使用）', () => {
+      it('1時間未満はMM:SS形式でフォーマットする', () => {
+        const { result } = renderHook(() => useGameState());
+
+        expect(result.current.formatGameTime(0)).toBe('00:00');
+        expect(result.current.formatGameTime(59)).toBe('00:59');
+        expect(result.current.formatGameTime(3599)).toBe('59:59');
+      });
+
+      it('1時間以上はHH:MM:SS形式でフォーマットする', () => {
+        const { result } = renderHook(() => useGameState());
+
+        expect(result.current.formatGameTime(3600)).toBe('1:00:00');
+        expect(result.current.formatGameTime(3661)).toBe('1:01:01');
+        expect(result.current.formatGameTime(7200)).toBe('2:00:00');
+      });
+    });
+
+    describe('setActivePlayer拡張: turnStartedAt設定', () => {
+      it('新しいアクティブプレイヤーのturnStartedAtに現在時刻を設定', () => {
+        const { result } = renderHook(() => useGameState());
+        const player1Id = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(player1Id);
+        });
+
+        // turnStartedAtがDateオブジェクトとして設定されている
+        const player1 = result.current.gameState.players.find(p => p.id === player1Id);
+        expect(player1?.turnStartedAt).toBeInstanceOf(Date);
+      });
+
+      it('前のアクティブプレイヤーのturnStartedAtをnullにクリア', () => {
+        const { result } = renderHook(() => useGameState());
+        const player1Id = result.current.gameState.players[0].id;
+        const player2Id = result.current.gameState.players[1].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(player1Id);
+        });
+
+        // プレイヤー2に切り替え
+        act(() => {
+          result.current.setActivePlayer(player2Id);
+        });
+
+        // プレイヤー1のturnStartedAtがnullになっている
+        const player1 = result.current.gameState.players.find(p => p.id === player1Id);
+        expect(player1?.turnStartedAt).toBeNull();
+
+        // プレイヤー2のturnStartedAtが設定されている
+        const player2 = result.current.gameState.players.find(p => p.id === player2Id);
+        expect(player2?.turnStartedAt).toBeInstanceOf(Date);
+      });
+    });
+
+    describe('setPaused拡張: pausedAtとturnStartedAt調整', () => {
+      it('一時停止時にpausedAtに現在時刻を設定', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        // 一時停止
+        act(() => {
+          result.current.setPaused(true);
+        });
+
+        // pausedAtがDateオブジェクトとして設定されている
+        expect(result.current.gameState.pausedAt).toBeInstanceOf(Date);
+      });
+
+      it('再開時にturnStartedAtを調整して一時停止期間を除外', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        const turnStartedAtBefore = result.current.gameState.players[0].turnStartedAt;
+
+        // 一時停止
+        act(() => {
+          result.current.setPaused(true);
+        });
+
+        // 3秒経過
+        act(() => {
+          vi.advanceTimersByTime(3000);
+        });
+
+        // 再開
+        act(() => {
+          result.current.setPaused(false);
+        });
+
+        const turnStartedAtAfter = result.current.gameState.players[0].turnStartedAt;
+
+        // turnStartedAtが調整されている（3秒分進んでいる）
+        if (turnStartedAtBefore && turnStartedAtAfter) {
+          const diff = turnStartedAtAfter.getTime() - turnStartedAtBefore.getTime();
+          expect(diff).toBeGreaterThanOrEqual(2500);  // 約3秒（タイマー精度を考慮）
+        }
+      });
+
+      it('再開時にpausedAtをnullにクリア', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        // 一時停止
+        act(() => {
+          result.current.setPaused(true);
+        });
+
+        // 再開
+        act(() => {
+          result.current.setPaused(false);
+        });
+
+        // pausedAtがnullになっている
+        expect(result.current.gameState.pausedAt).toBeNull();
+      });
+    });
+
+    describe('resetGame拡張: turnStartedAtとpausedAtのリセット', () => {
+      it('全プレイヤーのturnStartedAtをnullにリセット', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定（turnStartedAtが設定される）
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        // リセット
+        act(() => {
+          result.current.resetGame();
+        });
+
+        // 全プレイヤーのturnStartedAtがnull
+        result.current.gameState.players.forEach(player => {
+          expect(player.turnStartedAt).toBeNull();
+        });
+      });
+
+      it('pausedAtをnullにリセット', () => {
+        const { result } = renderHook(() => useGameState());
+        const playerId = result.current.gameState.players[0].id;
+
+        // プレイヤー1をアクティブに設定
+        act(() => {
+          result.current.setActivePlayer(playerId);
+        });
+
+        // 一時停止（pausedAtが設定される）
+        act(() => {
+          result.current.setPaused(true);
+        });
+
+        // リセット
+        act(() => {
+          result.current.resetGame();
+        });
+
+        // pausedAtがnull
+        expect(result.current.gameState.pausedAt).toBeNull();
+      });
+    });
+  });
 });

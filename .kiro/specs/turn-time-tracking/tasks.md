@@ -73,12 +73,12 @@
   - 再開時にpausedAtをnullにクリア
   - _Requirements: 1.4, 1.5, 4.6_
 
-- [ ] 3.6 resetGame関数の拡張
+- [x] 3.6 resetGame関数の拡張
   - 全プレイヤーのturnStartedAtをnullにリセット
   - pausedAtをnullにリセット
   - _Requirements: 1.8_
 
-- [ ] 3.7 useGameStateフックのユニットテストを作成
+- [x] 3.7 useGameStateフックのユニットテストを作成
   - getCurrentTurnTime関数のテストケースを作成
   - getTotalGameTime関数のテストケースを作成
   - formatGameTime関数のテストケースを作成
@@ -87,7 +87,7 @@
   - resetGame拡張のテストケースを作成
   - _Requirements: 5.1, 5.2_
 
-- [ ] 3.8 ユニットテストを実行して全てパスすることを確認
+- [x] 3.8 ユニットテストを実行して全てパスすることを確認
   - npm testコマンドを実行
   - 全テストケースが成功することを検証
   - _Requirements: 5.1, 5.2_

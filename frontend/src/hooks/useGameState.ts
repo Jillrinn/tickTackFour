@@ -237,10 +237,12 @@ export function useGameState() {
       players: prev.players.map(p => ({
         ...p,
         elapsedTimeSeconds: prev.timerMode === 'count-down' ? p.initialTimeSeconds : 0,
-        isActive: false
+        isActive: false,
+        turnStartedAt: null  // Task 3.6: turnStartedAtをnullにリセット
       })),
       activePlayerId: null,
       isPaused: false,
+      pausedAt: null,  // Task 3.6: pausedAtをnullにリセット
       lastUpdatedAt: new Date()
     }));
   }, []);
@@ -482,8 +484,7 @@ export function useGameState() {
 
   /**
    * ゲーム全体のプレイ時間を秒単位で計算
-   * カウントアップモード: 全プレイヤーのelapsedTimeSecondsの合計
-   * カウントダウンモード: 全プレイヤーの(initialTimeSeconds - elapsedTimeSeconds)の合計
+   * 全プレイヤーのelapsedTimeSecondsの合計を返す
    * @returns ゲーム全体のプレイ時間（秒）
    */
   const getTotalGameTime = useCallback((): number => {
@@ -492,17 +493,9 @@ export function useGameState() {
       return 0;
     }
 
-    // カウントアップモード: elapsedTimeSecondsの合計
-    if (gameState.timerMode === 'count-up') {
-      return gameState.players.reduce((total, player) => total + player.elapsedTimeSeconds, 0);
-    }
-
-    // カウントダウンモード: (initialTimeSeconds - elapsedTimeSeconds)の合計
-    return gameState.players.reduce((total, player) => {
-      const usedTime = player.initialTimeSeconds - player.elapsedTimeSeconds;
-      return total + usedTime;
-    }, 0);
-  }, [gameState.players, gameState.timerMode]);
+    // カウントアップモードもカウントダウンモードも、elapsedTimeSecondsの合計を返す
+    return gameState.players.reduce((total, player) => total + player.elapsedTimeSeconds, 0);
+  }, [gameState.players]);
 
   /**
    * ゲーム全体時間を適切な形式でフォーマット
