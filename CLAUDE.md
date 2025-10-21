@@ -25,6 +25,8 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `turn-time-tracking`: ターン時間トラッキング（現在のターンでの経過時間表示、ゲーム全体のプレイ時間表示）
 - `game-history-statistics`: ゲーム履歴統計画面（1ゲーム1レコード、プレイ時間順位表示、カウントアップ/ダウン判定、全体最多/最少時間プレイヤー表示）
 - `player-name-persistence`: プレイヤー名永続化機能（Azure Functions API + Cosmos DB Table API、プルダウン履歴選択、最大20件保存）
+- `reset-button-fix`: リセットボタン不具合修正（全時間リセット、ゲーム停止状態の実装）
+- `button-response-optimization`: ボタンレスポンス最適化（ボタン押下時のレスポンス時間を極限まで短縮）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
