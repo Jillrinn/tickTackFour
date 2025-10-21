@@ -18,15 +18,24 @@ test.describe('ターン時間トラッキング機能', () => {
     page = new GameTimerPage(testPage);
     await page.navigate();
 
-    // Note: 現在の実装では、ゲーム開始時にはアクティブプレイヤーが設定されていない。
-    // 「次のプレイヤーへ」ボタンをクリックすると最初のプレイヤーがアクティブになる。
-    const activePlayerIndex = await page.getActivePlayerIndex();
-    if (activePlayerIndex === -1) {
-      // 「次のプレイヤーへ」ボタンをクリックしてゲーム開始
-      await page.switchToNextPlayer();
-      // アクティブプレイヤーが設定されるまで少し待機
-      await page.page.waitForTimeout(300);
-    }
+    // バックエンドAPIからの初回ポーリング結果を待機
+    // デフォルトゲーム状態ではactivePlayerIndex=0なので、ポーリング完了まで待つ
+    await page.page.waitForFunction(
+      () => {
+        const activePlayerCards = document.querySelectorAll('.player-card.active');
+        return activePlayerCards.length > 0;
+      },
+      { timeout: 10000 } // 最大10秒待機
+    );
+
+    // デバッグ: APIレスポンスをログ出力
+    const apiResponse = await page.page.evaluate(async () => {
+      const response = await fetch('/api/game');
+      const data = await response.json();
+      console.log('[E2E Debug] API Response:', JSON.stringify(data, null, 2));
+      return data;
+    });
+    console.log('[E2E Test] API Response:', apiResponse);
   });
 
   /**

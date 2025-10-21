@@ -64,7 +64,8 @@ export function createDefaultGameState(): GameState {
     timerMode: 'countup',
     countdownSeconds: 60,
     isPaused: false,
-    turnStartedAt: new Date().toISOString()
+    turnStartedAt: new Date().toISOString(),
+    pausedAt: undefined
   };
 }
 

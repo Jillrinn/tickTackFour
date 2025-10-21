@@ -159,6 +159,39 @@ export function useServerGameState() {
     }
   }, []);
 
+  /**
+   * アクティブプレイヤーの現在のターン経過時間を秒単位で取得
+   *
+   * Requirements: turn-time-tracking spec 1.3
+   * - アクティブプレイヤーのturnStartedAtから現在までの経過時間を計算
+   * - 一時停止中の時間を除外
+   * - turnStartedAtがnullの場合は0を返す
+   */
+  const getCurrentTurnTime = useCallback((): number => {
+    if (!serverState || serverState.activePlayerIndex === -1) {
+      return 0;
+    }
+
+    const turnStartedAt = serverState.turnStartedAt;
+    if (!turnStartedAt) {
+      return 0;
+    }
+
+    const now = new Date();
+    const turnStart = new Date(turnStartedAt);
+
+    if (serverState.isPaused && serverState.pausedAt) {
+      // 一時停止中: pausedAt - turnStartedAtの差分を返す
+      const pausedTime = new Date(serverState.pausedAt);
+      const elapsedMs = pausedTime.getTime() - turnStart.getTime();
+      return Math.max(0, Math.floor(elapsedMs / 1000));
+    } else {
+      // 通常: 現在時刻 - turnStartedAtの差分を返す
+      const elapsedMs = now.getTime() - turnStart.getTime();
+      return Math.max(0, Math.floor(elapsedMs / 1000));
+    }
+  }, [serverState]);
+
   return {
     serverState,
     displayTime,
@@ -166,6 +199,7 @@ export function useServerGameState() {
     formatTime,
     getLongestTimePlayer,
     getTotalGameTime,
-    formatGameTime
+    formatGameTime,
+    getCurrentTurnTime
   };
 }

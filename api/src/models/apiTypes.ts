@@ -3,7 +3,7 @@
  *
  * 設計書準拠の形式:
  * - players配列に計算済みelapsedSecondsを含める
- * - turnStartedAt, pausedAt等の内部状態は含めない
+ * - turnStartedAt, pausedAtを含める（フロントエンドでターン時間計算に使用）
  */
 export interface GameStateWithTime {
   players: Array<{ name: string; elapsedSeconds: number }>;
@@ -12,6 +12,8 @@ export interface GameStateWithTime {
   countdownSeconds: number;
   isPaused: boolean;
   etag: string;
+  turnStartedAt: string | null; // ISO8601タイムスタンプ（アクティブプレイヤーのターン開始時刻）
+  pausedAt: string | null;      // ISO8601タイムスタンプ（一時停止開始時刻）
 }
 
 /**

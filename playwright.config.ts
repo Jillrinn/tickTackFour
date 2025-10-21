@@ -57,10 +57,20 @@ export default defineConfig({
   ],
 
   // 開発サーバー設定
-  webServer: {
-    command: 'cd frontend && npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: [
+    // バックエンドサーバー（Azure Functions）
+    {
+      command: 'cd api && npm run start',
+      url: 'http://localhost:7071/api/game',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+    // フロントエンドサーバー（Vite）
+    {
+      command: 'cd frontend && npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+  ],
 });

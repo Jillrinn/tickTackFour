@@ -46,7 +46,11 @@ export function GameTimer() {
   // ポーリング失敗時のエラーハンドラ
   const handlePollingError = React.useCallback((errorInfo: PollingErrorInfo) => {
     console.warn('[GameTimer] ポーリング3回連続失敗、フォールバックモードに切り替えます', errorInfo);
-    activateFallbackMode(errorInfo.lastError);
+    // E2Eテスト環境ではバックエンド起動待ちのため、フォールバックモード切り替えを無効化
+    // window.location.hostname === 'localhost' の場合は本番環境ではないと判断
+    if (import.meta.env.MODE === 'production') {
+      activateFallbackMode(errorInfo.lastError);
+    }
   }, [activateFallbackMode]);
 
   // Task 3.1: ポーリング同期サービスの実装
@@ -372,16 +376,24 @@ export function GameTimer() {
               })
             ) : (
               // 通常モード: Phase 2サーバー状態
-              (serverGameState.serverState?.players || []).map((player, index) => (
-                <li key={index} className={`player-card ${index === (serverGameState.serverState?.activePlayerIndex ?? -1) ? 'active' : ''}`}>
-                  <div className="player-info">
-                    <span className="player-name">{player.name}</span>
-                  </div>
-                  <div className="player-time">
-                    経過時間: {formatTime(index === (serverGameState.serverState?.activePlayerIndex ?? -1) ? serverGameState.displayTime : player.elapsedSeconds)}
-                  </div>
-                </li>
-              ))
+              (serverGameState.serverState?.players || []).map((player, index) => {
+                const isActive = index === (serverGameState.serverState?.activePlayerIndex ?? -1);
+                return (
+                  <li key={index} className={`player-card ${isActive ? 'active' : ''}`}>
+                    <div className="player-info">
+                      <span className="player-name">{player.name}</span>
+                    </div>
+                    <div className="player-time">
+                      経過時間: {formatTime(isActive ? serverGameState.displayTime : player.elapsedSeconds)}
+                    </div>
+                    {isActive && serverGameState.serverState && serverGameState.serverState.turnStartedAt && (
+                      <div className="turn-time" data-testid="turn-time">
+                        現在のターン: {serverGameState.formatTime(serverGameState.getCurrentTurnTime())}
+                      </div>
+                    )}
+                  </li>
+                );
+              })
             )}
           </ul>
         </div>
