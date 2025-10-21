@@ -348,4 +348,79 @@ export class GameTimerPage {
   async setViewportSize(width: number, height: number = 800): Promise<void> {
     await this.page.setViewportSize({ width, height });
   }
+
+  /**
+   * 指定プレイヤーのターン時間を取得（秒単位）
+   * アクティブプレイヤーのみターン時間が表示される
+   */
+  async getPlayerTurnTime(index: number): Promise<number | null> {
+    const playerCard = this.getPlayerCardByIndex(index);
+    const turnTimeElement = playerCard.locator('[data-testid="turn-time"]');
+
+    // ターン時間表示要素が存在するか確認
+    const isVisible = await turnTimeElement.isVisible().catch(() => false);
+    if (!isVisible) {
+      return null; // 非アクティブプレイヤーまたは表示なし
+    }
+
+    const timeText = await turnTimeElement.textContent();
+    const match = timeText?.match(/(\d+):(\d+)/);
+    if (match) {
+      const minutes = parseInt(match[1], 10);
+      const seconds = parseInt(match[2], 10);
+      return minutes * 60 + seconds;
+    }
+    return null;
+  }
+
+  /**
+   * ゲーム全体のプレイ時間を取得（秒単位）
+   * 固定ヘッダーに表示されるゲーム全体の累計時間
+   */
+  async getTotalGameTime(): Promise<number> {
+    const totalGameTimeElement = this.page.locator('[data-testid="total-game-time"]');
+    const timeText = await totalGameTimeElement.textContent();
+
+    // HH:MM:SS または MM:SS 形式をパース
+    const match = timeText?.match(/(\d+):(\d+):(\d+)|(\d+):(\d+)/);
+    if (match) {
+      if (match[1] && match[2] && match[3]) {
+        // HH:MM:SS 形式
+        const hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2], 10);
+        const seconds = parseInt(match[3], 10);
+        return hours * 3600 + minutes * 60 + seconds;
+      } else if (match[4] && match[5]) {
+        // MM:SS 形式
+        const minutes = parseInt(match[4], 10);
+        const seconds = parseInt(match[5], 10);
+        return minutes * 60 + seconds;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * ゲーム全体時間のフォーマット形式を取得（"MM:SS" または "HH:MM:SS"）
+   */
+  async getTotalGameTimeFormat(): Promise<'MM:SS' | 'HH:MM:SS' | null> {
+    const totalGameTimeElement = this.page.locator('[data-testid="total-game-time"]');
+    const timeText = await totalGameTimeElement.textContent();
+
+    if (timeText?.match(/\d+:\d+:\d+/)) {
+      return 'HH:MM:SS';
+    } else if (timeText?.match(/\d+:\d+/)) {
+      return 'MM:SS';
+    }
+    return null;
+  }
+
+  /**
+   * 指定プレイヤーのターン時間表示が存在するかを確認
+   */
+  async hasPlayerTurnTime(index: number): Promise<boolean> {
+    const playerCard = this.getPlayerCardByIndex(index);
+    const turnTimeElement = playerCard.locator('[data-testid="turn-time"]');
+    return await turnTimeElement.isVisible().catch(() => false);
+  }
 }
