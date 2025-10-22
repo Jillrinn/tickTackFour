@@ -205,6 +205,8 @@ export function useGameState() {
    * - 現在のアクティブプレイヤーから次のプレイヤーへターンを切り替える
    * - 最後のプレイヤーから最初のプレイヤーへ循環
    * - アクティブプレイヤーがいない場合は最初のプレイヤーをアクティブに
+   *
+   * 修正: setActivePlayerと同じロジックでturnStartedAtを設定
    */
   const switchToNextPlayer = useCallback(() => {
     setGameState((prev) => {
@@ -216,14 +218,18 @@ export function useGameState() {
       const nextIndex = (currentIndex + 1) % prev.players.length;
       const nextPlayerId = prev.players[nextIndex].id;
 
+      // setActivePlayerと同じロジックでturnStartedAtを設定
+      const now = new Date();
       return {
         ...prev,
         activePlayerId: nextPlayerId,
         players: prev.players.map(p => ({
           ...p,
-          isActive: p.id === nextPlayerId
+          isActive: p.id === nextPlayerId,
+          // 新しいアクティブプレイヤーにはturnStartedAtを設定、それ以外はnull
+          turnStartedAt: p.id === nextPlayerId ? now : null
         })),
-        lastUpdatedAt: new Date()
+        lastUpdatedAt: now
       };
     });
   }, []);
