@@ -1,16 +1,16 @@
 {
   "feature_name": "reset-button-fix",
   "created_at": "2025-10-21T00:00:00Z",
-  "updated_at": "2025-10-21T22:45:00Z",
+  "updated_at": "2025-10-22T00:00:00Z",
   "language": "ja",
-  "phase": "requirements-generated",
+  "phase": "design-generated",
   "approvals": {
     "requirements": {
       "generated": true,
       "approved": true
     },
     "design": {
-      "generated": false,
+      "generated": true,
       "approved": false
     },
     "tasks": {
