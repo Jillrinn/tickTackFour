@@ -27,6 +27,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `player-name-persistence`: プレイヤー名永続化機能（Azure Functions API + Cosmos DB Table API、プルダウン履歴選択、最大20件保存）
 - `reset-button-fix`: リセットボタン不具合修正（全時間リセット、ゲーム停止状態の実装）
 - `button-response-optimization`: ボタンレスポンス最適化（ボタン押下時のレスポンス時間を極限まで短縮）
+- `api-error-whiteout-fix`: API失敗とホワイトアウトエラーの修正（デプロイ環境とローカル環境のエラー調査と修正）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
