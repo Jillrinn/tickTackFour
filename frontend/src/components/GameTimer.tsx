@@ -139,8 +139,10 @@ export function GameTimer() {
     if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
+      // Task 2.1: API呼び出し完了後、即座にサーバー状態を取得して画面をリフレッシュ
+      await serverGameState.syncWithServer();
     }
-  }, [isInFallbackMode, etag, switchTurn, fallbackState, updateEtag, clearConflictMessage]);
+  }, [isInFallbackMode, etag, switchTurn, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
 
   const handlePauseResume = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
@@ -157,8 +159,10 @@ export function GameTimer() {
     if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
+      // Task 2.2: API呼び出し完了後、即座にサーバー状態を取得して画面をリフレッシュ
+      await serverGameState.syncWithServer();
     }
-  }, [isInFallbackMode, etag, isPaused, pauseGameApi, resumeGameApi, fallbackState, updateEtag, clearConflictMessage]);
+  }, [isInFallbackMode, etag, isPaused, pauseGameApi, resumeGameApi, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
 
   const handleResetGame = React.useCallback(async () => {
     // Task 8: リセット前にデフォルト名以外のプレイヤー名を保存
@@ -185,8 +189,10 @@ export function GameTimer() {
     if (result && 'etag' in result) {
       updateEtag(result.etag);
       clearConflictMessage();
+      // Task 2.3: API呼び出し完了後、即座にサーバー状態を取得して画面をリフレッシュ
+      await serverGameState.syncWithServer();
     }
-  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage, gameState, serverGameState.serverState?.players, playerNameHistory]);;
+  }, [isInFallbackMode, etag, resetGameApi, fallbackState, updateEtag, clearConflictMessage, gameState, serverGameState, playerNameHistory]);
 
   const handlePlayerCountChange = React.useCallback(async (playerCount: number) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
