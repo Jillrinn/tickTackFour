@@ -52,7 +52,7 @@ export function usePlayerNameHistory(): UsePlayerNameHistoryReturn {
   const [cache, setCache] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
   /**
    * fetchNames

@@ -91,7 +91,7 @@
   - _Requirements: 2.3, 3.1_
 
 - [ ] 7. Git commitとpushでデプロイをトリガーする
-- [ ] 7.1 変更をGitにコミット
+- [x] 7.1 変更をGitにコミット
   - `git status`で変更ファイルを確認（api/package.json、staticwebapp.config.json）
   - `git add api/package.json staticwebapp.config.json`で変更をステージング
   - `git commit -m "修正: ローカル環境API起動とデプロイ環境MIMEタイプ設定"`でコミット作成
