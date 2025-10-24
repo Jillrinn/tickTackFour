@@ -247,7 +247,7 @@ export function useGameState() {
         turnStartedAt: null  // Task 3.6: turnStartedAtをnullにリセット
       })),
       activePlayerId: null,
-      isPaused: false,
+      isPaused: true,  // reset-button-fix: タイマー停止状態にする
       pausedAt: null,  // Task 3.6: pausedAtをnullにリセット
       lastUpdatedAt: new Date()
     }));

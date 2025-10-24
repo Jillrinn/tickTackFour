@@ -35,7 +35,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
         expect(player.isActive).toBe(false);
       });
       expect(result.current.gameState.activePlayerId).toBeNull();
-      expect(result.current.gameState.isPaused).toBe(false);
+      expect(result.current.gameState.isPaused).toBe(true);  // reset-button-fix: 停止状態
     });
 
     it('カウントダウンモードでリセットすると全プレイヤーの時間が初期時間になる', () => {
@@ -66,7 +66,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
         expect(player.isActive).toBe(false);
       });
       expect(result.current.gameState.activePlayerId).toBeNull();
-      expect(result.current.gameState.isPaused).toBe(false);
+      expect(result.current.gameState.isPaused).toBe(true);  // reset-button-fix: 停止状態
     });
 
     it('アクティブプレイヤーがいる状態でリセットすると全てのプレイヤーが非アクティブになる', () => {
@@ -198,7 +198,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
   });
 
   describe('ゲームコントロールの統合動作', () => {
-    it('一時停止中にリセットすると一時停止が解除される', () => {
+    it('一時停止中にリセットすると停止状態が維持される', () => {
       const { result } = renderHook(() => useGameState());
 
       // 一時停止
@@ -213,8 +213,8 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
         result.current.resetGame();
       });
 
-      // 一時停止が解除される
-      expect(result.current.gameState.isPaused).toBe(false);
+      // 停止状態が維持される（reset-button-fix: リセット後は常に停止状態）
+      expect(result.current.gameState.isPaused).toBe(true);
     });
 
     it('タイマーモード切り替え後にリセットしても同じモードが維持される', () => {

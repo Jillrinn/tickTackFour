@@ -129,7 +129,8 @@ test.describe('ゲーム制御機能', () => {
     expect(player2Active).toBe(false);
     expect(player3Active).toBe(false);
 
-    // 一時停止がfalse（ボタンテキストが「一時停止」）
+    // reset-button-fix: リセット後は停止状態（ボタンテキストが「一時停止」）
+    // isPaused: true（停止状態）になるが、ボタンテキストは停止状態を示す「一時停止」
     const buttonText = await gameTimerPage.getPauseResumeButtonText();
     expect(buttonText).toContain('一時停止');
   });
@@ -152,5 +153,36 @@ test.describe('ゲーム制御機能', () => {
     await gameTimerPage.page.waitForTimeout(1000);
     const time = await gameTimerPage.getPlayerElapsedTime(1);
     expect(time).toBeGreaterThan(0);
+  });
+
+  test('リセット後、タイマーが完全に停止していることを確認（reset-button-fix）', async () => {
+    // Task 3.2: リセット後のタイマー停止検証
+    // プレイヤー0をアクティブにしてタイマー開始
+    await gameTimerPage.setPlayerActive(0);
+    await gameTimerPage.page.waitForTimeout(2000);
+
+    // 経過時間が進んでいることを確認
+    const timeBeforeReset = await gameTimerPage.getPlayerElapsedTime(0);
+    expect(timeBeforeReset).toBeGreaterThanOrEqual(1);
+
+    // リセット実行
+    await gameTimerPage.resetGame();
+
+    // 全プレイヤーの時間が0秒にリセットされることを確認
+    const player0TimeAfterReset = await gameTimerPage.getPlayerElapsedTime(0);
+    expect(player0TimeAfterReset).toBe(0);
+
+    // 5秒待機してタイマーが動作しないことを確認
+    await gameTimerPage.page.waitForTimeout(5000);
+
+    // プレイヤーの時間が変化しないこと（タイマーが停止している）
+    const player0TimeAfterWait = await gameTimerPage.getPlayerElapsedTime(0);
+    expect(player0TimeAfterWait).toBe(0);
+
+    // 全プレイヤーが非アクティブであることを確認
+    for (let i = 0; i < 4; i++) {
+      const isActive = await gameTimerPage.isPlayerActive(i);
+      expect(isActive).toBe(false);
+    }
   });
 });

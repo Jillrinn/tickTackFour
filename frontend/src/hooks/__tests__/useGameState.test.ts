@@ -645,4 +645,120 @@ describe('useGameState', () => {
       });
     });
   });
+
+  describe('Task 2.1: リセット機能のユニットテスト（reset-button-fix）', () => {
+    it('リセット後のisPausedフラグがtrueであること', () => {
+      const { result } = renderHook(() => useGameState());
+      const playerId = result.current.gameState.players[0].id;
+
+      // プレイヤー1をアクティブに設定
+      act(() => {
+        result.current.setActivePlayer(playerId);
+      });
+
+      // ゲーム開始（isPaused: false）
+      act(() => {
+        result.current.setPaused(false);
+      });
+
+      // リセット実行
+      act(() => {
+        result.current.resetGame();
+      });
+
+      // isPausedがtrueであることを確認（タイマー停止状態）
+      expect(result.current.gameState.isPaused).toBe(true);
+    });
+
+    it('リセット後のactivePlayerIdがnullであること', () => {
+      const { result } = renderHook(() => useGameState());
+      const playerId = result.current.gameState.players[0].id;
+
+      // プレイヤー1をアクティブに設定
+      act(() => {
+        result.current.setActivePlayer(playerId);
+      });
+
+      // リセット実行
+      act(() => {
+        result.current.resetGame();
+      });
+
+      // activePlayerIdがnullであることを確認
+      expect(result.current.gameState.activePlayerId).toBeNull();
+    });
+
+    it('カウントアップモードで全プレイヤーの時間が0秒にリセットされること', () => {
+      const { result } = renderHook(() => useGameState());
+
+      // カウントアップモードに設定（デフォルト）
+      expect(result.current.gameState.timerMode).toBe('count-up');
+
+      // 各プレイヤーに経過時間を設定
+      act(() => {
+        result.current.updatePlayerTime(result.current.gameState.players[0].id, 100);
+        result.current.updatePlayerTime(result.current.gameState.players[1].id, 200);
+        result.current.updatePlayerTime(result.current.gameState.players[2].id, 150);
+      });
+
+      // リセット実行
+      act(() => {
+        result.current.resetGame();
+      });
+
+      // 全プレイヤーの時間が0秒
+      result.current.gameState.players.forEach(player => {
+        expect(player.elapsedTimeSeconds).toBe(0);
+      });
+    });
+
+    it('カウントダウンモードで全プレイヤーの時間が初期時間にリセットされること', () => {
+      const { result } = renderHook(() => useGameState());
+      const initialTime = 300; // 5分
+
+      // カウントダウンモードに設定
+      act(() => {
+        result.current.setTimerMode('count-down', initialTime);
+      });
+
+      // 各プレイヤーの時間を変更
+      act(() => {
+        result.current.updatePlayerTime(result.current.gameState.players[0].id, 100);
+        result.current.updatePlayerTime(result.current.gameState.players[1].id, 50);
+      });
+
+      // リセット実行
+      act(() => {
+        result.current.resetGame();
+      });
+
+      // 全プレイヤーの時間が初期時間（300秒）にリセット
+      result.current.gameState.players.forEach(player => {
+        expect(player.elapsedTimeSeconds).toBe(initialTime);
+      });
+    });
+
+    it('全プレイヤーのisActiveフラグがfalseにリセットされること', () => {
+      const { result } = renderHook(() => useGameState());
+      const playerId = result.current.gameState.players[0].id;
+
+      // プレイヤー1をアクティブに設定
+      act(() => {
+        result.current.setActivePlayer(playerId);
+      });
+
+      // プレイヤー1のisActiveがtrueであることを確認
+      expect(result.current.gameState.players[0].isActive).toBe(true);
+
+      // リセット実行
+      act(() => {
+        result.current.resetGame();
+      });
+
+      // 全プレイヤーのisActiveがfalse
+      result.current.gameState.players.forEach(player => {
+        expect(player.isActive).toBe(false);
+      });
+    });
+  });
 });
