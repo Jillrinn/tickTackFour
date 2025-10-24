@@ -11,7 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "start": "func start"
+    "start": "func start --verbose"
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.0",
