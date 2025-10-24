@@ -67,8 +67,8 @@
 
 ## Phase 2: デプロイ環境のホワイトアウトエラー修正
 
-- [ ] 5. Azure Static Web AppsのMIMEタイプ設定を追加する
-- [ ] 5.1 staticwebapp.config.jsonにMIMEタイプ設定を追加
+- [x] 5. Azure Static Web AppsのMIMEタイプ設定を追加する
+- [x] 5.1 staticwebapp.config.jsonにMIMEタイプ設定を追加
   - プロジェクトルートの`staticwebapp.config.json`を開く
   - `mimeTypes`オブジェクトに`.js`と`.mjs`の設定を追加（`"application/javascript"`）
   - 既存の`.json`設定（`"application/json"`）を維持
