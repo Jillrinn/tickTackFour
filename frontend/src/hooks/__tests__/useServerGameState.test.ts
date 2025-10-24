@@ -386,4 +386,223 @@ describe('useServerGameState - APIモード状態管理', () => {
       // このテストはメモリリークがないことを確認する意図
     });
   });
+
+  describe('syncWithServer - サーバー状態の即座取得', () => {
+    beforeEach(() => {
+      // fetchのモックをリセット
+      global.fetch = vi.fn();
+      // Fake timersを使用してデバウンスをテスト可能にする
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    });
+
+    it('syncWithServer()が/api/gameをfetchし、最新状態を取得すること', async () => {
+      const mockState: GameStateWithTime = {
+        players: [
+          { name: 'プレイヤー1', elapsedSeconds: 30 },
+          { name: 'プレイヤー2', elapsedSeconds: 45 }
+        ],
+        activePlayerIndex: 1,
+        timerMode: 'count-up',
+        countdownSeconds: 600,
+        isPaused: false,
+        etag: 'test-etag-sync'
+      };
+
+      // fetch APIのモック
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockState)
+        } as Response)
+      );
+
+      const { result } = renderHook(() => useServerGameState());
+
+      let returnedState: GameStateWithTime | null = null;
+      await act(async () => {
+        const promise = result.current.syncWithServer();
+        // 100msデバウンス待機
+        await vi.advanceTimersByTimeAsync(100);
+        returnedState = await promise;
+      });
+
+      // fetchが/api/gameを呼び出したことを確認
+      expect(global.fetch).toHaveBeenCalledWith('/api/game');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      // 戻り値が取得した状態であることを確認
+      expect(returnedState).toEqual(mockState);
+
+      // serverStateが更新されたことを確認
+      expect(result.current.serverState).toEqual(mockState);
+    });
+
+    it('デバウンス: 100ms以内の連続呼び出しをスキップすること', async () => {
+      const mockState: GameStateWithTime = {
+        players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
+        activePlayerIndex: 0,
+        timerMode: 'count-up',
+        countdownSeconds: 600,
+        isPaused: false,
+        etag: 'test-etag-debounce'
+      };
+
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockState)
+        } as Response)
+      );
+
+      const { result } = renderHook(() => useServerGameState());
+
+      // 3回連続で即座に呼び出し
+      await act(async () => {
+        result.current.syncWithServer();
+        result.current.syncWithServer();
+        result.current.syncWithServer();
+
+        // 100ms待機（デバウンス）
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      // デバウンスにより、最後の1回のみ実行される
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('重複リクエスト防止: 実行中のリクエストがある場合、新しいリクエストをスキップすること', async () => {
+      const mockState: GameStateWithTime = {
+        players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
+        activePlayerIndex: 0,
+        timerMode: 'count-up',
+        countdownSeconds: 600,
+        isPaused: false,
+        etag: 'test-etag-duplicate'
+      };
+
+      let callCount = 0;
+      let resolveFunc: ((value: Response) => void) | undefined;
+
+      // 1回目は遅延、2回目以降は即座に解決
+      global.fetch = vi.fn(() => {
+        callCount++;
+        if (callCount === 1) {
+          // 1回目のリクエストは手動で解決
+          return new Promise<Response>((resolve) => {
+            resolveFunc = resolve;
+          });
+        } else {
+          // 2回目以降は即座に解決（本来ならスキップされるべき）
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(mockState)
+          } as Response);
+        }
+      });
+
+      const { result } = renderHook(() => useServerGameState());
+
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await act(async () => {
+        // 1回目の呼び出し
+        const promise1 = result.current.syncWithServer();
+
+        // デバウンス待機（100msデバウンス後、fetchが実行される）
+        await vi.advanceTimersByTimeAsync(100);
+
+        // 2回目の呼び出し（1回目がまだ進行中）
+        const promise2 = result.current.syncWithServer();
+
+        // 2回目のデバウンス待機
+        await vi.advanceTimersByTimeAsync(100);
+
+        // 1回目のfetchを解決
+        resolveFunc?.({
+          ok: true,
+          json: () => Promise.resolve(mockState)
+        } as Response);
+
+        // 両方のPromiseを待つ
+        await Promise.all([promise1, promise2]);
+      });
+
+      // 1回目のリクエストが進行中のため、2回目はスキップされる
+      expect(consoleLogSpy).toHaveBeenCalledWith('[syncWithServer] Skipped (already in progress)');
+      // fetchは1回のみ呼ばれる
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      consoleLogSpy.mockRestore();
+    });
+
+    it('エラー時: ネットワークエラーが発生した場合、nullを返しコンソールにエラーを記録すること', async () => {
+      // このテストのみreal timersを使用
+      vi.useRealTimers();
+
+      // fetchが失敗するモック
+      global.fetch = vi.fn(() =>
+        Promise.reject(new Error('Network error'))
+      );
+
+      const { result } = renderHook(() => useServerGameState());
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      let returnedState: GameStateWithTime | null = null;
+      await act(async () => {
+        returnedState = await result.current.syncWithServer();
+      });
+
+      // エラーが発生した場合、nullを返す
+      expect(returnedState).toBeNull();
+
+      // コンソールにエラーが記録される
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[syncWithServer] Failed:',
+        expect.any(Error)
+      );
+
+      consoleErrorSpy.mockRestore();
+      vi.useFakeTimers(); // 次のテストのためにfake timersに戻す
+    });
+
+    it('エラー時: HTTPステータスエラー（404等）の場合、nullを返しコンソールにエラーを記録すること', async () => {
+      // このテストのみreal timersを使用
+      vi.useRealTimers();
+
+      // HTTP 404エラーのモック
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 404
+        } as Response)
+      );
+
+      const { result } = renderHook(() => useServerGameState());
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      let returnedState: GameStateWithTime | null = null;
+      await act(async () => {
+        returnedState = await result.current.syncWithServer();
+      });
+
+      // エラーが発生した場合、nullを返す
+      expect(returnedState).toBeNull();
+
+      // コンソールにエラーが記録される
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[syncWithServer] Failed:',
+        expect.any(Error)
+      );
+
+      consoleErrorSpy.mockRestore();
+      vi.useFakeTimers(); // 次のテストのためにfake timersに戻す
+    });
+  });
 });

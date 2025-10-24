@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GameStateWithTime } from '../types/GameState';
 
 /**
@@ -192,6 +192,54 @@ export function useServerGameState() {
     }
   }, [serverState]);
 
+  // Task 1.1-1.4: サーバー状態の即座取得機能
+  const syncInProgress = useRef(false);
+  const syncDebounceTimer = useRef<number | null>(null);
+
+  /**
+   * サーバー状態を強制的に取得するメソッド
+   *
+   * Requirements: button-response-optimization spec 3.1-3.5
+   * - /api/gameエンドポイントへのGETリクエスト送信
+   * - 取得した最新状態を内部状態管理システムに反映
+   * - 100ms以内の連続呼び出しを自動的にキャンセル（デバウンス）
+   * - 実行中のリクエストがある場合、新しいリクエストをスキップ（重複防止）
+   * - エラー発生時は静かに失敗させる（nullを返す）
+   */
+  const syncWithServer = useCallback(async (): Promise<GameStateWithTime | null> => {
+    // デバウンス: 100ms以内の連続呼び出しをスキップ
+    if (syncDebounceTimer.current !== null) {
+      window.clearTimeout(syncDebounceTimer.current);
+    }
+
+    return new Promise<GameStateWithTime | null>((resolve) => {
+      syncDebounceTimer.current = window.setTimeout(async () => {
+        // 既に進行中のリクエストがある場合はスキップ
+        if (syncInProgress.current) {
+          console.log('[syncWithServer] Skipped (already in progress)');
+          resolve(null);
+          return;
+        }
+
+        syncInProgress.current = true;
+        try {
+          const response = await fetch('/api/game');
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const state: GameStateWithTime = await response.json();
+          updateFromServer(state);
+          resolve(state);
+        } catch (error) {
+          console.error('[syncWithServer] Failed:', error);
+          resolve(null);
+        } finally {
+          syncInProgress.current = false;
+        }
+      }, 100); // 100ms デバウンス
+    });
+  }, [updateFromServer]);
+
   return {
     serverState,
     displayTime,
@@ -200,6 +248,7 @@ export function useServerGameState() {
     getLongestTimePlayer,
     getTotalGameTime,
     formatGameTime,
-    getCurrentTurnTime
+    getCurrentTurnTime,
+    syncWithServer
   };
 }
