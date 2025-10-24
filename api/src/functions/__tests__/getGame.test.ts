@@ -32,6 +32,8 @@ async function getGame(
       timerMode: result.state.timerMode,
       countdownSeconds: result.state.countdownSeconds,
       isPaused: result.state.isPaused,
+      turnStartedAt: result.state.turnStartedAt || null,
+      pausedAt: result.state.pausedAt || null,
       etag: result.etag
     };
 
