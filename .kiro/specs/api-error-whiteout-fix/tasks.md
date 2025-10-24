@@ -126,6 +126,12 @@
   - 全機能が正常に動作することを確認
   - _Requirements: 2.1, 3.3_
 
+- [x] 8.3.1 API 500エラー修正（追加タスク）
+  - 問題: CosmosDBConnectionString環境変数が未設定
+  - 解決: `az staticwebapp appsettings set`でCosmos DB接続文字列を設定
+  - 検証: `/api/health`と`/api/game`が正常動作、ポーリング同期成功
+  - _Requirements: 1.2, 2.1_
+
 - [ ] 8.4 静的アセットの配信を確認
   - `/vite.svg`やその他の静的アセット（CSS、画像）が200ステータスコードで返されることをNetwork タブで確認
   - 404エラーが発生していないことを確認
