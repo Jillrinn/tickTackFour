@@ -384,10 +384,36 @@ export function GameTimer() {
               // 通常モード: Phase 2サーバー状態
               (serverGameState.serverState?.players || []).map((player, index) => {
                 const isActive = index === (serverGameState.serverState?.activePlayerIndex ?? -1);
+                const isGameActive = (serverGameState.serverState?.activePlayerIndex ?? -1) !== -1;
                 return (
                   <li key={index} className={`player-card ${isActive ? 'active' : ''}`}>
                     <div className="player-info">
-                      <span className="player-name">{player.name}</span>
+                      {!isGameActive ? (
+                        // ゲーム開始前: プレイヤー名編集可能
+                        <>
+                          <input
+                            type="text"
+                            className="player-name-input"
+                            value={player.name}
+                            onChange={(e) => {
+                              // TODO: Task 4.2で実装 - API呼び出しロジック
+                              console.log(`Player ${index} name changed to: ${e.target.value}`);
+                            }}
+                            onFocus={handlePlayerNameFocus}
+                            list={`player-name-history-api-${index}`}
+                            aria-label="プレイヤー名"
+                            disabled={isGameActive}
+                          />
+                          <datalist id={`player-name-history-api-${index}`}>
+                            {playerNameHistory.names.map((name, historyIndex) => (
+                              <option key={historyIndex} value={name} />
+                            ))}
+                          </datalist>
+                        </>
+                      ) : (
+                        // ゲーム開始後: プレイヤー名表示のみ
+                        <span className="player-name">{player.name}</span>
+                      )}
                     </div>
                     <div className="player-time">
                       経過時間: {formatTime(isActive ? serverGameState.displayTime : player.elapsedSeconds)}
