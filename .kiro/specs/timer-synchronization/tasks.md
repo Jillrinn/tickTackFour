@@ -69,7 +69,7 @@
 
 既存のuseGameTimerフックが正しく動作していることを検証し、必要に応じて最適化します。
 
-- [ ] 2.1 onTimerTickコールバックの動作検証
+- [x] 2.1 onTimerTickコールバックの動作検証
   - **ファイル**: `frontend/src/hooks/useGameTimer.ts` (83行目), `frontend/src/components/GameTimer.tsx`
   - **実装内容**:
     - useGameTimer.ts 83行目のonTimerTick呼び出しを確認
@@ -78,6 +78,11 @@
     - onTimerTickコールバックのシグネチャ: `(playerId: string, newElapsedTime: number) => void`
   - **完了条件**: onTimerTickの仕様文書化、1秒ごとの呼び出しフロー確認
   - **カバーする要件**: Req 1 (AC2,3), Req 2 (AC1)
+  - **検証結果**:
+    - ✅ onTimerTickは83行目で `onTimerTick(currentPlayer.id, newElapsedTime)` として呼び出し
+    - ✅ 既存テストで1秒ごとの呼び出しを検証済み（useGameTimer.test.ts 41-58行目）
+    - ✅ 全7テストパス - カウントアップ/ダウン、一時停止、5秒同期、時間切れ、クリーンアップ全て検証済み
+    - ⚠️ GameTimer.tsxでは現在useGameTimerを使用していない（forceUpdate()メカニズムのみ）
 
 - [ ] 2.2 タイマー精度検証とテスト作成
   - **ファイル**: `frontend/src/hooks/__tests__/useGameTimer.test.ts` (既存ファイルに追加)
