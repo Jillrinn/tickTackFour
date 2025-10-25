@@ -94,7 +94,7 @@
   - エラー処理: API失敗時にローカル状態を元の値にロールバック、エラーメッセージ表示
   - _要件: 2.3, 2.6, 4.1, 4.4_
 
-- [ ] 5.3 プレイヤー名履歴をdatalistで表示
+- [x] 5.3 プレイヤー名履歴をdatalistで表示
   - `<datalist id="player-name-history-api-{index}">` をAPIモードセクションに追加
   - `list` 属性でdatalistを参照
   - onFocusハンドラで `handlePlayerNameFocus` を呼び出し、履歴を取得
