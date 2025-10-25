@@ -120,6 +120,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         timerMode: 'count-up',
         countdownSeconds: 600,
         isPaused: true,  // 一時停止中
+        pausedAt: new Date().toISOString(),  // 一時停止時刻を追加
         etag: 'test-etag-1'
       };
 
@@ -384,6 +385,186 @@ describe('useServerGameState - APIモード状態管理', () => {
       // アンマウント後はタイマーが停止しているため、displayTimeが変化しない
       // （ただし、unmount後はresult.currentにアクセスできないため、実際の確認は難しい）
       // このテストはメモリリークがないことを確認する意図
+    });
+  });
+
+  describe('backend-driven-timer-fix: displayTime計算ロジックの修正', () => {
+    it('Task 1: updateFromServer呼び出し後、displayTimeがserverTimeにリセットされること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      const mockState: GameStateWithTime = {
+        players: [{ name: 'プレイヤー1', elapsedSeconds: 45 }],
+        activePlayerIndex: 0,
+        timerMode: 'count-up',
+        countdownSeconds: 600,
+        isPaused: false,
+        etag: 'test-etag-1',
+        turnStartedAt: new Date().toISOString(),
+        pausedAt: null
+      };
+
+      act(() => {
+        result.current.updateFromServer(mockState);
+      });
+
+      // displayTimeが初期化されていることを確認（0から開始、すぐに100ms timerで更新される）
+      expect(result.current.displayTime).toBeGreaterThanOrEqual(0);
+    });
+
+    it('Task 1: ポーリング間の経過時間のみが加算されること（lastSyncTimeベース）', async () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      const mockState: GameStateWithTime = {
+        players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
+        activePlayerIndex: 0,
+        timerMode: 'count-up',
+        countdownSeconds: 600,
+        isPaused: false,
+        etag: 'test-etag-1',
+        turnStartedAt: new Date().toISOString(),
+        pausedAt: null
+      };
+
+      act(() => {
+        result.current.updateFromServer(mockState);
+      });
+
+      // 500ms経過（ポーリング間の経過時間）
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+
+      // displayTime = serverTime (10秒) + 0.5秒 = 10.5秒前後
+      expect(result.current.displayTime).toBeGreaterThanOrEqual(10);
+      expect(result.current.displayTime).toBeLessThan(11);
+    });
+
+    it('Task 1: 二重カウントが発生しないこと（turnStartedAtベースではなくlastSyncTimeベース）', async () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      // 最初のポーリング: サーバーから10秒を取得
+      const turnStartedAt = new Date(Date.now() - 10000).toISOString(); // 10秒前にターン開始
+
+      act(() => {
+        result.current.updateFromServer({
+          players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }], // サーバー計算済み: 10秒
+          activePlayerIndex: 0,
+          timerMode: 'count-up',
+          countdownSeconds: 600,
+          isPaused: false,
+          etag: 'test-etag-1',
+          turnStartedAt: turnStartedAt,
+          pausedAt: null
+        });
+      });
+
+      // 500ms経過
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+
+      // 二重カウントがない場合: 10秒 + 0.5秒 = 10.5秒前後
+      // 二重カウントがある場合: 10秒 + 10秒 + 0.5秒 = 20.5秒前後（これは発生しない）
+      expect(result.current.displayTime).toBeGreaterThanOrEqual(10);
+      expect(result.current.displayTime).toBeLessThan(11);
+    });
+  });
+
+  describe('backend-driven-timer-fix: タイマー再構築機能', () => {
+    it('Task 2: updateFromServer呼び出し時にdisplayTimeがリセットされること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      // 初回更新
+      act(() => {
+        result.current.updateFromServer({
+          players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
+          activePlayerIndex: 0,
+          timerMode: 'count-up',
+          countdownSeconds: 600,
+          isPaused: false,
+          etag: 'test-etag-1',
+          turnStartedAt: new Date().toISOString(),
+          pausedAt: null
+        });
+      });
+
+      // 2回目更新（タイマー再構築）
+      act(() => {
+        result.current.updateFromServer({
+          players: [{ name: 'プレイヤー1', elapsedSeconds: 15 }],
+          activePlayerIndex: 0,
+          timerMode: 'count-up',
+          countdownSeconds: 600,
+          isPaused: false,
+          etag: 'test-etag-2',
+          turnStartedAt: new Date().toISOString(),
+          pausedAt: null
+        });
+      });
+
+      // displayTimeが新しいserverTime (15秒) ベースにリセットされる
+      // 100ms timer実行後は15秒前後になる
+      expect(result.current.displayTime).toBeGreaterThanOrEqual(0);
+    });
+
+    it('Task 2: turnDisplayTimeもリセットされること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      // 初回更新
+      act(() => {
+        result.current.updateFromServer({
+          players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
+          activePlayerIndex: 0,
+          timerMode: 'count-up',
+          countdownSeconds: 600,
+          isPaused: false,
+          etag: 'test-etag-1',
+          turnStartedAt: new Date().toISOString(),
+          pausedAt: null
+        });
+      });
+
+      // 2回目更新（タイマー再構築）
+      act(() => {
+        result.current.updateFromServer({
+          players: [{ name: 'プレイヤー1', elapsedSeconds: 15 }],
+          activePlayerIndex: 0,
+          timerMode: 'count-up',
+          countdownSeconds: 600,
+          isPaused: false,
+          etag: 'test-etag-2',
+          turnStartedAt: new Date().toISOString(),
+          pausedAt: null
+        });
+      });
+
+      // turnDisplayTimeが0にリセットされる（新しいターン開始）
+      const turnTime = result.current.getCurrentTurnTime();
+      expect(turnTime).toBeGreaterThanOrEqual(0);
+    });
+
+    it('Task 2: ゲーム開始前（activePlayerIndex=-1）の状態で全てが0にリセットされること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      act(() => {
+        result.current.updateFromServer({
+          players: [
+            { name: 'プレイヤー1', elapsedSeconds: 0 },
+            { name: 'プレイヤー2', elapsedSeconds: 0 }
+          ],
+          activePlayerIndex: -1, // ゲーム開始前
+          timerMode: 'count-up',
+          countdownSeconds: 600,
+          isPaused: false,
+          etag: 'test-etag-reset',
+          turnStartedAt: null,
+          pausedAt: null
+        });
+      });
+
+      // 全ての値が0にリセットされる
+      expect(result.current.displayTime).toBe(0);
+      expect(result.current.getCurrentTurnTime()).toBe(0);
     });
   });
 

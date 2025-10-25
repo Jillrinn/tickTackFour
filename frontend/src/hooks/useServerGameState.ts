@@ -80,10 +80,18 @@ export function useServerGameState() {
 
     setServerState(state);
 
-    // アクティブプレイヤーの経過時間を基準に設定
+    // タイマー状態をリセット（GET同期ごとにタイマー再構築）
     if (state.activePlayerIndex !== -1) {
       const serverElapsed = state.players[state.activePlayerIndex]?.elapsedSeconds || 0;
-      setServerTime(serverElapsed);
+      setServerTime(serverElapsed);  // サーバーの累積時間（基準点）
+      setDisplayTime(serverElapsed);  // 表示時間もリセット
+      setTurnDisplayTime(0);  // ターン時間もリセット
+      setLastSyncTime(Date.now());  // 同期時刻記録（基準点）
+    } else {
+      // ゲーム開始前の状態では全てを0にリセット
+      setServerTime(0);
+      setDisplayTime(0);
+      setTurnDisplayTime(0);
       setLastSyncTime(Date.now());
     }
   }, [serverState]);
@@ -102,33 +110,21 @@ export function useServerGameState() {
     const syncedTimer = setInterval(() => {
       const now = Date.now(); // 両方の計算で同じタイムスタンプを使用
 
-      // displayTimeの更新（アクティブプレイヤーはturnStartedAtを基準に計算）
+      // displayTimeの更新（lastSyncTimeを基準に計算して二重カウントを防止）
       if (serverState.activePlayerIndex === -1) {
         // ゲーム開始前: serverTimeをそのまま使用
         setDisplayTime(serverTime);
-      } else if (!serverState.turnStartedAt) {
-        // turnStartedAtが未設定の場合
-        setDisplayTime(serverTime);
       } else {
-        const turnStart = new Date(serverState.turnStartedAt).getTime();
-
         if (serverState.isPaused && serverState.pausedAt) {
-          // 一時停止中: pausedAt時点での累積時間を計算
-          const pausedTime = new Date(serverState.pausedAt).getTime();
-          const currentTurnElapsed = (pausedTime - turnStart) / 1000;
-
-          // serverTimeには前のターンまでの累積時間が含まれている
-          // 現在のターンの経過時間を加算
-          const previousTurnsTime = serverTime;
-          setDisplayTime(previousTurnsTime + currentTurnElapsed);
+          // 一時停止中: serverTimeをそのまま使用（同期時点での累積時間）
+          setDisplayTime(serverTime);
         } else {
-          // 通常: 現在時刻でのターン経過時間を計算
-          const currentTurnElapsed = (now - turnStart) / 1000;
-
-          // serverTimeには前のターンまでの累積時間が含まれている
-          // 現在のターンの経過時間を加算
-          const previousTurnsTime = serverTime;
-          setDisplayTime(previousTurnsTime + currentTurnElapsed);
+          // 通常: ポーリング間の経過時間のみを加算
+          // serverTimeはサーバーから取得した累積時間（基準点）
+          // lastSyncTimeは最後にサーバーと同期した時刻（基準点）
+          // (now - lastSyncTime)はポーリング間の経過時間のみ
+          const elapsedSinceSync = (now - lastSyncTime) / 1000;
+          setDisplayTime(serverTime + elapsedSinceSync);
         }
       }
 
