@@ -87,8 +87,31 @@ export function GameTimer() {
   // 一時停止状態を取得（ハンドラ関数で使用）
   const isPaused = isInFallbackMode ? fallbackState.gameState.isPaused : (serverGameState.serverState?.isPaused ?? false);
 
-  // ゲームがアクティブかどうかを取得（設定の無効化判定で使用）
-  const isGameActive = isInFallbackMode ? (fallbackState.gameState.activePlayerId !== null) : (serverGameState.serverState?.activePlayerIndex !== -1);
+  // ゲームがアクティブかどうかを取得（ボタンの有効化判定で使用）
+  const isGameActive = isInFallbackMode
+    ? (fallbackState.gameState.activePlayerId !== null)
+    : (serverGameState.serverState ? serverGameState.serverState.activePlayerIndex !== -1 : false);
+
+  // ゲームが開始済みかどうかを判定（設定の無効化判定で使用）
+  // 開始済み: activePlayerIndex が 0 以上 OR いずれかのプレイヤーが実際にプレイした形跡がある
+  // カウントアップモード: elapsedTimeSeconds > 0
+  // カウントダウンモード: elapsedTimeSeconds < initialTimeSeconds
+  const isGameStarted = isInFallbackMode
+    ? (fallbackState.gameState.activePlayerId !== null || fallbackState.gameState.players.some(p => {
+        const timerMode = fallbackState.gameState.timerMode;
+        return timerMode === 'count-up'
+          ? p.elapsedTimeSeconds > 0
+          : p.elapsedTimeSeconds < p.initialTimeSeconds;
+      }))
+    : (serverGameState.serverState
+        ? (serverGameState.serverState.activePlayerIndex !== -1 || serverGameState.serverState.players.some(p => {
+            const timerMode = serverGameState.serverState?.timerMode;
+            return timerMode === 'count-up'
+              ? p.elapsedTimeSeconds > 0
+              : p.elapsedTimeSeconds < p.initialTimeSeconds;
+          }))
+        : false // serverGameState.serverStateがnullの場合、未開始と判定
+      );
 
   // タイムアウトしたプレイヤーID（Task 12.2） - フォールバックモード時のみ
   const timedOutPlayerId = isInFallbackMode ? fallbackState.getTimedOutPlayerId() : null;
@@ -573,7 +596,7 @@ export function GameTimer() {
                   className="styled-select"
                   value={isInFallbackMode ? (gameState?.players.length || 4) : (serverGameState.serverState?.players.length || 4)}
                   onChange={(e) => handlePlayerCountChange(Number(e.target.value))}
-                  disabled={isGameActive && !isPaused}
+                  disabled={isGameStarted}
                   data-testid="player-count-dropdown"
                   aria-label="プレイヤー人数選択"
                 >
@@ -591,7 +614,8 @@ export function GameTimer() {
                     type="checkbox"
                     checked={isInFallbackMode ? (gameState?.timerMode === 'count-down') : (serverGameState.serverState?.timerMode === 'count-down')}
                     onChange={(e) => handleTimerModeChange(e.target.checked)}
-                    disabled={isGameActive && !isPaused}
+                    disabled={isGameStarted}
+                    title={isGameStarted ? 'ゲーム開始後はタイマーモードを変更できません' : ''}
                     data-testid="timer-mode-toggle"
                     aria-label="カウントモード切替"
                   />
@@ -609,6 +633,9 @@ export function GameTimer() {
                     onChange={(e) => setCountdownSeconds(Number(e.target.value))}
                     min="1"
                     max="3600"
+                    disabled={isGameStarted}
+                    title={isGameStarted ? 'ゲーム開始後はカウントダウン秒数を変更できません' : ''}
+                    data-testid="countdown-seconds-input"
                   />
                   <span>秒</span>
                 </div>
@@ -623,3 +650,5 @@ export function GameTimer() {
     </div>
   );
 }
+
+export default GameTimer;
