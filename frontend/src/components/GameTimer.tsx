@@ -104,7 +104,7 @@ export function GameTimer() {
   }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
 
   // Task 4.2: プレイヤー名変更のデバウンス処理用タイマー
-  const debounceTimerRef = React.useRef<Record<number, NodeJS.Timeout>>({});
+  const debounceTimerRef = React.useRef<Record<number, number>>({});
 
   // 編集中のプレイヤーインデックス（フォーカス中のプレイヤー）
   const [editingPlayerIndex, setEditingPlayerIndex] = React.useState<number | null>(null);
@@ -122,7 +122,7 @@ export function GameTimer() {
 
       // 300ms後にAPI呼び出し
       debounceTimerRef.current[playerIndex] = setTimeout(async () => {
-        const result = await updatePlayerName(playerIndex, newName, etag);
+        const result = await updatePlayerName(playerIndex, newName, etag ?? '');
 
         if (result === null) {
           // API失敗: ローカル状態をサーバー状態にロールバック
@@ -131,18 +131,24 @@ export function GameTimer() {
         } else if ('type' in result && result.type === 'conflict') {
           // 409 Conflict: 他のユーザーが更新済み
           console.warn('Conflict detected, rolling back to latest state');
-          if ('latestState' in result && result.latestState) {
-            serverGameState.updateFromServer(result.latestState);
-            updateEtag(result.latestState.etag);
+          const latestState = (result as any).latestState as GameStateWithTime | undefined;
+          if (latestState) {
+            serverGameState.updateFromServer(latestState);
+            if (latestState.etag) {
+              updateEtag(latestState.etag);
+            }
           }
         } else {
-          // 200 OK: 成功
-          serverGameState.updateFromServer(result);
-          updateEtag(result.etag);
+          // 200 OK: 成功 (GameStateWithTime型)
+          const gameState = result as GameStateWithTime;
+          serverGameState.updateFromServer(gameState);
+          if (gameState.etag) {
+            updateEtag(gameState.etag);
+          }
         }
 
         delete debounceTimerRef.current[playerIndex];
-      }, 300);
+      }, 300) as unknown as number;
     },
     [updatePlayerName, etag, serverGameState, updateEtag]
   );
@@ -171,14 +177,20 @@ export function GameTimer() {
           console.error('Failed to update player name via API');
         } else if ('type' in result && result.type === 'conflict') {
           console.warn('Conflict detected, rolling back to latest state');
-          if ('latestState' in result && result.latestState) {
-            serverGameState.updateFromServer(result.latestState);
-            updateEtag(result.latestState.etag);
+          const latestState = (result as any).latestState as GameStateWithTime | undefined;
+          if (latestState) {
+            serverGameState.updateFromServer(latestState);
+            if (latestState.etag) {
+              updateEtag(latestState.etag);
+            }
           }
         } else {
-          // 200 OK: 成功
-          serverGameState.updateFromServer(result);
-          updateEtag(result.etag);
+          // 200 OK: 成功 (GameStateWithTime型)
+          const gameState = result as GameStateWithTime;
+          serverGameState.updateFromServer(gameState);
+          if (gameState.etag) {
+            updateEtag(gameState.etag);
+          }
         }
       }
     }
