@@ -276,11 +276,72 @@ export function useGameApi() {
     []
   );
 
+  /**
+   * プレイヤー名更新API呼び出し
+   * PUT /api/updatePlayerName
+   *
+   * Requirements: 2.3, 4.1, 4.2
+   * - プレイヤー名編集時にバックエンドAPIに更新リクエスト送信
+   * - 現在のETagを含めて楽観的ロックを実装
+   *
+   * @param playerIndex - プレイヤーのインデックス（0ベース）
+   * @param name - 新しいプレイヤー名
+   * @param etag - 現在のETag
+   * @returns 更新後のゲーム状態、競合エラー、またはnull
+   */
+  const updatePlayerName = useCallback(
+    async (playerIndex: number, name: string, etag: string): Promise<ApiResult> => {
+      try {
+        const response = await fetch('http://localhost:7071/api/updatePlayerName', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'If-Match': etag,
+          },
+          body: JSON.stringify({
+            playerIndex,
+            name,
+          }),
+        });
+
+        if (response.status === 409) {
+          // 409 Conflict: ETag不一致
+          const errorData = await response.json();
+          return {
+            type: 'conflict',
+            message: errorData.message || '他のユーザーがプレイヤー名を更新しました',
+            action: 'reload' as const,
+            latestState: errorData.latestState,
+          } as ConflictError & { latestState?: GameStateWithTime };
+        }
+
+        if (!response.ok) {
+          // 400 Bad Request or 500 Internal Server Error
+          console.error(`Error updating player name: ${response.status}`);
+          return null;
+        }
+
+        // 200 OK: 成功
+        const newEtag = response.headers.get('etag');
+        const gameState = await response.json();
+        return {
+          ...gameState,
+          etag: newEtag || gameState.etag,
+        };
+      } catch (error) {
+        console.error('Error updating player name:', error);
+        return null;
+      }
+    },
+    []
+  );
+
   return {
     switchTurn,
     pauseGame,
     resumeGame,
     resetGame,
-    updateGame
+    updateGame,
+    updatePlayerName,
   };
 }
