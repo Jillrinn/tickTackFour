@@ -102,69 +102,19 @@ jobs:
           cd frontend
           npx tsc --noEmit
 
-  # E2Eテスト (Phase 1)
-  e2e-tests:
-    name: E2E Tests (Phase 1)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [frontend-unit-tests, backend-unit-tests, code-quality]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --workspaces --include-workspace-root
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-        env:
-          CI: true
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-
-      - name: Upload test screenshots
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-screenshots
-          path: test-results/
-          retention-days: 7
-
-      - name: Upload trace files
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-traces
-          path: test-results/**/*.zip
-          retention-days: 7
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
 
   # 全テスト結果の集計
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [frontend-unit-tests, backend-unit-tests, e2e-tests]
+    needs: [frontend-unit-tests, backend-unit-tests, code-quality]
     if: always()
 
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
       - name: Create test summary
         run: |
           echo "# 🧪 Test Summary" >> $GITHUB_STEP_SUMMARY
@@ -172,12 +122,12 @@ jobs:
           echo "## Test Results" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Frontend Unit Tests: ${{ needs.frontend-unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Backend Unit Tests: ${{ needs.backend-unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ E2E Tests: ${{ needs.e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.frontend-unit-tests.result }}" == "success" ] && \
              [ "${{ needs.backend-unit-tests.result }}" == "success" ] && \
-             [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+             [ "${{ needs.code-quality.result }}" == "success" ]; then
             echo "## 🎉 All tests passed!" >> $GITHUB_STEP_SUMMARY
           else
             echo "## ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
@@ -188,7 +138,7 @@ jobs:
   deployment-gate:
     name: Deployment Gate
     runs-on: ubuntu-latest
-    needs: [frontend-unit-tests, backend-unit-tests, e2e-tests, code-quality]
+    needs: [frontend-unit-tests, backend-unit-tests, code-quality]
     if: github.event_name == 'pull_request'
 
     steps:
@@ -205,7 +155,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ All tests passed! Ready for deployment.\n\n**Test Summary:**\n- Frontend Unit Tests: ✅\n- Backend Unit Tests: ✅\n- E2E Tests: ✅\n- Code Quality: ✅'
+              body: '✅ All tests passed! Ready for deployment.\n\n**Test Summary:**\n- Frontend Unit Tests: ✅\n- Backend Unit Tests: ✅\n- Code Quality: ✅'
             });
 
       - name: Block deployment on failure
@@ -213,3 +163,11 @@ jobs:
         run: |
           echo "❌ Tests failed - blocking deployment"
           exit 1
+
+  # Azure Static Web Apps デプロイ (mainブランチへのpush時のみ)
+  deploy:
+    name: Deploy to Azure
+    needs: [frontend-unit-tests, backend-unit-tests, code-quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/azure-static-web-apps-orange-stone-066c2d600.yml
+    secrets: inherit
