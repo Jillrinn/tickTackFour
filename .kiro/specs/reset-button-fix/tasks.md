@@ -61,7 +61,7 @@
 
 ### 3. GameTimerコンポーネントとAPIの統合テストを実装する
 
-- [ ] 3.1 リセットハンドラーとAPI統合のテストを実装する
+- [x] 3.1 リセットハンドラーとAPI統合のテストを実装する
   - **ファイル**: frontend/src/components/__tests__/GameTimer.resetIntegration.test.tsx（新規作成）
   - **テストケース**:
     1. APIモードでリセットボタン押下時、`resetGameApi(etag)`が呼び出されることを検証
@@ -71,7 +71,7 @@
   - **完了条件**: 全テストケースがパス
   - _Requirements: 3.1-3.4, 4.1, 4.3_
 
-- [ ] 3.2 リセット後のタイマー停止確認テストを実装する
+- [x] 3.2 リセット後のタイマー停止確認テストを実装する
   - **ファイル**: frontend/src/components/__tests__/GameTimer.resetIntegration.test.tsx
   - **テストケース**:
     1. APIから`isPaused: true`の状態を取得後、useGameTimerが停止することを検証
