@@ -387,7 +387,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
 
 ### 修正タスク
 
-- [ ] 5.6 レンダリング時に通常モードでもtotalGameTime stateを使用
+- [x] 5.6 レンダリング時に通常モードでもtotalGameTime stateを使用
   - **ファイル**: `frontend/src/components/GameTimer.tsx` (lines 402-404, 418)
   - **実装内容**:
     1. **TDD: RED phase**
@@ -428,7 +428,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ ブラウザで手動確認（通常モード）
   - **カバーする要件**: Req 2 (AC1), Req 4 (AC3, AC5)
 
-- [ ] 5.7 通常モード切り替え時の初期値設定
+- [x] 5.7 通常モード切り替え時の初期値設定
   - **ファイル**: `frontend/src/components/GameTimer.tsx` (新規useEffect追加)
   - **実装内容**:
     1. **TDD: RED phase**
@@ -456,7 +456,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ ブラウザで手動確認（通常モード）
   - **カバーする要件**: Req 2 (AC1), Req 3 (AC1,2)
 
-- [ ] 5.8 通常モードでも1秒ごとにtotalGameTimeを更新
+- [x] 5.8 通常モードでも1秒ごとにtotalGameTimeを更新
   - **ファイル**: `frontend/src/components/GameTimer.tsx` (新規useEffect追加)
   - **実装内容**:
     1. **TDD: RED phase**
@@ -490,7 +490,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ ブラウザで手動確認（通常モード）
   - **カバーする要件**: Req 2 (AC1), Req 3 (AC1,2,3,4), Req 4 (AC3, AC5)
 
-- [ ] 5.9 ギャップ分析の再検証とコミット作成
+- [x] 5.9 ギャップ分析の再検証とコミット作成
   - **実施内容**:
     1. APIモード（通常モード）での実機検証:
        - ✅ ゲーム全体時間が1秒ごとに更新される
@@ -644,7 +644,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
 
 全ての実装とテストが完了した後、仕様を完了状態に更新します。
 
-- [ ] 7.1 全テスト結果の確認
+- [x] 7.1 全テスト結果の確認
   - **実施内容**:
     - `npm test`を実行し、全てのユニットテストが成功することを確認
     - `npx playwright test`を実行し、全てのE2Eテストが成功することを確認
@@ -653,7 +653,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ブラウザで手動確認: 全てのタイマー表示が同期して更新されることを目視確認
   - **完了条件**: 全テストパス、手動確認完了、リグレッションなし
 
-- [ ] 7.2 spec.json更新とコミット作成
+- [x] 7.2 spec.json更新とコミット作成
   - **実施内容**:
     - `spec.json`のphaseを"implementation-done"に更新
     - tasks.mdの全タスクをチェック済み[x]に更新
