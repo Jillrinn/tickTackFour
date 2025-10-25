@@ -102,15 +102,37 @@ export function useServerGameState() {
     const syncedTimer = setInterval(() => {
       const now = Date.now(); // 両方の計算で同じタイムスタンプを使用
 
-      // displayTimeの更新
-      if (!serverState.isPaused && serverState.activePlayerIndex !== -1) {
-        const localElapsed = (now - lastSyncTime) / 1000;
-        setDisplayTime(serverTime + localElapsed);
-      } else {
+      // displayTimeの更新（アクティブプレイヤーはturnStartedAtを基準に計算）
+      if (serverState.activePlayerIndex === -1) {
+        // ゲーム開始前: serverTimeをそのまま使用
         setDisplayTime(serverTime);
+      } else if (!serverState.turnStartedAt) {
+        // turnStartedAtが未設定の場合
+        setDisplayTime(serverTime);
+      } else {
+        const turnStart = new Date(serverState.turnStartedAt).getTime();
+
+        if (serverState.isPaused && serverState.pausedAt) {
+          // 一時停止中: pausedAt時点での累積時間を計算
+          const pausedTime = new Date(serverState.pausedAt).getTime();
+          const currentTurnElapsed = (pausedTime - turnStart) / 1000;
+
+          // serverTimeには前のターンまでの累積時間が含まれている
+          // 現在のターンの経過時間を加算
+          const previousTurnsTime = serverTime;
+          setDisplayTime(previousTurnsTime + currentTurnElapsed);
+        } else {
+          // 通常: 現在時刻でのターン経過時間を計算
+          const currentTurnElapsed = (now - turnStart) / 1000;
+
+          // serverTimeには前のターンまでの累積時間が含まれている
+          // 現在のターンの経過時間を加算
+          const previousTurnsTime = serverTime;
+          setDisplayTime(previousTurnsTime + currentTurnElapsed);
+        }
       }
 
-      // turnDisplayTimeの更新
+      // turnDisplayTimeの更新（turnStartedAtを基準に計算）
       if (serverState.activePlayerIndex === -1) {
         setTurnDisplayTime(0);
       } else if (!serverState.turnStartedAt) {
