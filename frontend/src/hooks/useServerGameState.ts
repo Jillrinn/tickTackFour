@@ -145,14 +145,25 @@ export function useServerGameState() {
    * Task 5.1: ゲーム全体のプレイ時間を秒単位で取得
    *
    * Requirements: turn-time-tracking spec 2.2
-   * - 全プレイヤーのelapsedSecondsの合計を計算
+   * - アクティブプレイヤーのdisplayTime + 非アクティブプレイヤーのelapsedSecondsの合計
+   * - これにより、アクティブプレイヤーの滑らかな時間増加が反映される
    * - プレイヤーが0人の場合は0を返す
    */
   const getTotalGameTime = useCallback((): number => {
     if (!serverState || serverState.players.length === 0) return 0;
 
-    return serverState.players.reduce((total, player) => total + player.elapsedSeconds, 0);
-  }, [serverState]);
+    // アクティブプレイヤーがいない場合（ゲーム開始前）は全員の合計
+    if (serverState.activePlayerIndex === -1) {
+      return serverState.players.reduce((total, player) => total + player.elapsedSeconds, 0);
+    }
+
+    // 非アクティブプレイヤーの合計 + アクティブプレイヤーのdisplayTime
+    const inactiveTotal = serverState.players
+      .filter((_, idx) => idx !== serverState.activePlayerIndex)
+      .reduce((total, player) => total + player.elapsedSeconds, 0);
+
+    return inactiveTotal + displayTime;
+  }, [serverState, displayTime, serverState?.activePlayerIndex]);
 
   /**
    * Task 5.1: ゲーム全体時間をフォーマット（HH:MM:SSまたはMM:SS）
