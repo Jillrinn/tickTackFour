@@ -207,7 +207,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
 3. **REFACTOR phase**: 必要に応じてリファクタリング
 4. `npm test`で全テストが成功することを確認
 
-- [ ] 5.1 GameTimer.tsxに`totalGameTime` state追加（フォールバックモード）
+- [x] 5.1 GameTimer.tsxに`totalGameTime` state追加（フォールバックモード）
   - **ファイル**: `frontend/src/components/GameTimer.tsx`
   - **実装内容**:
     1. **TDD: RED phase**
@@ -233,7 +233,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ ブラウザで手動確認（フォールバックモード）
   - **カバーする要件**: Req 2 (AC1), Req 4 (AC3)
 
-- [ ] 5.2 useGameTimerのonTimerTickで`getTotalGameTime()`結果を状態更新
+- [x] 5.2 useGameTimerのonTimerTickで`getTotalGameTime()`結果を状態更新
   - **ファイル**: `frontend/src/components/GameTimer.tsx` (useGameTimer呼び出し部分)
   - **実装内容**:
     1. **TDD: RED phase**
@@ -263,7 +263,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ 一時停止/再開/リセット動作が正しい
   - **カバーする要件**: Req 2 (AC1), Req 3 (AC1,2,3,4)
 
-- [ ] 5.3 レンダリング時に`totalGameTime` stateを使用
+- [x] 5.3 レンダリング時に`totalGameTime` stateを使用
   - **ファイル**: `frontend/src/components/GameTimer.tsx` (行390-414)
   - **実装内容**:
     1. **TDD: RED phase**
@@ -292,7 +292,7 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ ブラウザで手動確認
   - **カバーする要件**: Req 4 (AC3, AC5)
 
-- [ ] 5.4 通常モード（サーバーモード）にも同じ実装を適用
+- [x] 5.4 通常モード（サーバーモード）にも同じ実装を適用
   - **ファイル**: `frontend/src/components/GameTimer.tsx`, `frontend/src/hooks/useServerGameState.ts`
   - **実装内容**:
     1. **TDD: RED phase**

@@ -63,6 +63,10 @@ export function GameTimer() {
     serverGameState.updateFromServer(state, editingPlayerIndex);
     updateEtag(state.etag);
 
+    // Task 5.4: ポーリング同期時にゲーム全体時間も更新（通常モード）
+    // serverGameState.getTotalGameTime()は最新のserverStateに基づいて計算される
+    setTotalGameTime(serverGameState.getTotalGameTime());
+
     // API接続成功時、フォールバックモードから復帰
     if (isInFallbackMode) {
       deactivateFallbackMode();
@@ -96,6 +100,10 @@ export function GameTimer() {
   // forceUpdate()を排除し、useGameTimerフックによる統一的なタイマー管理を使用
   const [turnTimeUpdateTrigger, setTurnTimeUpdateTrigger] = React.useState(0);
 
+  // timer-synchronization Phase 5: ゲーム全体時間の同期状態管理
+  // Task 5.1: getTotalGameTime()結果をstateで管理し、タイマーtickで明示的に更新
+  const [totalGameTime, setTotalGameTime] = React.useState(0);
+
   // timer-synchronization: useGameTimerフック統合（フォールバックモードのみ）
   // onTimerTickコールバックでターン時間表示も同期して再レンダリング
   useGameTimer(
@@ -106,6 +114,8 @@ export function GameTimer() {
         fallbackState.updatePlayerTime(playerId, newElapsedTime);
         // ターン時間表示を再レンダリング（React自動バッチングで同期）
         setTurnTimeUpdateTrigger(prev => prev + 1);
+        // Task 5.2: ゲーム全体時間も同期して更新
+        setTotalGameTime(fallbackState.getTotalGameTime());
       }
     }
   );
@@ -392,8 +402,9 @@ export function GameTimer() {
               <span
                 className={`total-game-time-value ${
                   (() => {
+                    // Task 5.3: totalGameTime stateを使用（フォールバックモード）
                     const totalSeconds = isInFallbackMode
-                      ? fallbackState.getTotalGameTime()
+                      ? totalGameTime
                       : serverGameState.getTotalGameTime();
 
                     // Task 5.2: 時間の長さに応じて色を変更
@@ -406,8 +417,9 @@ export function GameTimer() {
                   })()
                 }`}
               >
+                {/* Task 5.3: totalGameTime stateを使用してフォーマット */}
                 {isInFallbackMode
-                  ? fallbackState.formatGameTime(fallbackState.getTotalGameTime())
+                  ? fallbackState.formatGameTime(totalGameTime)
                   : serverGameState.formatGameTime(serverGameState.getTotalGameTime())
                 }
               </span>
