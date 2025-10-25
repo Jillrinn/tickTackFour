@@ -4,13 +4,21 @@
 
 この仕様は、マルチプレイヤーゲームタイマーの複数のタイマー表示（プレイヤーカード、ターン時間、全体プレイ時間、最長時間プレイヤー）が同期して更新されるようにする機能を実装します。
 
-現在は各タイマー表示が独立して更新されているため、表示タイミングにズレが生じています。この問題を解決するため、単一のタイマーインスタンスと統一された状態管理を使用し、React 19.1.1のauto-batching機能を活用して全ての表示を同期させます。
+現在は各タイマー表示が独立して更新されているため、表示タイミングにズレが生じています。この問題を解決するため、既存のuseGameTimerフックを改修し、Reactの状態管理とレンダリングバッチングを活用することで、全てのタイマー表示が同じタイミングで同期して更新されるようにします。
 
-## Phase 1: コード調査とforceUpdate特定
+**実装アプローチ**: ギャップ分析により、Option A（既存コンポーネント拡張）を採用。既存のuseGameTimerフック構造を維持し、最小限の変更で実現します。
+
+**実装複雑度**: Small (S) - 1.5-2日
+- Phase 2-4実装: 0.5-1日
+- Phase 5ユニットテスト: 0.5日
+- Phase 6 E2Eテスト: 0.5日
+- Phase 7完了処理: 0.1日
+
+## Phase 1: コード調査とforceUpdate特定（✅ 完了）
 
 ### 1. 既存実装の調査と分析
 
-既存のタイマー実装を理解し、forceUpdate()の使用箇所を特定します。
+既存のタイマー実装を理解し、forceUpdate()の使用箇所を特定しました。
 
 - [x] 1.1 GameTimer.tsxでforceUpdate()使用箇所を特定
   - **ファイル**: `frontend/src/components/GameTimer.tsx`
@@ -61,13 +69,14 @@
 
 既存のuseGameTimerフックが正しく動作していることを検証し、必要に応じて最適化します。
 
-- [ ] 2.1 onTimerTickコールバックの仕様確認
-  - **ファイル**: `frontend/src/hooks/useGameTimer.ts`, `frontend/src/components/GameTimer.tsx`
+- [ ] 2.1 onTimerTickコールバックの動作検証
+  - **ファイル**: `frontend/src/hooks/useGameTimer.ts` (83行目), `frontend/src/components/GameTimer.tsx`
   - **実装内容**:
-    - onTimerTickコールバックが受け取るパラメータを確認
+    - useGameTimer.ts 83行目のonTimerTick呼び出しを確認
     - GameTimer側でonTimerTickがどのように使われているかを把握
     - 現在の実装で1秒ごとに正確に呼び出されているか確認
-  - **完了条件**: onTimerTickの仕様文書化、呼び出しフロー理解
+    - onTimerTickコールバックのシグネチャ: `(playerId: string, newElapsedTime: number) => void`
+  - **完了条件**: onTimerTickの仕様文書化、1秒ごとの呼び出しフロー確認
   - **カバーする要件**: Req 1 (AC2,3), Req 2 (AC1)
 
 - [ ] 2.2 タイマー精度検証とテスト作成
@@ -76,6 +85,7 @@
     - jest.useFakeTimers()を使用してタイマー精度をテスト
     - 1秒ごとの更新が正確に行われることを確認
     - 遅延が発生した場合の動作を検証
+    - React 19.1.1の自動バッチングが正しく機能することを確認
   - **完了条件**: タイマー精度テスト追加、npm testパス
   - **カバーする要件**: Req 2 (AC4)
 
@@ -88,54 +98,105 @@ forceUpdate()を排除し、単一のuseStateを使用した統一的な状態�
 - [ ] 3.1 統合タイマー状態の設計と実装
   - **ファイル**: `frontend/src/components/GameTimer.tsx`
   - **実装内容**:
-    - 新しいTypeScript型を定義: `interface TimerState { lastUpdateTime: number; forceRenderCount: number; }`
-    - `const [timerState, setTimerState] = useState<TimerState>({ lastUpdateTime: 0, forceRenderCount: 0 })`を追加
-    - onTimerTickコールバック内で`setTimerState({ lastUpdateTime: Date.now(), forceRenderCount: prev.forceRenderCount + 1 })`を実装
+    - 新しいTypeScript型を定義（コンポーネント内に追加）:
+      ```typescript
+      interface TimerState {
+        lastUpdateTime: number;
+        forceRenderCount: number;
+      }
+      ```
+    - useState追加:
+      ```typescript
+      const [timerState, setTimerState] = useState<TimerState>({
+        lastUpdateTime: 0,
+        forceRenderCount: 0
+      });
+      ```
+    - onTimerTickコールバック内で状態更新:
+      ```typescript
+      const handleTimerTick = (playerId: number, newElapsedTime: number) => {
+        // 既存のupdatePlayerTime呼び出しを維持
+        fallbackState.updatePlayerTime(playerId, newElapsedTime);
+
+        // 新規: timerStateを更新してターン時間表示も再レンダリング
+        setTimerState({
+          lastUpdateTime: Date.now(),
+          forceRenderCount: prev => prev.forceRenderCount + 1
+        });
+      };
+      ```
     - React 19.1.1のauto-batchingにより、同一イベントループ内の複数setState呼び出しが1回の再レンダリングにまとめられることを確認
-  - **完了条件**: timerState実装完了、onTimerTick内で更新されることを確認
+  - **完了条件**: timerState実装完了、onTimerTick内で更新されることを確認、型エラーなし
   - **カバーする要件**: Req 1 (AC2,3), Req 2 (AC1), Req 3 (AC1-4), Req 4 (AC5)
 
-- [ ] 3.2 forceUpdate()呼び出しの全箇所特定
+- [ ] 3.2 forceUpdate()の削除（96-104行目）
   - **ファイル**: `frontend/src/components/GameTimer.tsx`
   - **実装内容**:
-    - Task 1.1の結果を再確認
-    - 漏れがないことをダブルチェック
-    - 各forceUpdate()をどのsetTimerState呼び出しに置き換えるか計画
-  - **完了条件**: forceUpdate()置き換え計画の作成
+    - 96行目: `const [, forceUpdate] = React.useReducer(x => x + 1, 0);` を削除
+    - 97-104行目: 以下のuseEffectブロック全体を削除
+      ```typescript
+      React.useEffect(() => {
+        if (isInFallbackMode && !isPaused && gameState?.activePlayerId) {
+          const interval = setInterval(() => {
+            forceUpdate();
+          }, 1000);
+          return () => clearInterval(interval);
+        }
+      }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
+      ```
+    - 削除後、npm run devで開発サーバーを起動して動作確認
+    - ブラウザでターン時間表示が正常に更新されることを確認
+  - **完了条件**: forceUpdate関連コード完全削除、ブラウザで動作確認、型エラーなし
   - **カバーする要件**: Req 2 (AC1), Req 3 (AC1-4)
 
-- [ ] 3.3 forceUpdate()をtimerState更新に置き換え
-  - **ファイル**: `frontend/src/components/GameTimer.tsx`
+- [ ] 3.3 ポーリング同期時のtimerState更新対応
+  - **ファイル**: `frontend/src/components/GameTimer.tsx`, `frontend/src/hooks/useServerGameState.ts`
   - **実装内容**:
-    - 全てのforceUpdate()呼び出しを`setTimerState(prev => ({ ...prev, forceRenderCount: prev.forceRenderCount + 1 }))`に置き換え
-    - タイマー更新以外のforceUpdate()（例: pause/resume/reset時）も同様に置き換え
-    - npm run devで開発サーバーを起動して動作確認
-    - ブラウザで全てのタイマー表示が正常に更新されることを確認
-  - **完了条件**: 全forceUpdate()削除完了、ブラウザで動作確認、型エラーなし
-  - **カバーする要件**: Req 2 (AC1), Req 3 (AC1-4)
+    - useServerGameStateのポーリング時（5秒ごと）にtimerStateも更新
+    - onServerSyncコールバック内でsetTimerStateを呼び出し:
+      ```typescript
+      const handleServerSync = (playerId: number, newElapsedTime: number) => {
+        // 既存のサーバー同期処理
+        serverGameState.syncWithServer();
+
+        // 新規: timerStateも更新
+        setTimerState({
+          lastUpdateTime: Date.now(),
+          forceRenderCount: prev => prev.forceRenderCount + 1
+        });
+      };
+      ```
+    - ETag更新時も同様にtimerStateを更新
+  - **完了条件**: ポーリング同期時のtimerState更新実装完了、ブラウザで確認
+  - **カバーする要件**: Req 2 (AC1), Req 4 (AC5)
 
 ## Phase 4: タイマー表示コンポーネント更新
 
-### 4. タイマー表示コンポーネントのprops駆動化
+### 4. タイマー表示コンポーネントのprops駆動化確認
 
-各タイマー表示が完全にprops駆動で動作するようにし、独自の状態やタイマーを持たないようにします。
+各タイマー表示が完全にprops駆動で動作するようにし、独自の状態やタイマーを持たないことを確認します。
 
 - [ ] 4.1 各表示コンポーネントのprops構造確認
   - **ファイル**: `frontend/src/components/GameTimer.tsx`内の各表示セクション
   - **実装内容**:
     - プレイヤーカード、ターン時間、全体プレイ時間、最長時間プレイヤーの各表示がpropsで時間を受け取っているか確認
-    - props変更で自動的に再レンダリングされる構造になっているか検証
-    - 必要に応じてprops構造を改善
-  - **完了条件**: 各表示がprops駆動であることを確認、必要な改善を実施
+    - **Phase 1調査結果の再確認**:
+      - プレイヤーカード: ✅ 既にprops駆動
+      - ターン時間: ⚠️ forceUpdate()削除後、props駆動に変更済みか確認
+      - 全体プレイ時間: ✅ 既にprops駆動
+      - 最長時間プレイヤー: ✅ 既にprops駆動
+    - timerStateの変更により全表示が自動的に再レンダリングされることを確認
+  - **完了条件**: 各表示がprops駆動であることを確認、ブラウザで動作確認
   - **カバーする要件**: Req 4 (AC1-5)
 
-- [ ] 4.2 独自状態や独自タイマーの削除
+- [ ] 4.2 独自状態や独自タイマーが残っていないことを確認
   - **ファイル**: `frontend/src/components/GameTimer.tsx`内の各表示セクション
   - **実装内容**:
-    - 各表示コンポーネント内で独自にuseState、useEffect、forceUpdate()を使用している箇所を特定
-    - あれば全て削除し、完全にprops駆動のレンダリングに変更
-    - timerStateの変更により自動的に全表示が再レンダリングされることを確認
-  - **完了条件**: 独自状態・タイマー削除完了、ブラウザで動作確認
+    - 各表示コンポーネント内で独自にuseState、useEffect、forceUpdate()を使用している箇所がないことを確認
+    - grep検索で確認: `forceUpdate`, `useEffect.*setInterval`, `useState.*timer`
+    - timerStateの変更により全表示が同期して再レンダリングされることを確認
+    - 開発サーバーを起動し、Chrome DevToolsで再レンダリングを検証
+  - **完了条件**: 独自状態・タイマーなし確認完了、ブラウザで全表示同期確認
   - **カバーする要件**: Req 4 (AC1-5)
 
 ## Phase 5: ユニットテスト実装
@@ -160,6 +221,7 @@ forceUpdate()を排除し、単一のuseStateを使用した統一的な状態�
     - act()とjest.advanceTimersByTime(1000)で1秒経過をシミュレート
     - 全てのタイマー表示（プレイヤーカード、ターン時間、全体時間、最長時間プレイヤー）が同時に更新されることを確認
     - カウントアップモードとカウントダウンモードの両方をテスト
+    - React自動バッチングにより全表示が1回の再レンダリングで更新されることを確認
   - **完了条件**: テスト作成完了、npm testパス
   - **カバーする要件**: Req 2 (AC1,2,3) - タイマー更新の同期
 
@@ -235,10 +297,11 @@ forceUpdate()を排除し、単一のuseStateを使用した統一的な状態�
     - `spec.json`のphaseを"implementation-done"に更新
     - tasks.mdの全タスクをチェック済み[x]に更新
     - 以下の情報を含む詳細なコミットメッセージを作成:
-      - 実装内容のサマリー
+      - 実装内容のサマリー（forceUpdate削除、timerState追加、ポーリング同期対応）
       - カバーした全要件（Req 1-4、AC 1-17）
       - テスト結果（ユニットテスト数、E2Eテスト数）
       - 変更ファイル一覧
+      - 実装複雑度: Small (S) - 実測時間
     - Gitコミットを作成（実装完了の最終コミット）
   - **完了条件**: spec.json更新、tasks.md全タスク完了、詳細なコミットメッセージでコミット作成
 
@@ -250,11 +313,11 @@ forceUpdate()を排除し、単一のuseStateを使用した統一的な状態�
 | Req 1 | AC2: 全表示が同じインスタンス参照 | 3.1, 4.1, 5.1 |
 | Req 1 | AC3: 同じタイマー値を提供 | 3.1, 5.1 |
 | Req 1 | AC4: タイマー破棄時の全表示停止 | 2.2, 5.1, 7.1 |
-| Req 2: タイマー更新の同期 | AC1: 1秒経過時の同時更新 | 2.1, 3.1, 3.3, 5.2, 6.1 |
+| Req 2: タイマー更新の同期 | AC1: 1秒経過時の同時更新 | 2.1, 3.1, 3.2, 5.2, 6.1 |
 | Req 2 | AC2: カウントアップ同期 | 5.2, 6.1 |
 | Req 2 | AC3: カウントダウン同期 | 5.2, 6.1 |
 | Req 2 | AC4: 遅延補正 | 2.2 |
-| Req 3: タイマー状態管理の統一 | AC1: 一時停止時の更新停止 | 3.3, 5.3, 6.2 |
+| Req 3: タイマー状態管理の統一 | AC1: 一時停止時の更新停止 | 3.2, 5.3, 6.2 |
 | Req 3 | AC2: 一時停止状態の時刻保持 | 5.3, 6.2 |
 | Req 3 | AC3: 再開時の更新再開 | 5.3, 6.2 |
 | Req 3 | AC4: リセット時の即座更新 | 5.3, 6.2 |
@@ -262,11 +325,25 @@ forceUpdate()を排除し、単一のuseStateを使用した統一的な状態�
 | Req 4 | AC2: ターン時間同期表示 | 4.1, 4.2, 5.4, 6.1 |
 | Req 4 | AC3: 全体プレイ時間同期表示 | 4.1, 4.2, 5.4, 6.1 |
 | Req 4 | AC4: 最長時間プレイヤー同期表示 | 4.1, 4.2, 5.4, 6.1 |
-| Req 4 | AC5: 全表示の同タイミング更新 | 3.1, 3.3, 5.4, 6.1 |
+| Req 4 | AC5: 全表示の同タイミング更新 | 3.1, 3.2, 3.3, 5.4, 6.1 |
 
 **全17個の受入基準が適切にタスクにマッピングされています。**
 
 ## 実装上の注意事項
+
+### ギャップ分析からの重要な洞察
+
+**推奨アプローチ**: Option A - 既存コンポーネント拡張
+- 最小限の変更で実現（削除: 9行、追加: 15行）
+- 既存のuseGameTimerフック構造を維持
+- Reactの宣言的UIパターンに統一
+- 実装複雑度: Small (S) - 1.5-2日
+
+**主要な変更点**:
+1. forceUpdate()削除（96-104行目）
+2. timerState追加（useState使用）
+3. onTimerTickコールバック修正
+4. ポーリング同期対応（useServerGameState）
 
 ### React 19.1.1 Auto-Batching
 
@@ -285,3 +362,19 @@ forceUpdate()を排除し、単一のuseStateを使用した統一的な状態�
 - **ユニットテスト**: コンポーネント単位でロジックを検証、高速で信頼性が高い
 - **E2Eテスト**: 実際のブラウザで統合動作を検証、ユーザー体験に最も近い
 - **両方のテストが必要**: ユニットテストで細部を保証し、E2Eテストで全体の同期を確認
+
+### リスク要因と対策
+
+**中リスク**:
+1. React自動バッチングの動作検証
+   - 対策: Phase 2でタイマー精度検証テストを実施
+   - 影響: 低（最悪でも従来と同じ動作）
+
+2. ポーリング同期タイミング
+   - 対策: useServerGameStateのポーリングロジック検証（Task 3.3）
+   - 影響: 低（既存のonServerSyncコールバック活用）
+
+**低リスク**:
+1. 既存テストのリグレッション
+   - 対策: Phase 5で既存テストを全て実行
+   - 影響: 極めて低（forceUpdate削除は内部実装のみ）
