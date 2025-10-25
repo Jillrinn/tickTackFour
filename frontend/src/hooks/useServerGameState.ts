@@ -240,6 +240,28 @@ export function useServerGameState() {
     });
   }, [updateFromServer]);
 
+  /**
+   * Task 4.2: プレイヤー名を楽観的に更新（即座にUIに反映）
+   *
+   * Requirements: api-mode-ui-fixes spec 2.6
+   * - ローカル状態を即座に更新してUIに反映
+   * - API呼び出し結果を待たずに更新（楽観的更新）
+   */
+  const updatePlayerNameOptimistic = useCallback((playerIndex: number, newName: string) => {
+    if (!serverState) return;
+
+    const updatedPlayers = [...serverState.players];
+    updatedPlayers[playerIndex] = {
+      ...updatedPlayers[playerIndex],
+      name: newName
+    };
+
+    setServerState({
+      ...serverState,
+      players: updatedPlayers
+    });
+  }, [serverState]);
+
   return {
     serverState,
     displayTime,
@@ -249,6 +271,7 @@ export function useServerGameState() {
     getTotalGameTime,
     formatGameTime,
     getCurrentTurnTime,
-    syncWithServer
+    syncWithServer,
+    updatePlayerNameOptimistic
   };
 }

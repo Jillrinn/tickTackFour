@@ -71,7 +71,7 @@ export function GameTimer() {
   });
 
   // Task 3.3: API呼び出し用のカスタムフック
-  const { switchTurn, pauseGame: pauseGameApi, resumeGame: resumeGameApi, resetGame: resetGameApi, updateGame } = useGameApi();
+  const { switchTurn, pauseGame: pauseGameApi, resumeGame: resumeGameApi, resetGame: resetGameApi, updateGame, updatePlayerName } = useGameApi();
 
   // 現在使用する状態とメソッドを決定（モード切替）
   // フォールバックモード時: fallbackState、通常モード時: serverGameState
@@ -101,6 +101,47 @@ export function GameTimer() {
       return () => clearInterval(interval);
     }
   }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
+
+  // Task 4.2: プレイヤー名変更のデバウンス処理用タイマー
+  const debounceTimerRef = React.useRef<Record<number, NodeJS.Timeout>>({});
+
+  // Task 4.2: プレイヤー名変更ハンドラ（楽観的更新 + デバウンスAPI呼び出し）
+  const handlePlayerNameChange = React.useCallback(
+    (playerIndex: number, newName: string) => {
+      // 楽観的更新: ローカル状態を即座に更新
+      serverGameState.updatePlayerNameOptimistic(playerIndex, newName);
+
+      // 既存のデバウンスタイマーをクリア
+      if (debounceTimerRef.current[playerIndex]) {
+        clearTimeout(debounceTimerRef.current[playerIndex]);
+      }
+
+      // 300ms後にAPI呼び出し
+      debounceTimerRef.current[playerIndex] = setTimeout(async () => {
+        const result = await updatePlayerName(playerIndex, newName, etag);
+
+        if (result === null) {
+          // API失敗: ローカル状態をサーバー状態にロールバック
+          console.error('Failed to update player name via API');
+          // ポーリングで最新状態を取得するため、ここでは何もしない
+        } else if ('type' in result && result.type === 'conflict') {
+          // 409 Conflict: 他のユーザーが更新済み
+          console.warn('Conflict detected, rolling back to latest state');
+          if ('latestState' in result && result.latestState) {
+            serverGameState.updateFromServer(result.latestState);
+            updateEtag(result.latestState.etag);
+          }
+        } else {
+          // 200 OK: 成功
+          serverGameState.updateFromServer(result);
+          updateEtag(result.etag);
+        }
+
+        delete debounceTimerRef.current[playerIndex];
+      }, 300);
+    },
+    [updatePlayerName, etag, serverGameState, updateEtag]
+  );
 
   // Task 8: ブラウザ閉じる前（beforeunload）にプレイヤー名を保存
   React.useEffect(() => {
@@ -395,10 +436,7 @@ export function GameTimer() {
                             type="text"
                             className="player-name-input"
                             value={player.name}
-                            onChange={(e) => {
-                              // TODO: Task 4.2で実装 - API呼び出しロジック
-                              console.log(`Player ${index} name changed to: ${e.target.value}`);
-                            }}
+                            onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                             onFocus={handlePlayerNameFocus}
                             list={`player-name-history-api-${index}`}
                             aria-label="プレイヤー名"

@@ -46,7 +46,7 @@
   - `disabled={isGameActive}` 属性を追加してゲーム中の編集を無効化
   - _要件: 2.1, 2.2, 2.4_
 
-- [ ] 4.2 プレイヤー名入力時のAPI呼び出しロジックを実装
+- [x] 4.2 プレイヤー名入力時のAPI呼び出しロジックを実装
   - onChangeハンドラ `handlePlayerNameChange` を実装
   - 楽観的更新: ローカル状態を即座に更新（UIに即反映）
   - デバウンス処理: 300ms後にuseGameApi.updatePlayerNameを呼び出し
