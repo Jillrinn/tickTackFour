@@ -89,65 +89,50 @@ export function useServerGameState() {
   }, [serverState]);
 
   /**
-   * 表示用ローカルタイマー（100msごとに滑らか更新）
-   * design.md lines 424-436の実装
+   * 統合タイマー: displayTimeとturnDisplayTimeを同一のsetIntervalで更新
    *
-   * 一時停止中: serverTimeのみ表示（ローカル補間なし）
-   * 非一時停止中: serverTime + (現在時刻 - 最終同期時刻) / 1000
+   * 要件: 秒が切り替わる瞬間を完全に同期させる
+   * - 2つの独立したsetIntervalは異なるタイミングで発火する
+   * - 単一のsetIntervalで両方を更新することで、同じDate.now()を使用
+   * - 結果: 秒の切り替えが完全に同期
    */
   useEffect(() => {
     if (!serverState) return;
 
-    const displayTimer = setInterval(() => {
+    const syncedTimer = setInterval(() => {
+      const now = Date.now(); // 両方の計算で同じタイムスタンプを使用
+
+      // displayTimeの更新
       if (!serverState.isPaused && serverState.activePlayerIndex !== -1) {
-        const localElapsed = (Date.now() - lastSyncTime) / 1000;
+        const localElapsed = (now - lastSyncTime) / 1000;
         setDisplayTime(serverTime + localElapsed);
       } else {
         setDisplayTime(serverTime);
       }
-    }, 100);  // 100msごとに更新（滑らかな表示）
 
-    return () => clearInterval(displayTimer);
-  }, [serverState, serverTime, lastSyncTime]);
-
-  /**
-   * ターン時間表示用ローカルタイマー（100msごとに滑らか更新）
-   * displayTimeと同じパターンでターン時間を計算
-   *
-   * タイマー同期要件を満たすため、displayTimeと同じ100ms間隔で更新
-   */
-  useEffect(() => {
-    if (!serverState) return;
-
-    const turnTimer = setInterval(() => {
-      if (!serverState || serverState.activePlayerIndex === -1) {
+      // turnDisplayTimeの更新
+      if (serverState.activePlayerIndex === -1) {
         setTurnDisplayTime(0);
-        return;
-      }
-
-      const turnStartedAt = serverState.turnStartedAt;
-      if (!turnStartedAt) {
+      } else if (!serverState.turnStartedAt) {
         setTurnDisplayTime(0);
-        return;
-      }
-
-      const now = Date.now();
-      const turnStart = new Date(turnStartedAt).getTime();
-
-      if (serverState.isPaused && serverState.pausedAt) {
-        // 一時停止中: pausedAt - turnStartedAtの差分
-        const pausedTime = new Date(serverState.pausedAt).getTime();
-        const elapsedMs = pausedTime - turnStart;
-        setTurnDisplayTime(Math.max(0, elapsedMs / 1000));
       } else {
-        // 通常: 現在時刻 - turnStartedAtの差分
-        const elapsedMs = now - turnStart;
-        setTurnDisplayTime(Math.max(0, elapsedMs / 1000));
-      }
-    }, 100);  // 100msごとに更新（displayTimeと同期）
+        const turnStart = new Date(serverState.turnStartedAt).getTime();
 
-    return () => clearInterval(turnTimer);
-  }, [serverState]);
+        if (serverState.isPaused && serverState.pausedAt) {
+          // 一時停止中: pausedAt - turnStartedAtの差分
+          const pausedTime = new Date(serverState.pausedAt).getTime();
+          const elapsedMs = pausedTime - turnStart;
+          setTurnDisplayTime(Math.max(0, elapsedMs / 1000));
+        } else {
+          // 通常: 現在時刻 - turnStartedAtの差分
+          const elapsedMs = now - turnStart;
+          setTurnDisplayTime(Math.max(0, elapsedMs / 1000));
+        }
+      }
+    }, 100);  // 100msごとに両方を同時更新
+
+    return () => clearInterval(syncedTimer);
+  }, [serverState, serverTime, lastSyncTime]);
 
   /**
    * UI用のヘルパー関数
