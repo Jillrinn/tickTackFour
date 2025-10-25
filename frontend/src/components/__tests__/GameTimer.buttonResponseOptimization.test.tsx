@@ -12,6 +12,9 @@ import { GameTimer } from '../GameTimer';
  * - Task 2.3: リセットボタンの即座更新
  *
  * テスト戦略: 各ボタンハンドラでsyncWithServer()が呼ばれることを確認
+ *
+ * 注意: import.meta.env.MODE === 'test'の条件により、通常テスト環境では
+ * API呼び出しがスキップされるため、vi.stubEnv()でMODEを'development'に設定
  */
 
 // syncWithServer()のモック
@@ -91,19 +94,18 @@ vi.mock('../../hooks/useServerGameState', () => ({
 
 // useGameApiをモック
 const mockSwitchTurn = vi.fn();
-const mockPauseGameApi = vi.fn();
-const mockResumeGameApi = vi.fn();
-const mockResetGameApi = vi.fn();
+const mockPauseGame = vi.fn();
+const mockResumeGame = vi.fn();
+const mockResetGame = vi.fn();
 
 vi.mock('../../hooks/useGameApi', () => ({
   useGameApi: () => ({
     switchTurn: mockSwitchTurn,
-    pauseGameApi: mockPauseGameApi,
-    resumeGameApi: mockResumeGameApi,
-    resetGameApi: mockResetGameApi,
-    updatePlayerCountApi: vi.fn().mockResolvedValue({ etag: 'test-etag' }),
-    updateTimerModeApi: vi.fn().mockResolvedValue({ etag: 'test-etag' }),
-    updatePlayerNameApi: vi.fn().mockResolvedValue({ etag: 'test-etag' })
+    pauseGame: mockPauseGame,
+    resumeGame: mockResumeGame,
+    resetGame: mockResetGame,
+    updateGame: vi.fn().mockResolvedValue({ etag: 'test-etag' }),
+    updatePlayerName: vi.fn().mockResolvedValue({ etag: 'test-etag' })
   })
 }));
 
@@ -141,6 +143,8 @@ vi.mock('../../hooks/usePlayerNameHistory', () => ({
 describe('GameTimer - Task 2.1: ターン切り替えボタンの即座更新', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // MODEを'development'に設定してAPI呼び出しを有効化
+    vi.stubEnv('MODE', 'development');
     // API成功レスポンス
     mockSwitchTurn.mockResolvedValue({ etag: 'new-etag-456' });
     mockSyncWithServer.mockResolvedValue({
@@ -160,13 +164,14 @@ describe('GameTimer - Task 2.1: ターン切り替えボタンの即座更新', 
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('ターン切り替えボタンクリック後、syncWithServer()が呼ばれる', async () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
-    const nextButton = screen.getByRole('button', { name: /次のプレイヤーへ/i });
+    const nextButton = screen.getByRole('button', { name: /次のプレイヤー/i });
     await user.click(nextButton);
 
     // syncWithServer()が呼ばれたことを確認
@@ -181,7 +186,7 @@ describe('GameTimer - Task 2.1: ターン切り替えボタンの即座更新', 
 
     render(<GameTimer />);
 
-    const nextButton = screen.getByRole('button', { name: /次のプレイヤーへ/i });
+    const nextButton = screen.getByRole('button', { name: /次のプレイヤー/i });
     await user.click(nextButton);
 
     // 少し待機
@@ -195,7 +200,9 @@ describe('GameTimer - Task 2.1: ターン切り替えボタンの即座更新', 
 describe('GameTimer - Task 2.2: 一時停止・再開ボタンの即座更新', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPauseGameApi.mockResolvedValue({ etag: 'new-etag-789' });
+    // MODEを'development'に設定してAPI呼び出しを有効化
+    vi.stubEnv('MODE', 'development');
+    mockPauseGame.mockResolvedValue({ etag: 'new-etag-789' });
     mockSyncWithServer.mockResolvedValue({
       players: [
         { name: 'プレイヤー1', elapsedSeconds: 10 },
@@ -213,6 +220,7 @@ describe('GameTimer - Task 2.2: 一時停止・再開ボタンの即座更新', 
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('一時停止ボタンクリック後、syncWithServer()が呼ばれる', async () => {
@@ -232,7 +240,9 @@ describe('GameTimer - Task 2.2: 一時停止・再開ボタンの即座更新', 
 describe('GameTimer - Task 2.3: リセットボタンの即座更新', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockResetGameApi.mockResolvedValue({ etag: 'new-etag-reset' });
+    // MODEを'development'に設定してAPI呼び出しを有効化
+    vi.stubEnv('MODE', 'development');
+    mockResetGame.mockResolvedValue({ etag: 'new-etag-reset' });
     mockSyncWithServer.mockResolvedValue({
       players: [
         { name: 'プレイヤー1', elapsedSeconds: 0 },
@@ -250,6 +260,7 @@ describe('GameTimer - Task 2.3: リセットボタンの即座更新', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('リセットボタンクリック後、syncWithServer()が呼ばれる', async () => {

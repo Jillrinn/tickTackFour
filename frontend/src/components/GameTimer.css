@@ -195,12 +195,12 @@
 }
 
 .pause-btn {
-  background: #ff9800;
+  background: #bf360c; /* WCAG AA準拠: 白テキストとのコントラスト比4.5:1以上 */
   color: white;
 }
 
 .pause-btn:hover {
-  background: #f57c00;
+  background: #a72f0a; /* さらに濃いオレンジ */
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

@@ -113,7 +113,7 @@ describe('contrastRatio', () => {
     });
 
     describe('次のプレイヤーへボタン', () => {
-      const background = '#1b5e20'; // 濃い緑背景
+      const background = '#2e7d32'; // 実際の緑背景 (GameTimer.css参照)
       const foreground = '#ffffff'; // 白テキスト
 
       it('ボタンテキストのコントラスト比が4.5:1以上', () => {
@@ -124,7 +124,7 @@ describe('contrastRatio', () => {
     });
 
     describe('一時停止ボタン', () => {
-      const background = '#e65100'; // 濃いオレンジ背景
+      const background = '#bf360c'; // 実際の濃いオレンジ背景 (GameTimer.css参照、WCAG AA準拠)
       const foreground = '#ffffff'; // 白テキスト
 
       it('ボタンテキストのコントラスト比が4.5:1以上', () => {
