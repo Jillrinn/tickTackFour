@@ -369,7 +369,198 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
     - ✅ ブラウザで手動確認完了
     - ✅ 詳細なコミットメッセージでコミット作成
 
-## Phase 5: ユニットテスト実装
+## Phase 5追加: 通常モード（APIモード）での1秒ごと更新修正
+
+### ユーザーフィードバック
+> apiモードで画面を見ていますが、全く満たしていません。
+
+### 問題の本質（ギャップ分析結果）
+
+#### 実装されているがレンダリングで使われていない
+- ✅ **コード実装**: Phase 5でtotalGameTime stateとポーリング同期時の更新を実装済み
+- ❌ **レンダリング**: 通常モードで`serverGameState.getTotalGameTime()`を直接呼び出し、stateを使っていない（lines 402-404, 418）
+- ❌ **タイマー更新**: 通常モードで1秒ごとの更新がない（ポーリング5秒ごとのみ）
+
+#### ユーザー要件との乖離
+- ❌ 要件2「全てのタイマーが同じタイミングで秒が増加/減少」: 通常モードで1秒ごとに更新されない
+- ❌ 要件3「ポーリングで最新の秒に更新」: ポーリングは動作しているが、1秒ごとの更新がない
+
+### 修正タスク
+
+- [ ] 5.6 レンダリング時に通常モードでもtotalGameTime stateを使用
+  - **ファイル**: `frontend/src/components/GameTimer.tsx` (lines 402-404, 418)
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - 既存テスト（GameTimer.totalGameTime.test.tsx）を確認
+       - 通常モード用のテストケース追加（必要に応じて）
+    2. **TDD: GREEN phase**
+       - lines 402-404のclassName計算を修正:
+         ```typescript
+         // BEFORE:
+         const totalSeconds = isInFallbackMode
+           ? totalGameTime
+           : serverGameState.getTotalGameTime();
+
+         // AFTER:
+         const totalSeconds = totalGameTime;  // 両モードでstateを使用
+         ```
+       - line 418の表示を修正:
+         ```typescript
+         // BEFORE:
+         {isInFallbackMode
+           ? fallbackState.formatGameTime(totalGameTime)
+           : serverGameState.formatGameTime(serverGameState.getTotalGameTime())
+         }
+
+         // AFTER:
+         {isInFallbackMode
+           ? fallbackState.formatGameTime(totalGameTime)
+           : serverGameState.formatGameTime(totalGameTime)
+         }
+         ```
+       - `npm test` → テストパス確認
+    3. **TDD: REFACTOR phase**
+       - コード整理
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ レンダリング時に両モードでtotalGameTime stateを使用
+    - ✅ 全ユニットテストパス
+    - ✅ ブラウザで手動確認（通常モード）
+  - **カバーする要件**: Req 2 (AC1), Req 4 (AC3, AC5)
+
+- [ ] 5.7 通常モード切り替え時の初期値設定
+  - **ファイル**: `frontend/src/components/GameTimer.tsx` (新規useEffect追加)
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - テストケース追加（GameTimer.totalGameTime.test.tsx）:
+         - フォールバックモードから通常モードに切り替え時の初期値設定
+         - 通常モードでゲーム開始時の初期値設定
+       - `npm test` → テスト失敗を確認
+    2. **TDD: GREEN phase**
+       - 通常モード切り替え時の初期値設定を追加:
+         ```typescript
+         // 通常モード切り替え時の初期値設定
+         React.useEffect(() => {
+           if (!isInFallbackMode) {
+             setTotalGameTime(serverGameState.getTotalGameTime());
+           }
+         }, [isInFallbackMode]);
+         ```
+       - `npm test` → テストパス確認
+    3. **TDD: REFACTOR phase**
+       - コード整理
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ 通常モード切り替え時に初期値が設定される
+    - ✅ 全ユニットテストパス
+    - ✅ ブラウザで手動確認（通常モード）
+  - **カバーする要件**: Req 2 (AC1), Req 3 (AC1,2)
+
+- [ ] 5.8 通常モードでも1秒ごとにtotalGameTimeを更新
+  - **ファイル**: `frontend/src/components/GameTimer.tsx` (新規useEffect追加)
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - テストケース追加（GameTimer.totalGameTime.test.tsx）:
+         - 通常モードで1秒経過後、totalGameTimeが更新される
+         - 通常モードで5秒経過後、totalGameTimeが累積更新される
+         - 通常モードで一時停止時、totalGameTime更新が停止する
+       - `npm test` → テスト失敗を確認
+    2. **TDD: GREEN phase**
+       - 通常モード用: 1秒ごとにtotalGameTimeを更新するタイマーを追加:
+         ```typescript
+         // 通常モード用: 1秒ごとにtotalGameTimeを更新
+         React.useEffect(() => {
+           if (!isInFallbackMode && serverGameState.serverState && !serverGameState.serverState.isPaused) {
+             const totalGameTimeTimer = setInterval(() => {
+               setTotalGameTime(serverGameState.getTotalGameTime());
+             }, 1000);
+
+             return () => clearInterval(totalGameTimeTimer);
+           }
+         }, [isInFallbackMode, serverGameState.serverState?.isPaused]);
+         ```
+       - `npm test` → テストパス確認
+    3. **TDD: REFACTOR phase**
+       - コード整理
+       - タイマー処理の最適化（必要に応じて）
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ 通常モードで1秒ごとにtotalGameTimeが更新される
+    - ✅ 全ユニットテストパス
+    - ✅ ブラウザで手動確認（通常モード）
+  - **カバーする要件**: Req 2 (AC1), Req 3 (AC1,2,3,4), Req 4 (AC3, AC5)
+
+- [ ] 5.9 ギャップ分析の再検証とコミット作成
+  - **実施内容**:
+    1. APIモード（通常モード）での実機検証:
+       - ✅ ゲーム全体時間が1秒ごとに更新される
+       - ✅ ポーリング同期（5秒ごと）で最新値に同期される
+       - ✅ フォールバックモードと同じ動作になっている
+    2. ギャップ分析で指摘された問題が解決されたことを確認:
+       - ✅ 問題1「全てのタイマーが同じタイミングで秒が増加/減少すること」（通常モード対応）
+       - ✅ 問題2「ゲーム全体のタイマーは他のタイマーと同じように秒が増減し、ポーリングごとに最新の秒に更新されること」（通常モード対応）
+    3. 全ユニットテストパス確認（`npm test`）
+    4. 詳細なコミットメッセージを作成:
+       ```
+       Phase 5追加完了: Task 5.6-5.8 - 通常モード（APIモード）での1秒ごと更新修正
+
+       ## ユーザーフィードバック
+       > apiモードで画面を見ていますが、全く満たしていません。
+
+       ## 実装内容
+
+       ### Task 5.6: レンダリング時に通常モードでもtotalGameTime stateを使用
+       - **ファイル**: frontend/src/components/GameTimer.tsx (lines 402-404, 418)
+       - `serverGameState.getTotalGameTime()` → `totalGameTime` に変更
+       - 両モードで同じstateを使用することで一貫性を確保
+
+       ### Task 5.7: 通常モード切り替え時の初期値設定
+       - **ファイル**: frontend/src/components/GameTimer.tsx (新規useEffect追加)
+       - 通常モード切り替え時に`setTotalGameTime(serverGameState.getTotalGameTime())`呼び出し
+       - フォールバックモードから復帰時の初期値設定を保証
+
+       ### Task 5.8: 通常モードでも1秒ごとにtotalGameTimeを更新
+       - **ファイル**: frontend/src/components/GameTimer.tsx (新規useEffect追加)
+       - 通常モード用の1秒タイマーを追加
+       - ポーリング5秒ごと + ローカル1秒ごとのハイブリッド更新
+
+       ## 解決した問題（ギャップ分析準拠）
+
+       ### 問題: 通常モードでgetTotalGameTime()を直接呼び出し、stateを使っていない
+       - **修正前**: レンダリング時に`serverGameState.getTotalGameTime()`を直接呼び出し
+       - **修正後**: `totalGameTime` stateを使用（フォールバックモードと同じパターン）
+       - **効果**: ✅ 通常モードでも確実に最新値が表示される
+
+       ### 問題: 通常モードで1秒ごとの更新がない（ポーリング5秒ごとのみ）
+       - **修正前**: ポーリング同期（5秒ごと）でしか`setTotalGameTime()`が呼ばれない
+       - **修正後**: 1秒タイマーを追加し、フォールバックモードと同じ頻度で更新
+       - **効果**: ✅ 通常モードでもゲーム全体時間が1秒ごとに更新される
+
+       ## テスト結果
+       - 全[N]/[N]ユニットテストパス
+       - APIモード実機検証: ✅ 1秒ごとに全タイマー同期更新
+       - ポーリング同期検証: ✅ 5秒ごとに最新値同期
+
+       ## カバーした要件
+       - **Req 2 (AC1)**: 全てのタイマー表示が同じタイミングで更新される ✅（通常モード対応完了）
+       - **Req 3 (AC1-4)**: ポーリング同期により最新の秒に更新される ✅（通常モード対応完了）
+       - **Req 4 (AC3, AC5)**: ゲーム全体時間の同期表示 ✅（通常モード対応完了）
+
+       ## 次のフェーズ
+       - Phase 6: ユニットテスト実装（残りのテストケース）
+
+       🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+       Co-Authored-By: Claude <noreply@anthropic.com>
+       ```
+    5. Gitコミット作成
+  - **完了条件**:
+    - ✅ APIモード実機検証完了（1秒ごと更新、ポーリング同期）
+    - ✅ ギャップ分析の問題が解決（通常モード対応）
+    - ✅ 全ユニットテストパス
+    - ✅ 詳細なコミットメッセージでコミット作成
+
+## Phase 6: ユニットテスト実装
 
 ### 5. ユニットテスト実装
 
