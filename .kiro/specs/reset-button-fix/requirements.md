@@ -61,3 +61,15 @@
 1. WHEN リセット処理中にエラーが発生する THEN ゲームタイマーシステム SHALL エラー内容をコンソールに記録する
 2. IF サーバー同期モードでETagが利用できない THEN ゲームタイマーシステム SHALL 警告メッセージを表示してリセット処理を中断する
 3. WHEN サーバー側リセットAPIが412 Conflict を返す THEN ゲームタイマーシステム SHALL 競合メッセージを表示してユーザーに再読み込みを促す
+
+### Requirement 6: 初期状態からのゲーム開始処理
+**Objective:** ゲームリセット後のユーザーとして、「次のプレイヤーへ」ボタンを押下したとき、ゲームが正常に開始し、最初のプレイヤーのタイマーが動作することを期待します。これにより、リセット後に新しいゲームをスムーズに開始できます。
+
+#### Acceptance Criteria
+
+1. WHEN activePlayerIndexが-1（初期状態/ゲーム未開始）の状態で次のプレイヤーへボタンが押下される THEN POST /api/switchTurn エンドポイント SHALL 初期状態を検出する
+2. WHEN 初期状態が検出される THEN POST /api/switchTurn エンドポイント SHALL 前のプレイヤーの時間加算処理をスキップする（プレイヤーが存在しないため）
+3. WHEN 初期状態が検出される THEN POST /api/switchTurn エンドポイント SHALL activePlayerIndexを0に設定する（最初のプレイヤーをアクティブに）
+4. WHEN 初期状態が検出される THEN POST /api/switchTurn エンドポイント SHALL isPausedをfalseに設定する（ゲーム開始）
+5. WHEN 初期状態が検出される THEN POST /api/switchTurn エンドポイント SHALL turnStartedAtを現在時刻（ISO8601形式）に設定する
+6. WHEN 初期状態からゲームを開始する THEN ゲームタイマーシステム SHALL エラーなく正常に応答する（500エラーを返さない）

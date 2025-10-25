@@ -334,6 +334,78 @@ describe('POST /api/switchTurn', () => {
       expect(body.activePlayerIndex).toBe(2);
       expect(body.isPaused).toBe(true);
     });
+
+    it('初期状態（activePlayerIndex: -1）からゲームを開始する', async () => {
+      // Arrange: リセット直後の初期状態
+      const initialState: GameState = {
+        playerCount: 4,
+        players: [
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
+        ],
+        activePlayerIndex: -1, // 初期状態：アクティブプレイヤーなし
+        timerMode: 'countup',
+        countdownSeconds: 60,
+        isPaused: true, // 初期状態：停止中
+        turnStartedAt: undefined,
+        pausedAt: undefined
+      };
+
+      const clientETag = 'W/"initial-etag"';
+
+      mockRequest = {
+        method: 'POST',
+        url: 'http://localhost:7071/api/switchTurn',
+        headers: {},
+        query: {},
+        params: {},
+        text: async () => JSON.stringify({ etag: clientETag })
+      } as unknown as HttpRequest;
+
+      mockGetGameState.mockResolvedValue({
+        state: initialState,
+        etag: clientETag
+      });
+
+      // 初期状態なのでcalculateElapsedTimeは呼ばれない想定
+      mockCalculateElapsedTime.mockReturnValue(0);
+
+      const updatedState: GameState = {
+        ...initialState,
+        activePlayerIndex: 0, // 最初のプレイヤーをアクティブに
+        isPaused: false, // ゲーム開始
+        turnStartedAt: expect.any(String), // 現在時刻が設定される
+        // players配列は変更なし（時間加算処理がスキップされる）
+        players: initialState.players
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: updatedState,
+        etag: 'W/"game-started-etag"'
+      });
+
+      // Act
+      const response = await switchTurn(mockRequest, mockContext);
+
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.headers['Content-Type']).toBe('application/json');
+
+      const body = JSON.parse(response.body);
+      expect(body.activePlayerIndex).toBe(0); // 最初のプレイヤーがアクティブ
+      expect(body.isPaused).toBe(false); // ゲーム開始
+      expect(body.turnStartedAt).toBeDefined(); // ターン開始時刻が設定される
+      expect(body.players[0].accumulatedSeconds).toBe(0); // プレイヤー1の時間は変更なし
+      expect(body.players[1].accumulatedSeconds).toBe(0); // プレイヤー2の時間は変更なし
+      expect(body.etag).toBe('W/"game-started-etag"');
+
+      // モック呼び出し確認
+      expect(mockGetGameState).toHaveBeenCalledTimes(1);
+      // 初期状態なのでcalculateElapsedTimeは呼ばれない（または呼ばれても使われない）
+      expect(mockRetryUpdateWithETag).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('異常系', () => {

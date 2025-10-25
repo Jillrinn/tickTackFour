@@ -42,26 +42,44 @@ async function switchTurn(
     const result = await getGameState();
     const currentState = result.state;
 
-    // 現在のアクティブプレイヤーの経過時間を計算
-    const elapsedSeconds = calculateElapsedTime(currentState, currentState.activePlayerIndex);
+    // 初期状態（activePlayerIndex: -1）かどうかをチェック
+    const isInitialState = currentState.activePlayerIndex === -1;
 
-    // 累積経過時間に加算
-    const updatedPlayers = [...currentState.players];
-    updatedPlayers[currentState.activePlayerIndex] = {
-      ...updatedPlayers[currentState.activePlayerIndex],
-      accumulatedSeconds: elapsedSeconds
-    };
+    let newState: GameState;
 
-    // アクティブプレイヤーインデックスを循環（(current + 1) % playerCount）
-    const nextPlayerIndex = (currentState.activePlayerIndex + 1) % currentState.playerCount;
+    if (isInitialState) {
+      // 初期状態からのゲーム開始処理
+      newState = {
+        ...currentState,
+        activePlayerIndex: 0, // 最初のプレイヤーをアクティブに
+        isPaused: false, // ゲーム開始
+        turnStartedAt: new Date().toISOString(), // ターン開始時刻を設定
+        // players配列は変更なし（前のプレイヤーが存在しないため時間加算不要）
+        players: currentState.players
+      };
+    } else {
+      // 通常のターン切り替え処理
+      // 現在のアクティブプレイヤーの経過時間を計算
+      const elapsedSeconds = calculateElapsedTime(currentState, currentState.activePlayerIndex);
 
-    // 新しいゲーム状態を構築
-    const newState: GameState = {
-      ...currentState,
-      players: updatedPlayers,
-      activePlayerIndex: nextPlayerIndex,
-      turnStartedAt: new Date().toISOString() // 新しいターンの開始時刻
-    };
+      // 累積経過時間に加算
+      const updatedPlayers = [...currentState.players];
+      updatedPlayers[currentState.activePlayerIndex] = {
+        ...updatedPlayers[currentState.activePlayerIndex],
+        accumulatedSeconds: elapsedSeconds
+      };
+
+      // アクティブプレイヤーインデックスを循環（(current + 1) % playerCount）
+      const nextPlayerIndex = (currentState.activePlayerIndex + 1) % currentState.playerCount;
+
+      // 新しいゲーム状態を構築
+      newState = {
+        ...currentState,
+        players: updatedPlayers,
+        activePlayerIndex: nextPlayerIndex,
+        turnStartedAt: new Date().toISOString() // 新しいターンの開始時刻
+      };
+    }
 
     // ETag楽観的ロック更新（再試行メカニズム使用）
     const updatedResult = await retryUpdateWithETag(
