@@ -120,6 +120,24 @@ export function GameTimer() {
     }
   );
 
+  // Task 5.7: 通常モード切り替え時の初期値設定
+  React.useEffect(() => {
+    if (!isInFallbackMode) {
+      setTotalGameTime(serverGameState.getTotalGameTime());
+    }
+  }, [isInFallbackMode, serverGameState]);
+
+  // Task 5.8: 通常モード用 - 1秒ごとにtotalGameTimeを更新
+  React.useEffect(() => {
+    if (!isInFallbackMode && serverGameState.serverState && !serverGameState.serverState.isPaused) {
+      const totalGameTimeTimer = setInterval(() => {
+        setTotalGameTime(serverGameState.getTotalGameTime());
+      }, 1000);
+
+      return () => clearInterval(totalGameTimeTimer);
+    }
+  }, [isInFallbackMode, serverGameState.serverState?.isPaused]);
+
   // Task 4.2: プレイヤー名変更のデバウンス処理用タイマー
   const debounceTimerRef = React.useRef<Record<number, number>>({});
 
@@ -402,10 +420,8 @@ export function GameTimer() {
               <span
                 className={`total-game-time-value ${
                   (() => {
-                    // Task 5.3: totalGameTime stateを使用（フォールバックモード）
-                    const totalSeconds = isInFallbackMode
-                      ? totalGameTime
-                      : serverGameState.getTotalGameTime();
+                    // Task 5.6: 両モードでtotalGameTime stateを使用
+                    const totalSeconds = totalGameTime;
 
                     // Task 5.2: 時間の長さに応じて色を変更
                     // 1時間未満（<3600秒）: normal（緑系）
@@ -417,10 +433,10 @@ export function GameTimer() {
                   })()
                 }`}
               >
-                {/* Task 5.3: totalGameTime stateを使用してフォーマット */}
+                {/* Task 5.6: 両モードでtotalGameTime stateを使用してフォーマット */}
                 {isInFallbackMode
                   ? fallbackState.formatGameTime(totalGameTime)
-                  : serverGameState.formatGameTime(serverGameState.getTotalGameTime())
+                  : serverGameState.formatGameTime(totalGameTime)
                 }
               </span>
             </div>
