@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "accountName": {
+      "type": "string",
+      "defaultValue": "tick-tack-db"
+    },
+    "databaseName": {
+      "type": "string",
+      "defaultValue": "TablesDB"
+    },
+    "maxThroughput": {
+      "type": "int",
+      "defaultValue": 1000
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/tables",
+      "apiVersion": "2023-04-15",
+      "name": "[concat(parameters('accountName'), '/', parameters('databaseName'), '/GameState')]",
+      "properties": {
+        "resource": {
+          "id": "GameState"
+        },
+        "options": {
+          "autoscaleSettings": {
+            "maxThroughput": "[parameters('maxThroughput')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/tables",
+      "apiVersion": "2023-04-15",
+      "name": "[concat(parameters('accountName'), '/', parameters('databaseName'), '/PlayerNames')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/tables', parameters('accountName'), concat(parameters('databaseName'), '/GameState'))]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "PlayerNames"
+        },
+        "options": {}
+      }
+    }
+  ]
+}

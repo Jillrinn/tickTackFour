@@ -30,6 +30,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `api-error-whiteout-fix`: API失敗とホワイトアウトエラーの修正（デプロイ環境とローカル環境のエラー調査と修正）
 - `e2e-test-fixes`: E2Eテスト修正（42件の失敗テストの修正、プレイヤー名編集バグ修正、通常モードUI対応）
 - `api-mode-ui-fixes`: APIモードUI修正（白背景に白文字の視認性問題、ゲーム開始前のプレイヤー名編集機能）
+- `game-in-progress-ui-visibility`: ゲーム開始中のUI視認性改善（APIモード：アクティブプレイヤー表示、非アクティブカードの輪郭強調）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
