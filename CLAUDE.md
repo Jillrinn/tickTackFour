@@ -33,6 +33,8 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `game-in-progress-ui-visibility`: ゲーム開始中のUI視認性改善（APIモード：アクティブプレイヤー表示、非アクティブカードの輪郭強調）
 - `game-controls-ui-improvements`: ゲームコントロールボタンUI改善（ボタン色の統一、一時停止ボタンの状態管理、開始ボタンテキスト変更）
 - `timer-synchronization`: タイマー表示の同期（複数タイマーを単一インスタンスで管理し、秒数の増加/減少を同期）
+- `timer-mode-update-fix`: タイマーモード更新機能の修正（ゲーム開始後のタイマーモード変更を禁止、一時停止中も無効化維持）
+- `app-branding-setup`: ONEmore Turnブランディング設定（タブタイトル、ファビコン、ロゴ、アプリ名の変更）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
