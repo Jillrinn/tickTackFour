@@ -39,7 +39,7 @@
   - _要件: 4.1, 4.2, 4.3, 4.4_
 
 - [ ] 4. バックエンドAPI `PUT /api/updatePlayerName` を実装する
-- [ ] 4.1 updatePlayerName.ts 関数ファイルを作成
+- [x] 4.1 updatePlayerName.ts 関数ファイルを作成
   - **ファイル**: `api/src/functions/updatePlayerName.ts`
   - 既存の `switchTurn.ts` パターンを参考に実装
   - リクエストボディから `playerIndex`, `name` を取得
