@@ -323,9 +323,11 @@ export function GameTimer() {
     const result = await updateGame(etag, params);
     if (result && 'etag' in result) {
       updateEtag(result.etag);
+      // API呼び出し後、即座にゲーム状態を同期
+      serverGameState.updateFromServer(result);
       clearConflictMessage();
     }
-  }, [isInFallbackMode, etag, countdownSeconds, updateGame, fallbackState, updateEtag, clearConflictMessage]);
+  }, [isInFallbackMode, etag, countdownSeconds, updateGame, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
 
   return (
     <div className="game-timer">
@@ -407,16 +409,17 @@ export function GameTimer() {
               <button
                 onClick={handlePauseResume}
                 className="pause-btn sticky-header-btn"
+                disabled={!isGameActive}
                 aria-label={isPaused ? 'ゲームを再開' : 'ゲームを一時停止'}
               >
-                {isPaused ? '▶️ 再開' : '⏸️ 一時停止'}
+                {isPaused ? '▶️ タイマー再開' : '⏸️ タイマー停止'}
               </button>
               <button
                 onClick={handleSwitchTurn}
                 className="next-player-btn sticky-header-btn"
-                aria-label="次のプレイヤーに切り替え"
+                aria-label={isGameActive ? "次のプレイヤーに切り替え" : "ゲームを開始"}
               >
-                次のプレイヤーへ →
+                {isGameActive ? '次のプレイヤーへ →' : 'ゲームを開始する'}
               </button>
             </div>
           </div>

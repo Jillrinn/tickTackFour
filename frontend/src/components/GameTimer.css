@@ -195,23 +195,34 @@
 }
 
 .pause-btn {
-  background: #bf360c; /* WCAG AA準拠: 白テキストとのコントラスト比4.5:1以上 */
+  background: #ff9800; /* Material Design標準オレンジ */
   color: white;
 }
 
 .pause-btn:hover {
-  background: #a72f0a; /* さらに濃いオレンジ */
+  background: #f57c00; /* 濃いオレンジ */
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.pause-btn:disabled {
+  background: #9e9e9e; /* グレーアウト */
+  color: #616161; /* 濃いグレーテキスト */
+  cursor: not-allowed;
+}
+
+.pause-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .next-player-btn {
-  background: #2e7d32;
+  background: #4caf50; /* Material Design標準緑 */
   color: white;
 }
 
 .next-player-btn:hover {
-  background: #1b5e20;
+  background: #388e3c; /* 濃い緑 */
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
