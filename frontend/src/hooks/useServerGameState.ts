@@ -51,6 +51,9 @@ export function useServerGameState() {
   const [displayTime, setDisplayTime] = useState(0);   // 表示用時間（滑らか）
   const [lastSyncTime, setLastSyncTime] = useState(Date.now());
 
+  // ターン時間表示用の状態（displayTimeと同じパターン）
+  const [turnDisplayTime, setTurnDisplayTime] = useState(0);   // ターン時間表示用（滑らか）
+
   /**
    * ポーリングコールバックで状態更新
    * GameTimer.tsxのusePollingSync内から呼び出される
@@ -106,6 +109,45 @@ export function useServerGameState() {
 
     return () => clearInterval(displayTimer);
   }, [serverState, serverTime, lastSyncTime]);
+
+  /**
+   * ターン時間表示用ローカルタイマー（100msごとに滑らか更新）
+   * displayTimeと同じパターンでターン時間を計算
+   *
+   * タイマー同期要件を満たすため、displayTimeと同じ100ms間隔で更新
+   */
+  useEffect(() => {
+    if (!serverState) return;
+
+    const turnTimer = setInterval(() => {
+      if (!serverState || serverState.activePlayerIndex === -1) {
+        setTurnDisplayTime(0);
+        return;
+      }
+
+      const turnStartedAt = serverState.turnStartedAt;
+      if (!turnStartedAt) {
+        setTurnDisplayTime(0);
+        return;
+      }
+
+      const now = Date.now();
+      const turnStart = new Date(turnStartedAt).getTime();
+
+      if (serverState.isPaused && serverState.pausedAt) {
+        // 一時停止中: pausedAt - turnStartedAtの差分
+        const pausedTime = new Date(serverState.pausedAt).getTime();
+        const elapsedMs = pausedTime - turnStart;
+        setTurnDisplayTime(Math.max(0, elapsedMs / 1000));
+      } else {
+        // 通常: 現在時刻 - turnStartedAtの差分
+        const elapsedMs = now - turnStart;
+        setTurnDisplayTime(Math.max(0, elapsedMs / 1000));
+      }
+    }, 100);  // 100msごとに更新（displayTimeと同期）
+
+    return () => clearInterval(turnTimer);
+  }, [serverState]);
 
   /**
    * UI用のヘルパー関数
@@ -191,34 +233,14 @@ export function useServerGameState() {
    * アクティブプレイヤーの現在のターン経過時間を秒単位で取得
    *
    * Requirements: turn-time-tracking spec 1.3
-   * - アクティブプレイヤーのturnStartedAtから現在までの経過時間を計算
+   * - タイマー同期要件を満たすため、turnDisplayTime stateを返す
+   * - turnDisplayTimeは100msごとに更新され、displayTimeと同期
    * - 一時停止中の時間を除外
    * - turnStartedAtがnullの場合は0を返す
    */
   const getCurrentTurnTime = useCallback((): number => {
-    if (!serverState || serverState.activePlayerIndex === -1) {
-      return 0;
-    }
-
-    const turnStartedAt = serverState.turnStartedAt;
-    if (!turnStartedAt) {
-      return 0;
-    }
-
-    const now = new Date();
-    const turnStart = new Date(turnStartedAt);
-
-    if (serverState.isPaused && serverState.pausedAt) {
-      // 一時停止中: pausedAt - turnStartedAtの差分を返す
-      const pausedTime = new Date(serverState.pausedAt);
-      const elapsedMs = pausedTime.getTime() - turnStart.getTime();
-      return Math.max(0, Math.floor(elapsedMs / 1000));
-    } else {
-      // 通常: 現在時刻 - turnStartedAtの差分を返す
-      const elapsedMs = now.getTime() - turnStart.getTime();
-      return Math.max(0, Math.floor(elapsedMs / 1000));
-    }
-  }, [serverState]);
+    return Math.floor(turnDisplayTime);
+  }, [turnDisplayTime]);
 
   // Task 1.1-1.4: サーバー状態の即座取得機能
   const syncInProgress = useRef(false);
