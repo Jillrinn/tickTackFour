@@ -6,6 +6,7 @@ import { useGameApi } from '../hooks/useGameApi';
 import { useETagManager } from '../hooks/useETagManager';
 import { useFallbackMode } from '../hooks/useFallbackMode';
 import { usePlayerNameHistory } from '../hooks/usePlayerNameHistory';
+import { useGameTimer } from '../hooks/useGameTimer';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
@@ -91,17 +92,23 @@ export function GameTimer() {
   // 最長時間プレイヤーを取得
   const longestPlayer = isInFallbackMode ? fallbackState.getLongestTimePlayer() : serverGameState.getLongestTimePlayer();
 
-  // Task 4.1: ターン時間表示の1秒ごと更新（フォールバックモードのみ）
-  // 強制的に再レンダリングしてgetCurrentTurnTime()の表示を更新
-  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
-  React.useEffect(() => {
-    if (isInFallbackMode && !isPaused && gameState?.activePlayerId) {
-      const interval = setInterval(() => {
-        forceUpdate();
-      }, 1000);
-      return () => clearInterval(interval);
+  // timer-synchronization: ターン時間表示の同期状態管理
+  // forceUpdate()を排除し、useGameTimerフックによる統一的なタイマー管理を使用
+  const [turnTimeUpdateTrigger, setTurnTimeUpdateTrigger] = React.useState(0);
+
+  // timer-synchronization: useGameTimerフック統合（フォールバックモードのみ）
+  // onTimerTickコールバックでターン時間表示も同期して再レンダリング
+  useGameTimer(
+    isInFallbackMode && gameState ? gameState : { players: [], activePlayerId: null, isPaused: true, timerMode: 'count-up', createdAt: new Date(), lastUpdatedAt: new Date() },
+    (playerId, newElapsedTime) => {
+      // フォールバックモードの場合のみ、プレイヤー時間を更新
+      if (isInFallbackMode && gameState) {
+        fallbackState.updatePlayerTime(playerId, newElapsedTime);
+        // ターン時間表示を再レンダリング（React自動バッチングで同期）
+        setTurnTimeUpdateTrigger(prev => prev + 1);
+      }
     }
-  }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
+  );
 
   // Task 4.2: プレイヤー名変更のデバウンス処理用タイマー
   const debounceTimerRef = React.useRef<Record<number, number>>({});

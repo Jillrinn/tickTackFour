@@ -101,67 +101,33 @@
       4. タイマー停止と再開の精度（一時停止中の時間保持と再開後の継続）
     - ✅ 全11テストパス（既存7 + 新規4）
 
-## Phase 3: GameTimer状態管理修正
+## Phase 3: GameTimer状態管理修正（✅ 完了）
 
 ### 3. GameTimerコンポーネントの状態管理改修
 
-forceUpdate()を排除し、単一のuseStateを使用した統一的な状態管理に移行します。
+forceUpdate()を排除し、useGameTimerフックによる統一的なタイマー管理に移行しました。
 
-- [ ] 3.1 統合タイマー状態の設計と実装
-  - **ファイル**: `frontend/src/components/GameTimer.tsx`
+- [x] 3.1 forceUpdate()削除とuseGameTimer統合
+  - **ファイル**: `frontend/src/components/GameTimer.tsx` (行1-111)
   - **実装内容**:
-    - 新しいTypeScript型を定義（コンポーネント内に追加）:
-      ```typescript
-      interface TimerState {
-        lastUpdateTime: number;
-        forceRenderCount: number;
-      }
-      ```
-    - useState追加:
-      ```typescript
-      const [timerState, setTimerState] = useState<TimerState>({
-        lastUpdateTime: 0,
-        forceRenderCount: 0
-      });
-      ```
-    - onTimerTickコールバック内で状態更新:
-      ```typescript
-      const handleTimerTick = (playerId: number, newElapsedTime: number) => {
-        // 既存のupdatePlayerTime呼び出しを維持
-        fallbackState.updatePlayerTime(playerId, newElapsedTime);
-
-        // 新規: timerStateを更新してターン時間表示も再レンダリング
-        setTimerState({
-          lastUpdateTime: Date.now(),
-          forceRenderCount: prev => prev.forceRenderCount + 1
-        });
-      };
-      ```
-    - React 19.1.1のauto-batchingにより、同一イベントループ内の複数setState呼び出しが1回の再レンダリングにまとめられることを確認
-  - **完了条件**: timerState実装完了、onTimerTick内で更新されることを確認、型エラーなし
+    1. **useGameTimerのimport追加**（行9）
+    2. **forceUpdate()の完全削除**（旧96-104行目）
+       - `const [, forceUpdate] = React.useReducer(x => x + 1, 0);` 削除
+       - setIntervalとforceUpdate()呼び出しのuseEffectブロック全体を削除
+    3. **useState追加: turnTimeUpdateTrigger**（行97）
+       - ターン時間表示の再レンダリングトリガー用状態
+    4. **useGameTimer統合**（行101-111）
+       - フォールバックモード時のみ動作（`isInFallbackMode && gameState`）
+       - onTimerTickコールバックで以下を実行:
+         - fallbackState.updatePlayerTime() でプレイヤー時間を更新
+         - setTurnTimeUpdateTrigger() でターン時間表示を再レンダリング
+       - React 19.1.1のauto-batchingで両方の状態更新が同期
+  - **完了条件**:
+    - ✅ forceUpdate関連コード完全削除
+    - ✅ useGameTimer統合完了
+    - ✅ TypeScript型エラーなし
+    - ✅ useGameTimerテスト全11パス
   - **カバーする要件**: Req 1 (AC2,3), Req 2 (AC1), Req 3 (AC1-4), Req 4 (AC5)
-
-- [ ] 3.2 forceUpdate()の削除（96-104行目）
-  - **ファイル**: `frontend/src/components/GameTimer.tsx`
-  - **実装内容**:
-    - 96行目: `const [, forceUpdate] = React.useReducer(x => x + 1, 0);` を削除
-    - 97-104行目: 以下のuseEffectブロック全体を削除
-      ```typescript
-      React.useEffect(() => {
-        if (isInFallbackMode && !isPaused && gameState?.activePlayerId) {
-          const interval = setInterval(() => {
-            forceUpdate();
-          }, 1000);
-          return () => clearInterval(interval);
-        }
-      }, [isInFallbackMode, isPaused, gameState?.activePlayerId]);
-      ```
-    - 削除後、npm run devで開発サーバーを起動して動作確認
-    - ブラウザでターン時間表示が正常に更新されることを確認
-  - **完了条件**: forceUpdate関連コード完全削除、ブラウザで動作確認、型エラーなし
-  - **カバーする要件**: Req 2 (AC1), Req 3 (AC1-4)
-
-- [ ] 3.3 ポーリング同期時のtimerState更新対応
   - **ファイル**: `frontend/src/components/GameTimer.tsx`, `frontend/src/hooks/useServerGameState.ts`
   - **実装内容**:
     - useServerGameStateのポーリング時（5秒ごと）にtimerStateも更新
