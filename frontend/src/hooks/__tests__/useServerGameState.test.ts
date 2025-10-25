@@ -507,8 +507,11 @@ describe('useServerGameState - APIモード状態管理', () => {
       expect(result.current.displayTime).toBeGreaterThanOrEqual(0);
     });
 
-    it('Task 2: turnDisplayTimeもリセットされること', () => {
+    it('Task 2: turnDisplayTimeはturnStartedAtベースで継続的に計算されること', async () => {
       const { result } = renderHook(() => useServerGameState());
+
+      // ターン開始時刻を10秒前に設定
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
 
       // 初回更新
       act(() => {
@@ -519,28 +522,44 @@ describe('useServerGameState - APIモード状態管理', () => {
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-1',
-          turnStartedAt: new Date().toISOString(),
+          turnStartedAt: tenSecondsAgo,
           pausedAt: null
         });
       });
 
-      // 2回目更新（タイマー再構築）
+      // setIntervalが実行されるまで待機
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      // turnDisplayTimeはturnStartedAtから10秒経過しているはず
+      const turnTime = result.current.getCurrentTurnTime();
+      expect(turnTime).toBeGreaterThanOrEqual(9.5);  // 約10秒（多少の誤差を許容）
+      expect(turnTime).toBeLessThan(11);
+
+      // ポーリング同期（updateFromServer）を実行
       act(() => {
         result.current.updateFromServer({
-          players: [{ name: 'プレイヤー1', elapsedSeconds: 15 }],
+          players: [{ name: 'プレイヤー1', elapsedSeconds: 10.5 }],
           activePlayerIndex: 0,
           timerMode: 'count-up',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-2',
-          turnStartedAt: new Date().toISOString(),
+          turnStartedAt: tenSecondsAgo,  // 同じターン開始時刻
           pausedAt: null
         });
       });
 
-      // turnDisplayTimeが0にリセットされる（新しいターン開始）
-      const turnTime = result.current.getCurrentTurnTime();
-      expect(turnTime).toBeGreaterThanOrEqual(0);
+      // setIntervalが再度実行されるまで待機
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+
+      // turnDisplayTimeはリセットされず、turnStartedAtから継続的に計算される
+      const turnTimeAfterSync = result.current.getCurrentTurnTime();
+      expect(turnTimeAfterSync).toBeGreaterThanOrEqual(9.5);  // 依然として約10秒
+      expect(turnTimeAfterSync).toBeLessThan(11);
     });
 
     it('Task 2: ゲーム開始前（activePlayerIndex=-1）の状態で全てが0にリセットされること', () => {

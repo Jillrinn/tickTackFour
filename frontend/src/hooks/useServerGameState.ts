@@ -85,13 +85,13 @@ export function useServerGameState() {
       const serverElapsed = state.players[state.activePlayerIndex]?.elapsedSeconds || 0;
       setServerTime(serverElapsed);  // サーバーの累積時間（基準点）
       setDisplayTime(serverElapsed);  // 表示時間もリセット
-      setTurnDisplayTime(0);  // ターン時間もリセット
+      // turnDisplayTimeはturnStartedAtベースで継続的に計算されるため、リセット不要
       setLastSyncTime(Date.now());  // 同期時刻記録（基準点）
     } else {
-      // ゲーム開始前の状態では全てを0にリセット
+      // ゲーム開始前の状態
       setServerTime(0);
       setDisplayTime(0);
-      setTurnDisplayTime(0);
+      // turnDisplayTimeはsetInterval内で適切に0に設定される
       setLastSyncTime(Date.now());
     }
   }, [serverState]);
