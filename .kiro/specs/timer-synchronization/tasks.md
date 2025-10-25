@@ -148,34 +148,226 @@ forceUpdate()を排除し、useGameTimerフックによる統一的なタイマ�
   - **完了条件**: ポーリング同期時のtimerState更新実装完了、ブラウザで確認
   - **カバーする要件**: Req 2 (AC1), Req 4 (AC5)
 
-## Phase 4: タイマー表示コンポーネント更新
+## Phase 4: タイマー表示コンポーネント更新（✅ 完了）
 
 ### 4. タイマー表示コンポーネントのprops駆動化確認
 
-各タイマー表示が完全にprops駆動で動作するようにし、独自の状態やタイマーを持たないことを確認します。
+各タイマー表示が完全にprops駆動で動作するようにし、独自の状態やタイマーを持たないことを確認しました。
 
-- [ ] 4.1 各表示コンポーネントのprops構造確認
+- [x] 4.1 各表示コンポーネントのprops構造確認
   - **ファイル**: `frontend/src/components/GameTimer.tsx`内の各表示セクション
   - **実装内容**:
     - プレイヤーカード、ターン時間、全体プレイ時間、最長時間プレイヤーの各表示がpropsで時間を受け取っているか確認
     - **Phase 1調査結果の再確認**:
-      - プレイヤーカード: ✅ 既にprops駆動
-      - ターン時間: ⚠️ forceUpdate()削除後、props駆動に変更済みか確認
-      - 全体プレイ時間: ✅ 既にprops駆動
-      - 最長時間プレイヤー: ✅ 既にprops駆動
-    - timerStateの変更により全表示が自動的に再レンダリングされることを確認
-  - **完了条件**: 各表示がprops駆動であることを確認、ブラウザで動作確認
+      - プレイヤーカード: ✅ 既にprops駆動（`player.elapsedTimeSeconds`）
+      - ターン時間: ✅ `getCurrentTurnTime()`による状態駆動
+      - 全体プレイ時間: ⚠️ **`getTotalGameTime()`がタイマー更新に反応しない問題を発見**
+      - 最長時間プレイヤー: ✅ `getLongestTimePlayer()`による状態駆動
+  - **完了条件**: 各表示がprops駆動であることを確認、**問題発見によりPhase 5へ**
   - **カバーする要件**: Req 4 (AC1-5)
+  - **検証結果**:
+    - ✅ プレイヤー経過時間: props駆動（`player.elapsedTimeSeconds`）
+    - ✅ ターン時間: 状態駆動（`getCurrentTurnTime()` + `turnTimeUpdateTrigger`）
+    - ❌ **ゲーム全体時間: `getTotalGameTime()`が更新されない問題を特定**
+    - ✅ 最長時間プレイヤー: 状態駆動（`getLongestTimePlayer()`）
 
-- [ ] 4.2 独自状態や独自タイマーが残っていないことを確認
+- [x] 4.2 独自状態や独自タイマーが残っていないことを確認
   - **ファイル**: `frontend/src/components/GameTimer.tsx`内の各表示セクション
   - **実装内容**:
     - 各表示コンポーネント内で独自にuseState、useEffect、forceUpdate()を使用している箇所がないことを確認
     - grep検索で確認: `forceUpdate`, `useEffect.*setInterval`, `useState.*timer`
     - timerStateの変更により全表示が同期して再レンダリングされることを確認
     - 開発サーバーを起動し、Chrome DevToolsで再レンダリングを検証
-  - **完了条件**: 独自状態・タイマーなし確認完了、ブラウザで全表示同期確認
+  - **完了条件**: 独自状態・タイマーなし確認完了、**ゲーム全体時間の問題発見**
   - **カバーする要件**: Req 4 (AC1-5)
+  - **検証結果**:
+    - ✅ `forceUpdate`: コメントのみ（削除済み）
+    - ✅ `setInterval`: GameTimer.tsx内に存在しない
+    - ✅ `turnTimeUpdateTrigger`: タイマー同期用の正当な状態
+    - ✅ `countdownSeconds`: カウントダウン設定（表示状態ではない）
+    - ✅ `debounceTimerRef`: プレイヤー名デバウンス用（タイマー表示と無関係）
+    - ❌ **重大な問題発見**: `getTotalGameTime()`がタイマー更新に反応しない
+
+## Phase 5: ゲーム全体時間同期の緊急修正
+
+### 5. ゲーム全体時間の同期問題修正
+
+**問題**: ギャップ分析により、`getTotalGameTime()`がタイマー更新とポーリング同期の両方で更新されないことが判明。`useCallback`の依存配列が配列参照のみを監視しており、個々のプレイヤー時間の変更を検知できない。
+
+**影響範囲**:
+- ❌ 要件2「全てのタイマーが同じタイミングで更新」: ゲーム全体時間が更新されない
+- ❌ 要件3「ポーリングで最新の秒に更新」: ゲーム全体時間がポーリングで更新されない
+
+**修正方針**: `getTotalGameTime()`結果をstateで管理し、タイマーtickとポーリング同期で明示的に更新する。
+
+#### TDD実装プロセス（必須）
+各タスクの実装時は以下のTDDプロセスに従うこと：
+1. **RED phase**: 実装前にテストケースを作成
+2. **GREEN phase**: 最小限の実装でテストをパス
+3. **REFACTOR phase**: 必要に応じてリファクタリング
+4. `npm test`で全テストが成功することを確認
+
+- [ ] 5.1 GameTimer.tsxに`totalGameTime` state追加（フォールバックモード）
+  - **ファイル**: `frontend/src/components/GameTimer.tsx`
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - テストファイル: `frontend/src/components/__tests__/GameTimer.totalGameTime.test.tsx` (新規作成)
+       - テストケース作成:
+         - ゲーム開始時、ゲーム全体時間が0:00と表示される
+         - 1秒経過後、ゲーム全体時間が0:01に更新される
+         - 5秒経過後、ゲーム全体時間が0:05に更新される
+         - プレイヤー切り替え後も、ゲーム全体時間が継続して増加する
+       - `npm test` → テスト失敗を確認（ゲーム全体時間が更新されない）
+    2. **TDD: GREEN phase**
+       - `const [totalGameTime, setTotalGameTime] = React.useState(0);` を追加（行97付近）
+       - useGameTimerのonTimerTickコールバック内で`setTotalGameTime(fallbackState.getTotalGameTime())`を追加
+       - レンダリング部分（行390-414）で`totalGameTime` stateを使用
+       - `npm test` → テストパスを確認
+    3. **TDD: REFACTOR phase**
+       - コードの可読性確認
+       - 重複コード削除
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ ユニットテスト作成・パス
+    - ✅ タイマーtickごとにゲーム全体時間が更新される
+    - ✅ ブラウザで手動確認（フォールバックモード）
+  - **カバーする要件**: Req 2 (AC1), Req 4 (AC3)
+
+- [ ] 5.2 useGameTimerのonTimerTickで`getTotalGameTime()`結果を状態更新
+  - **ファイル**: `frontend/src/components/GameTimer.tsx` (useGameTimer呼び出し部分)
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - テストケース追加（GameTimer.totalGameTime.test.tsx）:
+         - 一時停止時、ゲーム全体時間が更新されない
+         - 再開時、ゲーム全体時間が更新再開される
+         - リセット時、ゲーム全体時間が0:00にリセットされる
+       - `npm test` → テスト失敗を確認
+    2. **TDD: GREEN phase**
+       - useGameTimerのonTimerTickコールバック（行103-109）を修正:
+         ```typescript
+         (playerId, newElapsedTime) => {
+           if (isInFallbackMode && gameState) {
+             fallbackState.updatePlayerTime(playerId, newElapsedTime);
+             setTurnTimeUpdateTrigger(prev => prev + 1);
+             setTotalGameTime(fallbackState.getTotalGameTime()); // 追加
+           }
+         }
+         ```
+       - `npm test` → テストパス確認
+    3. **TDD: REFACTOR phase**
+       - コード整理
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ ユニットテスト追加・パス
+    - ✅ タイマーtickでゲーム全体時間が更新される
+    - ✅ 一時停止/再開/リセット動作が正しい
+  - **カバーする要件**: Req 2 (AC1), Req 3 (AC1,2,3,4)
+
+- [ ] 5.3 レンダリング時に`totalGameTime` stateを使用
+  - **ファイル**: `frontend/src/components/GameTimer.tsx` (行390-414)
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - テストケース追加（GameTimer.totalGameTime.test.tsx）:
+         - data-testid="total-game-time"要素が存在する
+         - 初期値が"00:00"と表示される
+         - 1秒後に"00:01"と表示される
+       - `npm test` → テスト失敗を確認（古いgetTotalGameTime()を使用しているため）
+    2. **TDD: GREEN phase**
+       - 行390-414のレンダリング部分を修正:
+         ```typescript
+         <span className={`total-game-time-value ${...}`}>
+           {isInFallbackMode
+             ? fallbackState.formatGameTime(totalGameTime)  // 修正
+             : serverGameState.formatGameTime(serverGameState.getTotalGameTime())
+           }
+         </span>
+         ```
+       - `npm test` → テストパス確認
+    3. **TDD: REFACTOR phase**
+       - コード整理
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ ユニットテスト追加・パス
+    - ✅ ゲーム全体時間が正しく表示される
+    - ✅ ブラウザで手動確認
+  - **カバーする要件**: Req 4 (AC3, AC5)
+
+- [ ] 5.4 通常モード（サーバーモード）にも同じ実装を適用
+  - **ファイル**: `frontend/src/components/GameTimer.tsx`, `frontend/src/hooks/useServerGameState.ts`
+  - **実装内容**:
+    1. **TDD: RED phase**
+       - テストケース追加（GameTimer.totalGameTime.test.tsx）:
+         - 通常モード（isInFallbackMode=false）でゲーム全体時間が更新される
+         - ポーリング同期時にゲーム全体時間が最新値に更新される
+       - `npm test` → テスト失敗を確認
+    2. **TDD: GREEN phase**
+       - GameTimer.tsxで通常モード用の`totalGameTime` stateも更新:
+         ```typescript
+         // usePollingSync内でポーリング結果を受け取った時
+         React.useEffect(() => {
+           if (!isInFallbackMode && serverState) {
+             setTotalGameTime(serverGameState.getTotalGameTime());
+           }
+         }, [isInFallbackMode, serverState]);
+         ```
+       - レンダリング部分を修正（両モードで`totalGameTime` stateを使用）
+       - `npm test` → テストパス確認
+    3. **TDD: REFACTOR phase**
+       - コード整理
+       - `npm test` → 全テストパス確認
+  - **完了条件**:
+    - ✅ ユニットテスト追加・パス
+    - ✅ 通常モードでゲーム全体時間が更新される
+    - ✅ ポーリング同期で最新値に更新される
+    - ✅ ブラウザで手動確認（通常モード）
+  - **カバーする要件**: Req 2 (AC1), Req 3 (AC1-4), Req 4 (AC3, AC5)
+
+- [ ] 5.5 ギャップ分析の検証完了とコミット作成
+  - **実施内容**:
+    1. ギャップ分析で指摘された2つの問題が解決されたことを確認:
+       - ✅ 問題1「全てのタイマーが同じタイミングで秒が増加/減少すること」
+       - ✅ 問題2「ゲーム全体のタイマーは他のタイマーと同じように秒が増減し、ポーリングごとに最新の秒に更新されること」
+    2. ブラウザで手動確認:
+       - フォールバックモードでゲーム全体時間が1秒ごとに更新される
+       - 通常モードでゲーム全体時間が1秒ごとに更新される
+       - 通常モードでポーリング同期（5秒ごと）で最新値に更新される
+    3. 全ユニットテストパス確認（`npm test`）
+    4. 詳細なコミットメッセージを作成:
+       ```
+       Phase 5完了: ゲーム全体時間同期の緊急修正
+
+       ## 実装内容
+       - GameTimer.tsxに`totalGameTime` state追加
+       - useGameTimerのonTimerTickで`getTotalGameTime()`結果を状態更新
+       - フォールバックモードと通常モードの両方に実装
+       - ポーリング同期時も`getTotalGameTime()`で状態更新
+
+       ## 解決した問題
+       - ❌→✅ 問題1: 全てのタイマーが同じタイミングで秒が増加/減少する
+       - ❌→✅ 問題2: ゲーム全体時間が他のタイマーと同じように秒が増減し、ポーリングごとに最新の秒に更新される
+
+       ## テスト結果
+       - 全[N]ユニットテストパス（GameTimer.totalGameTime.test.tsx 新規[M]テスト含む）
+       - 全テスト（既存含む）パス、リグレッションなし
+
+       ## カバーした要件
+       - Req 2 (AC1): 全てのタイマー表示が同じタイミングで更新される ✅
+       - Req 3 (AC1-4): ポーリング同期により最新の秒に更新される ✅
+       - Req 4 (AC3, AC5): ゲーム全体時間の同期表示 ✅
+
+       ## 次のフェーズ
+       - Phase 6: ユニットテスト実装（残りのテストケース）
+
+       🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+       Co-Authored-By: Claude <noreply@anthropic.com>
+       ```
+    5. Gitコミット作成
+  - **完了条件**:
+    - ✅ ギャップ分析の2つの問題が解決
+    - ✅ 全ユニットテストパス
+    - ✅ ブラウザで手動確認完了
+    - ✅ 詳細なコミットメッセージでコミット作成
 
 ## Phase 5: ユニットテスト実装
 
