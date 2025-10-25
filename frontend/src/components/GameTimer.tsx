@@ -131,7 +131,7 @@ export function GameTimer() {
         } else if ('type' in result && result.type === 'conflict') {
           // 409 Conflict: 他のユーザーが更新済み
           console.warn('Conflict detected, rolling back to latest state');
-          const latestState = (result as any).latestState as GameStateWithTime | undefined;
+          const latestState = ('latestState' in result ? result.latestState : undefined) as GameStateWithTime | undefined;
           if (latestState) {
             serverGameState.updateFromServer(latestState);
             if (latestState.etag) {
@@ -177,7 +177,7 @@ export function GameTimer() {
           console.error('Failed to update player name via API');
         } else if ('type' in result && result.type === 'conflict') {
           console.warn('Conflict detected, rolling back to latest state');
-          const latestState = (result as any).latestState as GameStateWithTime | undefined;
+          const latestState = ('latestState' in result ? result.latestState : undefined) as GameStateWithTime | undefined;
           if (latestState) {
             serverGameState.updateFromServer(latestState);
             if (latestState.etag) {

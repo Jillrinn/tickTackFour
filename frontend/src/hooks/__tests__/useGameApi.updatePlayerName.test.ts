@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useGameApi } from '../useGameApi';
+import { useGameApi, type ApiResult } from '../useGameApi';
 import type { GameStateWithTime } from '../../types/GameState';
 
 // global fetchのモック
@@ -90,7 +90,7 @@ describe('useGameApi - updatePlayerName', () => {
 
       const { result } = renderHook(() => useGameApi());
 
-      let apiResult: any = null;
+      let apiResult: ApiResult = null;
       await act(async () => {
         apiResult = await result.current.updatePlayerName(0, 'Bob', 'old-etag');
       });
@@ -114,7 +114,7 @@ describe('useGameApi - updatePlayerName', () => {
 
       const { result } = renderHook(() => useGameApi());
 
-      let apiResult: any = null;
+      let apiResult: ApiResult = null;
       await act(async () => {
         apiResult = await result.current.updatePlayerName(0, '', 'old-etag');
       });
@@ -135,7 +135,7 @@ describe('useGameApi - updatePlayerName', () => {
 
       const { result } = renderHook(() => useGameApi());
 
-      let apiResult: any = null;
+      let apiResult: ApiResult = null;
       await act(async () => {
         apiResult = await result.current.updatePlayerName(0, 'Alice', 'old-etag');
       });
@@ -155,7 +155,7 @@ describe('useGameApi - updatePlayerName', () => {
 
       const { result } = renderHook(() => useGameApi());
 
-      let apiResult: any = null;
+      let apiResult: ApiResult = null;
       await act(async () => {
         apiResult = await result.current.updatePlayerName(0, 'Alice', 'old-etag');
       });

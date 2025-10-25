@@ -62,8 +62,8 @@ describe('usePlayerNameHistory', () => {
 
     it('fetchNames呼び出し中はisLoadingがtrueになる', async () => {
       // Arrange
-      let resolveFunc: (value: any) => void;
-      const promise = new Promise((resolve) => {
+      let resolveFunc: (value: Response) => void;
+      const promise = new Promise<Response>((resolve) => {
         resolveFunc = resolve;
       });
 

@@ -89,7 +89,8 @@ describe('contrastRatio', () => {
 
   describe('Task 5.3: ゲームタイマーUIのコントラスト比検証', () => {
     describe('固定ヘッダーのプレイヤー名', () => {
-      const background = 'rgba(255, 255, 255, 0.98)'; // 実質的に白背景
+      // background変数は使用していないが、コメントとして文脈を残す
+      // const background = 'rgba(255, 255, 255, 0.98)'; // 実質的に白背景
       const foreground = '#0d47a1'; // 濃い青
 
       it('プレイヤー名のコントラスト比が4.5:1以上', () => {
