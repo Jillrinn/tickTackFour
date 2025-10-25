@@ -318,7 +318,7 @@ export function GameTimer() {
   return (
     <div className="game-timer">
       <header className="game-header">
-        <h1>マルチプレイヤー・ゲームタイマー (Phase 1: インメモリー版)</h1>
+        <h1>マルチプレイヤー・ゲームタイマー</h1>
       </header>
 
       <main className="game-main">
