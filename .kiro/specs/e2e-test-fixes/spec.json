@@ -1,20 +1,20 @@
 {
   "feature_name": "e2e-test-fixes",
   "created_at": "2025-10-25T14:30:00Z",
-  "updated_at": "2025-10-25T14:30:00Z",
+  "updated_at": "2025-10-25T14:50:00Z",
   "language": "ja",
-  "phase": "initialized",
+  "phase": "tasks-generated",
   "approvals": {
     "requirements": {
-      "generated": false,
-      "approved": false
+      "generated": true,
+      "approved": true
     },
     "design": {
-      "generated": false,
-      "approved": false
+      "generated": true,
+      "approved": true
     },
     "tasks": {
-      "generated": false,
+      "generated": true,
       "approved": false
     }
   },
