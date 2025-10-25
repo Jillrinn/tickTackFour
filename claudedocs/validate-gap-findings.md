@@ -64,41 +64,35 @@ This operation failed because it would have increased the total throughput to 14
 
 ## 解決策
 
-### オプション1: Cosmos DBテーブルを手動作成（推奨）
+### ✅ 実施済み: APIエンドポイント登録修正
 
-Azure Portalから以下の手順で作成：
-
-1. **Azure Portal** にログイン
-2. **tick-tack-db** Cosmos DBアカウントを開く
-3. **Data Explorer** を選択
-4. **New Table** をクリック
-5. テーブル設定:
-   - **Table name**: `PlayerNames`
-   - **Throughput**: `Shared` または最小値（100 RU/s）を選択してRU/s制限を回避
-6. **OK** をクリック
-
-### オプション2: 既存GameStateテーブルのRU/sを削減
-
-もし`GameState`テーブルが専用RU/sを持っている場合、それを削減して`PlayerNames`用のRU/sを確保：
-
-```bash
-# GameStateのRU/sを確認
-az cosmosdb table throughput show \
-  --account-name tick-tack-db \
-  --resource-group prdTickTackFour \
-  --name GameState
-
-# RU/sを400に削減（例）
-az cosmosdb table throughput update \
-  --account-name tick-tack-db \
-  --resource-group prdTickTackFour \
-  --name GameState \
-  --throughput 400
+`api/src/index.ts`に以下のimportを追加し、エンドポイントを登録：
+```typescript
+import './functions/getPlayerNames';
+import './functions/savePlayerNames';
 ```
 
-### オプション3: Cosmos DBアカウントのRU/s上限を引き上げる
+検証結果: `curl http://localhost:7071/api/player-names` → `[]` (200 OK) ✅
 
-Azureサポートに連絡して、アカウント全体のRU/s上限を1000 → 2000に引き上げる（有料プラン必要）
+### ⏳ 残作業: Database-level Shared Throughputの設定
+
+**Azure CLIでは設定不可** - Azure Portalでの手動設定が必要
+
+**推奨手順**（詳細は`claudedocs/create-playername-table.md`参照）：
+
+1. **Azure Portal** (https://portal.azure.com) にログイン
+2. **tick-tack-db** Cosmos DBアカウントを開く
+3. **Data Explorer** → **New Table**
+4. **最初のテーブル（GameState）作成時**:
+   - ✅ 「**Provision database throughput**」に**チェック**
+   - Autoscale: Max 1000 RU/s
+   - Table name: `GameState`
+5. **2つ目のテーブル（PlayerNames）作成時**:
+   - ❌ 「**Provision database throughput**」は**チェックしない**
+   - Table name: `PlayerNames`
+   - Throughput: 指定しない（Sharedを使用）
+
+これにより、全てのテーブルで1000 RU/sを共有し、将来的にさらにテーブルを追加可能。
 
 ## 検証手順
 
