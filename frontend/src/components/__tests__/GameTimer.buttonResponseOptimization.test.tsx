@@ -1,4 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { GameTimer } from '../GameTimer';
 
 /**
  * Task 2.1-2.3: ボタンレスポンス最適化テスト
@@ -8,121 +11,257 @@ import { describe, it, expect, vi } from 'vitest';
  * - Task 2.2: 一時停止・再開ボタンの即座更新
  * - Task 2.3: リセットボタンの即座更新
  *
- * 注: 実装完了後は、E2Eテストで実機動作を検証する
- * このテストは、syncWithServer()呼び出しの実装を確認するユニットテスト
+ * テスト戦略: 各ボタンハンドラでsyncWithServer()が呼ばれることを確認
  */
 
+// syncWithServer()のモック
+const mockSyncWithServer = vi.fn();
+
+// フォールバックモードを無効化（通常モードでテスト）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: false,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
+
+// useGameStateをモック（フォールバック用）
+vi.mock('../../hooks/useGameState', () => ({
+  useGameState: () => ({
+    gameState: {
+      players: [
+        { name: 'プレイヤー1', elapsedSeconds: 0 },
+        { name: 'プレイヤー2', elapsedSeconds: 0 },
+        { name: 'プレイヤー3', elapsedSeconds: 0 },
+        { name: 'プレイヤー4', elapsedSeconds: 0 }
+      ],
+      activePlayerIndex: 0,
+      isPaused: false,
+      timerMode: 'count-up' as const
+    },
+    switchToNextPlayer: vi.fn(),
+    setPaused: vi.fn(),
+    resetGame: vi.fn(),
+    setPlayerCount: vi.fn(),
+    setTimerMode: vi.fn(),
+    updatePlayerName: vi.fn(),
+    setActivePlayer: vi.fn(),
+    formatTime: (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+    getLongestTimePlayer: () => null,
+    getTotalGameTime: () => 0,
+    formatGameTime: (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+    getCurrentTurnTime: () => 0
+  })
+}));
+
+// useServerGameStateをモック
+vi.mock('../../hooks/useServerGameState', () => ({
+  useServerGameState: () => ({
+    serverState: {
+      players: [
+        { name: 'プレイヤー1', elapsedSeconds: 10 },
+        { name: 'プレイヤー2', elapsedSeconds: 20 },
+        { name: 'プレイヤー3', elapsedSeconds: 30 },
+        { name: 'プレイヤー4', elapsedSeconds: 40 }
+      ],
+      activePlayerIndex: 0,
+      isPaused: false,
+      timerMode: 'count-up' as const,
+      turnStartedAt: new Date().toISOString(),
+      pausedAt: null
+    },
+    displayTime: 10,
+    updateFromServer: vi.fn(),
+    formatTime: (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    },
+    getLongestTimePlayer: () => null,
+    getTotalGameTime: () => 100,
+    formatGameTime: (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+    getCurrentTurnTime: () => 5,
+    syncWithServer: mockSyncWithServer
+  })
+}));
+
+// useGameApiをモック
+const mockSwitchTurn = vi.fn();
+const mockPauseGameApi = vi.fn();
+const mockResumeGameApi = vi.fn();
+const mockResetGameApi = vi.fn();
+
+vi.mock('../../hooks/useGameApi', () => ({
+  useGameApi: () => ({
+    switchTurn: mockSwitchTurn,
+    pauseGameApi: mockPauseGameApi,
+    resumeGameApi: mockResumeGameApi,
+    resetGameApi: mockResetGameApi,
+    updatePlayerCountApi: vi.fn().mockResolvedValue({ etag: 'test-etag' }),
+    updateTimerModeApi: vi.fn().mockResolvedValue({ etag: 'test-etag' }),
+    updatePlayerNameApi: vi.fn().mockResolvedValue({ etag: 'test-etag' })
+  })
+}));
+
+// useETagManagerをモック
+const mockUpdateEtag = vi.fn();
+const mockClearConflictMessage = vi.fn();
+
+vi.mock('../../hooks/useETagManager', () => ({
+  useETagManager: () => ({
+    etag: 'test-etag-123',
+    updateEtag: mockUpdateEtag,
+    conflictMessage: null,
+    clearConflictMessage: mockClearConflictMessage
+  })
+}));
+
+// usePollingSync をモック（ポーリングを無効化）
+vi.mock('../../hooks/usePollingSync', () => ({
+  usePollingSync: () => ({
+    // ポーリングは実行しない
+  })
+}));
+
+// usePlayerNameHistoryをモック
+vi.mock('../../hooks/usePlayerNameHistory', () => ({
+  usePlayerNameHistory: () => ({
+    names: [],
+    isLoading: false,
+    fetchNames: vi.fn(),
+    saveNames: vi.fn().mockResolvedValue(undefined),
+    clearNames: vi.fn()
+  })
+}));
+
 describe('GameTimer - Task 2.1: ターン切り替えボタンの即座更新', () => {
-  it('handleSwitchTurn内でsyncWithServer()が呼ばれることを確認（実装前）', async () => {
-    // RED: このテストは実装前に失敗する
-    //
-    // 実装内容:
-    // frontend/src/components/GameTimer.tsx の handleSwitchTurn 関数に
-    // `await serverGameState.syncWithServer()` の呼び出しを追加する
-    //
-    // 挿入位置: updateEtag(result.etag) と clearConflictMessage() の後
-    //
-    // 期待される実装:
-    // ```typescript
-    // if (result && 'etag' in result) {
-    //   updateEtag(result.etag);
-    //   clearConflictMessage();
-    //   await serverGameState.syncWithServer();  // ← これを追加
-    // }
-    // ```
-    //
-    // このテストは、コードレビューで実装を確認するためのプレースホルダー
-    // 実際の動作検証はE2Eテストで実施
-
-    // 実装前はこのテストは常に成功する（プレースホルダー）
-    expect(true).toBe(true);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // API成功レスポンス
+    mockSwitchTurn.mockResolvedValue({ etag: 'new-etag-456' });
+    mockSyncWithServer.mockResolvedValue({
+      players: [
+        { name: 'プレイヤー1', elapsedSeconds: 10 },
+        { name: 'プレイヤー2', elapsedSeconds: 20 },
+        { name: 'プレイヤー3', elapsedSeconds: 30 },
+        { name: 'プレイヤー4', elapsedSeconds: 40 }
+      ],
+      activePlayerIndex: 1,
+      isPaused: false,
+      timerMode: 'count-up' as const,
+      turnStartedAt: new Date().toISOString(),
+      pausedAt: null
+    });
   });
 
-  it('フォールバックモードではsyncWithServer()が呼ばれないことを確認（実装前）', async () => {
-    // RED: このテストは実装前に失敗する
-    //
-    // 検証内容:
-    // フォールバックモード (import.meta.env.MODE === 'test' || isInFallbackMode) では
-    // syncWithServer()は呼ばれないこと
-    //
-    // 理由: フォールバックモードではfallbackState.switchToNextPlayer()のみ実行して
-    // 早期リターンするため、syncWithServer()は実行されない
-    //
-    // このテストは、コードレビューで実装を確認するためのプレースホルダー
-    // 実際の動作検証はE2Eテストで実施
-
-    // 実装前はこのテストは常に成功する（プレースホルダー）
-    expect(true).toBe(true);
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('API失敗時にsyncWithServer()が呼ばれないことを確認（実装前）', async () => {
-    // RED: このテストは実装前に失敗する
-    //
-    // 検証内容:
-    // POST /api/switchTurn が失敗した場合（result が null またはetagなし）、
-    // syncWithServer()は呼ばれないこと
-    //
-    // 理由: `if (result && 'etag' in result)` のブロック内でのみ
-    // syncWithServer()を呼び出すため、API失敗時は実行されない
-    //
-    // このテストは、コードレビューで実装を確認するためのプレースホルダー
-    // 実際の動作検証はE2Eテストで実施
+  it('ターン切り替えボタンクリック後、syncWithServer()が呼ばれる', async () => {
+    const user = userEvent.setup();
+    render(<GameTimer />);
 
-    // 実装前はこのテストは常に成功する（プレースホルダー）
-    expect(true).toBe(true);
+    const nextButton = screen.getByRole('button', { name: /次のプレイヤーへ/i });
+    await user.click(nextButton);
+
+    // syncWithServer()が呼ばれたことを確認
+    await waitFor(() => {
+      expect(mockSyncWithServer).toHaveBeenCalled();
+    }, { timeout: 1000 });
+  });
+
+  it('API失敗時にsyncWithServer()が呼ばれない', async () => {
+    const user = userEvent.setup();
+    mockSwitchTurn.mockResolvedValue(null); // API失敗
+
+    render(<GameTimer />);
+
+    const nextButton = screen.getByRole('button', { name: /次のプレイヤーへ/i });
+    await user.click(nextButton);
+
+    // 少し待機
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // syncWithServer()が呼ばれないことを確認
+    expect(mockSyncWithServer).not.toHaveBeenCalled();
   });
 });
 
 describe('GameTimer - Task 2.2: 一時停止・再開ボタンの即座更新', () => {
-  it('handlePauseResume内でsyncWithServer()が呼ばれることを確認（実装前）', async () => {
-    // RED: このテストは実装前に失敗する
-    //
-    // 実装内容:
-    // frontend/src/components/GameTimer.tsx の handlePauseResume 関数に
-    // `await serverGameState.syncWithServer()` の呼び出しを追加する
-    //
-    // 挿入位置: updateEtag(result.etag) と clearConflictMessage() の後
-    //
-    // 期待される実装:
-    // ```typescript
-    // if (result && 'etag' in result) {
-    //   updateEtag(result.etag);
-    //   clearConflictMessage();
-    //   await serverGameState.syncWithServer();  // ← これを追加
-    // }
-    // ```
-    //
-    // このテストは、コードレビューで実装を確認するためのプレースホルダー
-    // 実際の動作検証はE2Eテストで実施
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPauseGameApi.mockResolvedValue({ etag: 'new-etag-789' });
+    mockSyncWithServer.mockResolvedValue({
+      players: [
+        { name: 'プレイヤー1', elapsedSeconds: 10 },
+        { name: 'プレイヤー2', elapsedSeconds: 20 },
+        { name: 'プレイヤー3', elapsedSeconds: 30 },
+        { name: 'プレイヤー4', elapsedSeconds: 40 }
+      ],
+      activePlayerIndex: 0,
+      isPaused: true,
+      timerMode: 'count-up' as const,
+      turnStartedAt: new Date().toISOString(),
+      pausedAt: new Date().toISOString()
+    });
+  });
 
-    // 実装前はこのテストは常に成功する（プレースホルダー）
-    expect(true).toBe(true);
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('一時停止ボタンクリック後、syncWithServer()が呼ばれる', async () => {
+    const user = userEvent.setup();
+    render(<GameTimer />);
+
+    const pauseButton = screen.getByRole('button', { name: /一時停止/i });
+    await user.click(pauseButton);
+
+    // syncWithServer()が呼ばれたことを確認
+    await waitFor(() => {
+      expect(mockSyncWithServer).toHaveBeenCalled();
+    }, { timeout: 1000 });
   });
 });
 
 describe('GameTimer - Task 2.3: リセットボタンの即座更新', () => {
-  it('handleResetGame内でsyncWithServer()が呼ばれることを確認（実装前）', async () => {
-    // RED: このテストは実装前に失敗する
-    //
-    // 実装内容:
-    // frontend/src/components/GameTimer.tsx の handleResetGame 関数に
-    // `await serverGameState.syncWithServer()` の呼び出しを追加する
-    //
-    // 挿入位置: updateEtag(result.etag) と clearConflictMessage() の後
-    //
-    // 期待される実装:
-    // ```typescript
-    // if (result && 'etag' in result) {
-    //   updateEtag(result.etag);
-    //   clearConflictMessage();
-    //   await serverGameState.syncWithServer();  // ← これを追加
-    // }
-    // ```
-    //
-    // このテストは、コードレビューで実装を確認するためのプレースホルダー
-    // 実際の動作検証はE2Eテストで実施
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockResetGameApi.mockResolvedValue({ etag: 'new-etag-reset' });
+    mockSyncWithServer.mockResolvedValue({
+      players: [
+        { name: 'プレイヤー1', elapsedSeconds: 0 },
+        { name: 'プレイヤー2', elapsedSeconds: 0 },
+        { name: 'プレイヤー3', elapsedSeconds: 0 },
+        { name: 'プレイヤー4', elapsedSeconds: 0 }
+      ],
+      activePlayerIndex: 0,
+      isPaused: false,
+      timerMode: 'count-up' as const,
+      turnStartedAt: new Date().toISOString(),
+      pausedAt: null
+    });
+  });
 
-    // 実装前はこのテストは常に成功する（プレースホルダー）
-    expect(true).toBe(true);
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('リセットボタンクリック後、syncWithServer()が呼ばれる', async () => {
+    const user = userEvent.setup();
+    render(<GameTimer />);
+
+    const resetButton = screen.getByRole('button', { name: /リセット/i });
+    await user.click(resetButton);
+
+    // syncWithServer()が呼ばれたことを確認
+    await waitFor(() => {
+      expect(mockSyncWithServer).toHaveBeenCalled();
+    }, { timeout: 1000 });
   });
 });
