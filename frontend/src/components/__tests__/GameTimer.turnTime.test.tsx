@@ -138,7 +138,7 @@ describe('GameTimer - ターン時間表示（Task 4.3）', () => {
       expect(turnTimeElement?.textContent).toContain('00:05');
 
       // 一時停止ボタンをクリック
-      const pauseButton = screen.getByText('⏸️ 一時停止');
+      const pauseButton = screen.getByText('⏸️ タイマー停止');
       act(() => {
         pauseButton.click();
       });
@@ -153,7 +153,7 @@ describe('GameTimer - ターン時間表示（Task 4.3）', () => {
       expect(turnTimeElement?.textContent).toContain('00:05');
 
       // 再開ボタンをクリック
-      const resumeButton = screen.getByText('▶️ 再開');
+      const resumeButton = screen.getByText('▶️ タイマー再開');
       act(() => {
         resumeButton.click();
       });

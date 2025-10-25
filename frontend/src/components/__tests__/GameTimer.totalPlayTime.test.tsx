@@ -226,7 +226,7 @@ describe('GameTimer - ゲーム全体のプレイ時間表示（Task 5.3）', ()
       expect(totalGameTimeElement?.textContent).toContain('00:10');
 
       // 一時停止ボタンをクリック
-      const pauseButton = screen.getByText('⏸️ 一時停止');
+      const pauseButton = screen.getByText('⏸️ タイマー停止');
       act(() => {
         pauseButton.click();
       });
@@ -241,7 +241,7 @@ describe('GameTimer - ゲーム全体のプレイ時間表示（Task 5.3）', ()
       expect(totalGameTimeElement?.textContent).toContain('00:10');
 
       // 再開ボタンをクリック
-      const resumeButton = screen.getByText('▶️ 再開');
+      const resumeButton = screen.getByText('▶️ タイマー再開');
       act(() => {
         resumeButton.click();
       });
