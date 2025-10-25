@@ -32,6 +32,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `api-mode-ui-fixes`: APIモードUI修正（白背景に白文字の視認性問題、ゲーム開始前のプレイヤー名編集機能）
 - `game-in-progress-ui-visibility`: ゲーム開始中のUI視認性改善（APIモード：アクティブプレイヤー表示、非アクティブカードの輪郭強調）
 - `game-controls-ui-improvements`: ゲームコントロールボタンUI改善（ボタン色の統一、一時停止ボタンの状態管理、開始ボタンテキスト変更）
+- `timer-synchronization`: タイマー表示の同期（複数タイマーを単一インスタンスで管理し、秒数の増加/減少を同期）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
