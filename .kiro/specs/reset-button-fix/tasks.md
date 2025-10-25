@@ -12,7 +12,7 @@
 
 ### 1. createDefaultGameState関数の停止状態設定を実装する
 
-- [ ] 1.1 リセット後の停止状態フラグを設定する
+- [x] 1.1 リセット後の停止状態フラグを設定する
   - **ファイル**: api/src/models/gameState.ts
   - **修正箇所**: Line 63-68（createDefaultGameState関数内）
   - **変更内容**:
@@ -23,7 +23,7 @@
   - **既存機能への影響なし**: POST /api/resetは引き続きこの関数を呼び出すが、正しい停止状態を返すようになる
   - _Requirements: 1.2, 1.3, 1.6_
 
-- [ ] 1.2 createDefaultGameState関数のユニットテストを実装する
+- [x] 1.2 createDefaultGameState関数のユニットテストを実装する
   - **ファイル**: api/src/models/__tests__/gameState.test.ts（新規作成）
   - **テストケース**:
     1. リセット後のisPausedフラグが`true`であることを検証

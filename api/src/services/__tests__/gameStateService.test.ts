@@ -89,7 +89,9 @@ describe('GameStateService', () => {
       expect(result.state.playerCount).toBe(4);
       expect(result.state.players).toHaveLength(4);
       expect(result.state.players[0].accumulatedSeconds).toBe(0);
-      expect(result.state.activePlayerIndex).toBe(0);
+      expect(result.state.activePlayerIndex).toBe(-1); // リセット後は停止状態
+      expect(result.state.isPaused).toBe(true); // リセット後は停止状態
+      expect(result.state.turnStartedAt).toBeUndefined(); // リセット後はターン未開始
       expect(result.etag).toBe('new-etag');
     });
 

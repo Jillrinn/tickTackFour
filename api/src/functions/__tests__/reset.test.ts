@@ -171,10 +171,10 @@ describe('POST /api/reset', () => {
       expect(body.players[1].accumulatedSeconds).toBe(0);
       expect(body.players[2].accumulatedSeconds).toBe(0);
       expect(body.players[3].accumulatedSeconds).toBe(0);
-      expect(body.activePlayerIndex).toBe(0);
+      expect(body.activePlayerIndex).toBe(-1); // リセット後は停止状態
       expect(body.timerMode).toBe('countup');
-      expect(body.isPaused).toBe(false);
-      expect(body.turnStartedAt).toBeDefined();
+      expect(body.isPaused).toBe(true); // リセット後は停止状態
+      expect(body.turnStartedAt).toBeUndefined(); // リセット後はターン未開始
       expect(body.etag).toBe('W/"reset-etag"');
 
       // モックが正しく呼ばれたことを確認
@@ -214,11 +214,13 @@ describe('POST /api/reset', () => {
 
       const body = JSON.parse(response.body);
       expect(body.playerCount).toBe(4);
-      expect(body.activePlayerIndex).toBe(0);
+      expect(body.activePlayerIndex).toBe(-1); // リセット後は停止状態
+      expect(body.isPaused).toBe(true); // リセット後は停止状態
+      expect(body.turnStartedAt).toBeUndefined(); // リセット後はターン未開始
       expect(body.timerMode).toBe('countup');
     });
 
-    it('一時停止状態のゲームをリセットすると非一時停止状態になる', async () => {
+    it('一時停止状態のゲームをリセットすると停止状態（isPaused: true）になる', async () => {
       // Arrange
       const pausedState: GameState = {
         playerCount: 4,
@@ -266,7 +268,9 @@ describe('POST /api/reset', () => {
       expect(response.status).toBe(200);
 
       const body = JSON.parse(response.body);
-      expect(body.isPaused).toBe(false);
+      expect(body.isPaused).toBe(true); // リセット後は停止状態
+      expect(body.activePlayerIndex).toBe(-1); // リセット後はアクティブプレイヤーなし
+      expect(body.turnStartedAt).toBeUndefined(); // リセット後はターン未開始
       expect(body.pausedAt).toBeUndefined();
     });
   });

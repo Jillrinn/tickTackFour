@@ -60,11 +60,11 @@ export function createDefaultGameState(): GameState {
       { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
       { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
     ],
-    activePlayerIndex: 0,
+    activePlayerIndex: -1,
     timerMode: 'countup',
     countdownSeconds: 60,
-    isPaused: false,
-    turnStartedAt: new Date().toISOString(),
+    isPaused: true,
+    turnStartedAt: undefined,
     pausedAt: undefined
   };
 }
