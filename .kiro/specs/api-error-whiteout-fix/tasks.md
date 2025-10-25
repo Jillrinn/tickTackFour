@@ -146,21 +146,21 @@
 
 ## Phase 3: ドキュメント化とトラブルシューティングガイド
 
-- [ ] 10. README.mdにセットアップ手順を追加する
-- [ ] 10.1 前提条件セクションを更新
+- [x] 10. README.mdにセットアップ手順を追加する
+- [x] 10.1 前提条件セクションを更新
   - 必要なソフトウェアのバージョンを明記（Node.js 20以上、Azure Functions Core Tools v4）
   - Azure Functions Core Toolsのインストール方法をプラットフォーム別に記載（npm、Homebrew、Chocolatey）
   - インストール確認コマンド（`func --version`）を追加
   - _Requirements: 4.1, 4.4_
 
-- [ ] 10.2 ローカル環境セットアップ手順を追加
+- [x] 10.2 ローカル環境セットアップ手順を追加
   - 依存関係インストール手順（`npm install --workspaces`）
   - Azure Functions起動手順（`cd api && npm start`）
   - フロントエンド起動手順（`cd frontend && npm run dev`）
   - 動作確認方法（`http://localhost:5173`にアクセス）
   - _Requirements: 4.1, 4.4_
 
-- [ ] 10.3 デプロイ環境セクションを追加
+- [x] 10.3 デプロイ環境セクションを追加
   - Azure Static Web Apps設定ファイルの説明（`staticwebapp.config.json`）
   - MIMEタイプ設定の重要性を説明
   - GitHub Actionsによる自動デプロイの流れを記載
