@@ -56,8 +56,25 @@ export function useServerGameState() {
    * GameTimer.tsxのusePollingSync内から呼び出される
    *
    * design.md lines 410-421の実装
+   *
+   * @param state - サーバーから取得した最新のゲーム状態
+   * @param editingPlayerIndex - 現在編集中のプレイヤーのインデックス（編集中でない場合はnull）
    */
-  const updateFromServer = useCallback((state: GameStateWithTime) => {
+  const updateFromServer = useCallback((state: GameStateWithTime, editingPlayerIndex: number | null = null) => {
+    // 編集中のプレイヤー名を保持する
+    if (editingPlayerIndex !== null && serverState) {
+      const editingPlayerName = serverState.players[editingPlayerIndex]?.name;
+      if (editingPlayerName !== undefined) {
+        // 編集中のプレイヤー名は上書きせず、現在のローカル値を保持
+        const updatedPlayers = [...state.players];
+        updatedPlayers[editingPlayerIndex] = {
+          ...updatedPlayers[editingPlayerIndex],
+          name: editingPlayerName
+        };
+        state = { ...state, players: updatedPlayers };
+      }
+    }
+
     setServerState(state);
 
     // アクティブプレイヤーの経過時間を基準に設定
@@ -66,7 +83,7 @@ export function useServerGameState() {
       setServerTime(serverElapsed);
       setLastSyncTime(Date.now());
     }
-  }, []);
+  }, [serverState]);
 
   /**
    * 表示用ローカルタイマー（100msごとに滑らか更新）
