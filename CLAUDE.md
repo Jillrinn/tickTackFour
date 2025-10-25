@@ -28,6 +28,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `reset-button-fix`: リセットボタン不具合修正（全時間リセット、ゲーム停止状態の実装）
 - `button-response-optimization`: ボタンレスポンス最適化（ボタン押下時のレスポンス時間を極限まで短縮）
 - `api-error-whiteout-fix`: API失敗とホワイトアウトエラーの修正（デプロイ環境とローカル環境のエラー調査と修正）
+- `e2e-test-fixes`: E2Eテスト修正（42件の失敗テストの修正、プレイヤー名編集バグ修正、通常モードUI対応）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
