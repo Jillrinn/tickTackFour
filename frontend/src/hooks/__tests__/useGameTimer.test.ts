@@ -192,4 +192,108 @@ describe('useGameTimer', () => {
 
     expect(onTimerTick).not.toHaveBeenCalled();
   });
+
+  describe('タイマー精度検証', () => {
+    it('複数のコールバックが正確に1秒間隔で呼び出される', () => {
+      const onTimerTick = vi.fn();
+      renderHook(() => useGameTimer(mockGameState, onTimerTick));
+
+      // 10秒分進める
+      for (let i = 1; i <= 10; i++) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+        expect(onTimerTick).toHaveBeenCalledTimes(i);
+        expect(onTimerTick).toHaveBeenLastCalledWith('player-1', i);
+      }
+    });
+
+    it('React自動バッチングによる状態更新の同期', () => {
+      const onTimerTick = vi.fn();
+      const onServerSync = vi.fn();
+
+      renderHook(() => useGameTimer(mockGameState, onTimerTick, onServerSync));
+
+      // 5秒進める（onTimerTick 5回 + onServerSync 1回）
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      // onTimerTickが5回呼ばれていることを確認
+      expect(onTimerTick).toHaveBeenCalledTimes(5);
+      expect(onTimerTick).toHaveBeenLastCalledWith('player-1', 5);
+
+      // onServerSyncも正しく呼ばれていることを確認（5秒目）
+      expect(onServerSync).toHaveBeenCalledTimes(1);
+      expect(onServerSync).toHaveBeenCalledWith('player-1', 5);
+
+      // 両方のコールバックが同じact()内で実行されることで、
+      // React自動バッチングにより状態更新が同期される
+    });
+
+    it('遅延が発生しても次回のティックで補正される', () => {
+      const onTimerTick = vi.fn();
+      renderHook(() => useGameTimer(mockGameState, onTimerTick));
+
+      // 正常に2秒進める
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(onTimerTick).toHaveBeenCalledTimes(2);
+
+      // 遅延をシミュレート: 3秒分まとめて進める
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+
+      // setIntervalは各1秒ごとに呼び出されるため、3回追加で呼ばれる
+      expect(onTimerTick).toHaveBeenCalledTimes(5);
+      expect(onTimerTick).toHaveBeenLastCalledWith('player-1', 5);
+    });
+
+    it('タイマー停止と再開の精度', () => {
+      const onTimerTick = vi.fn();
+      let currentGameState = { ...mockGameState };
+      const { rerender } = renderHook(
+        ({ gameState }) => useGameTimer(gameState, onTimerTick),
+        { initialProps: { gameState: currentGameState } }
+      );
+
+      // 3秒進める
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(onTimerTick).toHaveBeenCalledTimes(3);
+
+      // プレイヤーの経過時間を更新してから一時停止
+      currentGameState = {
+        ...mockGameState,
+        isPaused: true,
+        players: mockGameState.players.map(p =>
+          p.id === 'player-1' ? { ...p, elapsedTimeSeconds: 3 } : p
+        )
+      };
+      rerender({ gameState: currentGameState });
+
+      // 一時停止中は進まない
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(onTimerTick).toHaveBeenCalledTimes(3); // 変化なし
+
+      // 再開（経過時間3秒の状態から）
+      currentGameState = {
+        ...currentGameState,
+        isPaused: false
+      };
+      rerender({ gameState: currentGameState });
+
+      // 再開後は経過時間3秒から継続して進む
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(onTimerTick).toHaveBeenCalledTimes(5);
+      expect(onTimerTick).toHaveBeenLastCalledWith('player-1', 5);
+    });
+  });
 });
