@@ -366,10 +366,6 @@ export function GameTimer() {
 
   return (
     <div className="game-timer">
-      <header className="game-header">
-        <h1>マルチプレイヤー・ゲームタイマー</h1>
-      </header>
-
       <main className="game-main">
         {/* Task 4.1: フォールバックモード警告 */}
         {isInFallbackMode && (

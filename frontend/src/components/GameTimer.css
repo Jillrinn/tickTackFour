@@ -42,12 +42,6 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.game-header {
-  text-align: center;
-  color: white;
-  margin-bottom: 2rem;
-}
-
 /* Task 4.1: フォールバックモード警告スタイル */
 .fallback-mode-warning {
   background-color: #ffc107;
@@ -70,13 +64,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.game-header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .connection-status {
@@ -983,10 +970,6 @@ select {
     padding: 0.75rem;
   }
 
-  .game-header h1 {
-    font-size: 1.5rem;
-  }
-
   .game-status,
   .players-section,
   .controls-section,
@@ -1040,10 +1023,6 @@ select {
     padding: 1rem;
   }
 
-  .game-header h1 {
-    font-size: 1.8rem;
-  }
-
   .players-grid {
     grid-template-columns: 1fr;
   }
@@ -1051,10 +1030,6 @@ select {
 
 /* レスポンシブ対応: タブレット (768px-1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .game-header h1 {
-    font-size: 2.2rem;
-  }
-
   .players-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1062,9 +1037,6 @@ select {
 
 /* レスポンシブ対応: PC (1024px以上) */
 @media (min-width: 1024px) {
-  .game-header h1 {
-    font-size: 2.5rem;
-  }
 
   .players-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -1073,10 +1045,6 @@ select {
 
 /* レスポンシブ対応: 大画面PC (1440px以上) */
 @media (min-width: 1440px) {
-  .game-header h1 {
-    font-size: 3rem;
-  }
-
   .players-grid {
     grid-template-columns: repeat(4, 1fr);
   }

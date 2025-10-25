@@ -1,0 +1,63 @@
+/* AppHeader - ブランドロゴとタイトル表示ヘッダー */
+
+.app-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem; /* ロゴとテキストの間隔 */
+  padding: 1rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* ベーススタイル: スマートフォン (375px〜767px) */
+.app-header__logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.app-header__title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+  line-height: 1;
+}
+
+/* タブレット (768px〜1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-header__logo {
+    height: 56px;
+  }
+
+  .app-header__title {
+    font-size: 1.5rem;
+  }
+}
+
+/* PC (1024px以上) */
+@media (min-width: 1024px) {
+  .app-header {
+    padding: 1.5rem;
+  }
+
+  .app-header__logo {
+    height: 72px;
+  }
+
+  .app-header__title {
+    font-size: 1.75rem;
+  }
+}
+
+/* 超大画面 (1440px以上) */
+@media (min-width: 1440px) {
+  .app-header__logo {
+    height: 80px;
+  }
+
+  .app-header__title {
+    font-size: 2rem;
+  }
+}
