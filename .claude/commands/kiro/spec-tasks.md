@@ -76,10 +76,41 @@ Generate detailed implementation tasks for feature: **$1**
 4. **Requirements mapping**: End details with `_Requirements: X.X, Y.Y_` or `_Requirements: [description]_`
 5. **Code-only focus**: Include ONLY coding/testing tasks, exclude deployment/docs/user testing
 
+### TDD Implementation Process (MANDATORY)
+
+**ALL implementation tasks MUST follow Test-Driven Development (TDD)**:
+
+```markdown
+### TDD実装プロセス（必須）
+各タスクの実装時は以下のTDDプロセスに従うこと：
+1. **RED phase**: 実装前にテストケースを作成
+2. **GREEN phase**: 最小限の実装でテストをパス
+3. **REFACTOR phase**: 必要に応じてリファクタリング
+4. `npm test`で全テストが成功することを確認
+
+### TDD Implementation Process (Required)
+Follow this TDD process for each task implementation:
+1. **RED phase**: Create test cases before implementation
+2. **GREEN phase**: Minimal implementation to pass tests
+3. **REFACTOR phase**: Refactor as needed
+4. Run `npm test` to verify all tests pass
+```
+
+**Important**: Include this TDD section at the beginning of every generated tasks.md file.
+
 ### Example Structure (FORMAT REFERENCE ONLY)
 
 ```markdown
 # Implementation Plan
+
+### TDD実装プロセス（必須）
+各タスクの実装時は以下のTDDプロセスに従うこと：
+1. **RED phase**: 実装前にテストケースを作成
+2. **GREEN phase**: 最小限の実装でテストをパス
+3. **REFACTOR phase**: 必要に応じてリファクタリング
+4. `npm test`で全テストが成功することを確認
+
+## Phase 1: 基盤構築とインフラ設定
 
 - [ ] 1. Set up project foundation and infrastructure
   - Initialize project with required technology stack
@@ -87,6 +118,8 @@ Generate detailed implementation tasks for feature: **$1**
   - Establish data storage and caching layer
   - Set up configuration and environment management
   - _Requirements: All requirements need foundational setup_
+
+## Phase 2: 認証とユーザー管理システム構築
 
 - [ ] 2. Build authentication and user management system
 - [ ] 2.1 Implement core authentication functionality
