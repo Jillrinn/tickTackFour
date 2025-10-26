@@ -35,6 +35,10 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `timer-synchronization`: タイマー表示の同期（複数タイマーを単一インスタンスで管理し、秒数の増加/減少を同期）
 - `timer-mode-update-fix`: タイマーモード更新機能の修正（ゲーム開始後のタイマーモード変更を禁止、一時停止中も無効化維持）
 - `app-branding-setup`: ONEmore Turnブランディング設定（タブタイトル、ファビコン、ロゴ、アプリ名の変更）
+- `timer-display-sync-fix`: タイマー表示同期修正（経過時間とターン時間の秒表示同期、一時停止・再開時のターン時間継続）
+- `countdown-mode-fix`: カウントダウンモード動作修正（カウントダウンモード選択時の正しい初期化と動作、フォールバックモード/APIモード両対応）
+- `longest-player-timer-realtime-update`: 最長時間プレイヤータイマーのリアルタイム更新（ゲーム全体タイマーと同様の実装パターン、バックエンドを信頼できる情報源としつつフロントエンドでリアルタイム更新）
+- `player-count-range-expansion`: プレイヤー人数範囲の拡張（4-6人から2-6人に変更、UIとバックエンドの両対応）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
