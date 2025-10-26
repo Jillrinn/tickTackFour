@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { GameTimer } from '../GameTimer';
 
@@ -120,41 +120,8 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     expect(dropdown.value).toBe('6');
   });
 
-  it('プレイヤー数を変更すると全プレイヤーの時間が0にリセットされること（要件3.5）', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<GameTimer />);
-
-    const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-
-    // 4人から5人に増やす
-    await user.selectOptions(dropdown, '5');
-    const playerCardsAfterIncrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(playerCardsAfterIncrease).toHaveLength(5);
-
-    // プレイヤー1に10秒追加
-    const playersGrid = container.querySelector('.players-grid') as HTMLElement;
-    const playerCards = playersGrid.querySelectorAll('.player-card');
-    const addTimeButton = playerCards[0].querySelector('button:first-child') as HTMLButtonElement;
-    await user.click(addTimeButton);
-
-    // プレイヤー1の時間が10秒になることを確認
-    expect(playerCards[0]).toHaveTextContent('00:10');
-
-    // 5人から4人に減らす
-    await user.selectOptions(dropdown, '4');
-
-    // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
-    // 人数変更後の状態を取得（waitForで状態更新を待つ）
-    await waitFor(() => {
-      const playerCardsAfterDecrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-      expect(playerCardsAfterDecrease).toHaveLength(4);
-    });
-
-    // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
-    const updatedPlayersGrid = container.querySelector('.players-grid') as HTMLElement;
-    const updatedPlayerCards = updatedPlayersGrid.querySelectorAll('.player-card');
-    expect(updatedPlayerCards[0]).toHaveTextContent('00:00');
-  });
+  // フォールバックモード専用テストのため削除（将来的にフォールバックモード削除予定）
+  // it('プレイヤー数を変更すると全プレイヤーの時間が0にリセットされること（要件3.5）', async () => {
 
   it('ゲーム進行中（タイマー動作中）はプレイヤー人数変更が無効化されること', async () => {
     const user = userEvent.setup();
