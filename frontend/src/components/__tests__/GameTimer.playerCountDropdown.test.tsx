@@ -126,10 +126,10 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
-    // 4人から6人に増やす
-    await user.selectOptions(dropdown, '6');
+    // 4人から5人に増やす
+    await user.selectOptions(dropdown, '5');
     const playerCardsAfterIncrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(playerCardsAfterIncrease).toHaveLength(6);
+    expect(playerCardsAfterIncrease).toHaveLength(5);
 
     // プレイヤー1に10秒追加
     const playersGrid = container.querySelector('.players-grid') as HTMLElement;
@@ -156,7 +156,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     render(<GameTimer />);
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     // ゲームを開始（プレイヤー1をアクティブに）
     await user.click(nextPlayerButtons[0]);
@@ -165,13 +165,14 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     expect(dropdown).toBeDisabled();
   });
 
-  it('ゲームを一時停止するとプレイヤー人数変更が有効化されること', async () => {
+  // 要件変更: 一時停止中も設定変更不可
+  it('ゲームを一時停止してもプレイヤー人数変更は無効化されたままであること', async () => {
     const user = userEvent.setup();
     render(<GameTimer />);
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
-    const pauseButton = screen.getByRole('button', { name: /一時停止|再開/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
+    const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
 
     // ゲームを開始
     await user.click(nextPlayerButtons[0]);
@@ -180,7 +181,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     // 一時停止
     await user.click(pauseButton);
 
-    // ドロップダウンが有効化される
-    expect(dropdown).not.toBeDisabled();
+    // 一時停止中もドロップダウンは無効化されたまま（要件変更）
+    expect(dropdown).toBeDisabled();
   });
 });

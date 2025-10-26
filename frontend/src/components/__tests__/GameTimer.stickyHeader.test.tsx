@@ -42,7 +42,7 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
   it('固定ヘッダー内に「次のプレイヤー」ボタンが配置されていること', () => {
     render(<GameTimer />);
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /次のプレイヤー/ });
+    const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
   });
 
@@ -76,7 +76,7 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     render(<GameTimer />);
 
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     // 初期状態：ゲーム未開始
     expect(stickyHeader).toHaveTextContent(/ゲーム未開始|未開始/);
@@ -94,7 +94,7 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     render(<GameTimer />);
 
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     // プレイヤー1をアクティブに
     await user.click(nextPlayerButtons[0]);
@@ -110,7 +110,7 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     render(<GameTimer />);
 
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButtonInHeader = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/ });
+    const nextPlayerButtonInHeader = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     // ボタンをクリック
     await user.click(nextPlayerButtonInHeader);

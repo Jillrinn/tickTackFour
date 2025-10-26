@@ -177,12 +177,12 @@ describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
 
       // 「次のプレイヤー」ボタン
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       expect(nextPlayerButton).toBeInTheDocument();
       // CSSでmin-height: 44pxが適用されることを確認（jsdom環境ではスタイル値を直接テストできない）
 
       // 一時停止/再開ボタン
-      const pauseButton = screen.getByRole('button', { name: /一時停止|再開/i });
+      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
       expect(pauseButton).toBeInTheDocument();
 
       // リセットボタン
