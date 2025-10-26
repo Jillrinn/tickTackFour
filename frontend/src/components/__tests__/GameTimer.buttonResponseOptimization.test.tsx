@@ -44,7 +44,7 @@ vi.mock('../../hooks/useGameState', () => ({
       ],
       activePlayerIndex: 0,
       isPaused: false,
-      timerMode: 'count-up' as const
+      timerMode: 'countup' as const
     },
     switchToNextPlayer: vi.fn(),
     setPaused: vi.fn(),
@@ -73,7 +73,7 @@ vi.mock('../../hooks/useServerGameState', () => ({
       ],
       activePlayerIndex: 0,
       isPaused: false,
-      timerMode: 'count-up' as const,
+      timerMode: 'countup' as const,
       turnStartedAt: new Date().toISOString(),
       pausedAt: null
     },
@@ -156,7 +156,7 @@ describe('GameTimer - Task 2.1: ターン切り替えボタンの即座更新', 
       ],
       activePlayerIndex: 1,
       isPaused: false,
-      timerMode: 'count-up' as const,
+      timerMode: 'countup' as const,
       turnStartedAt: new Date().toISOString(),
       pausedAt: null
     });
@@ -212,7 +212,7 @@ describe('GameTimer - Task 2.2: 一時停止・再開ボタンの即座更新', 
       ],
       activePlayerIndex: 0,
       isPaused: true,
-      timerMode: 'count-up' as const,
+      timerMode: 'countup' as const,
       turnStartedAt: new Date().toISOString(),
       pausedAt: new Date().toISOString()
     });
@@ -252,7 +252,7 @@ describe('GameTimer - Task 2.3: リセットボタンの即座更新', () => {
       ],
       activePlayerIndex: 0,
       isPaused: false,
-      timerMode: 'count-up' as const,
+      timerMode: 'countup' as const,
       turnStartedAt: new Date().toISOString(),
       pausedAt: null
     });

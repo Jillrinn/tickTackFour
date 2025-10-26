@@ -20,7 +20,7 @@ describe('useGameApi', () => {
           { name: 'プレイヤー2', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 1,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'new-etag-123'
@@ -68,7 +68,7 @@ describe('useGameApi', () => {
       const mockResponse: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 50 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: true,
         etag: 'paused-etag'
@@ -103,7 +103,7 @@ describe('useGameApi', () => {
       const mockResponse: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 50 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'resumed-etag'
@@ -141,7 +141,7 @@ describe('useGameApi', () => {
           { name: 'プレイヤー2', elapsedSeconds: 0 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'reset-etag'
@@ -182,7 +182,7 @@ describe('useGameApi', () => {
           { name: 'プレイヤー5', elapsedSeconds: 0 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'updated-etag'
@@ -218,7 +218,7 @@ describe('useGameApi', () => {
       const mockResponse: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 600 }],
         activePlayerIndex: 0,
-        timerMode: 'count-down',
+        timerMode: 'countdown',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'mode-etag'
@@ -234,7 +234,7 @@ describe('useGameApi', () => {
       let response: GameStateWithTime | null = null;
       await act(async () => {
         response = await result.current.updateGame('etag-mode', {
-          timerMode: 'count-down',
+          timerMode: 'countdown',
           countdownSeconds: 600
         });
       });
@@ -246,7 +246,7 @@ describe('useGameApi', () => {
         },
         body: JSON.stringify({
           etag: 'etag-mode',
-          timerMode: 'count-down',
+          timerMode: 'countdown',
           countdownSeconds: 600
         })
       });
@@ -258,7 +258,7 @@ describe('useGameApi', () => {
       const mockResponse: GameStateWithTime = {
         players: [{ name: '太郎', elapsedSeconds: 0 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'name-etag'

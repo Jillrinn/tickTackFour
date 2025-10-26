@@ -17,12 +17,12 @@ export interface PlayerListProps {
 export function PlayerList({
   players,
   activePlayerId,
-  timerMode = 'count-up'
+  timerMode = 'countup'
 }: PlayerListProps) {
   const isPlayerActive = (playerId: string) => playerId === activePlayerId;
 
   const isTimeExpired = (player: Player) =>
-    timerMode === 'count-down' && player.elapsedTimeSeconds === 0;
+    timerMode === 'countdown' && player.elapsedTimeSeconds === 0;
 
   return (
     <ul className="player-list" role="list">

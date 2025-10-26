@@ -36,8 +36,8 @@ export function TimerControls({
   };
 
   const handleTimerModeToggle = () => {
-    const newMode: TimerMode = gameState.timerMode === 'count-up' ? 'count-down' : 'count-up';
-    onSetTimerMode(newMode, newMode === 'count-down' ? initialTime : undefined);
+    const newMode: TimerMode = gameState.timerMode === 'countup' ? 'countdown' : 'countup';
+    onSetTimerMode(newMode, newMode === 'countdown' ? initialTime : undefined);
   };
 
   const handleInitialTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,10 +104,10 @@ export function TimerControls({
 
       <div className="control-group">
         <button className="btn btn-secondary" onClick={handleTimerModeToggle}>
-          {gameState.timerMode === 'count-up' ? 'カウントダウンモードに切替' : 'カウントアップモードに切替'}
+          {gameState.timerMode === 'countup' ? 'カウントダウンモードに切替' : 'カウントアップモードに切替'}
         </button>
 
-        {gameState.timerMode === 'count-down' && (
+        {gameState.timerMode === 'countdown' && (
           <div className="initial-time-input">
             <label htmlFor="initial-time">初期時間（秒）</label>
             <input

@@ -6,7 +6,7 @@ import type { GameStateWithTime } from '../types/GameState';
  */
 export interface UpdateGameParams {
   playerCount?: number;
-  timerMode?: 'count-up' | 'count-down';
+  timerMode?: 'countup' | 'countdown';
   countdownSeconds?: number;
   players?: Array<{ name: string; elapsedSeconds: number }>;
 }

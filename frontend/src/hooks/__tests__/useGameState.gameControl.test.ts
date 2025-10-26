@@ -43,7 +43,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
 
       // カウントダウンモードに変更（初期時間600秒）
       act(() => {
-        result.current.setTimerMode('count-down', 600);
+        result.current.setTimerMode('countdown', 600);
       });
 
       // プレイヤー1の時間を減少
@@ -138,14 +138,14 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
 
       // カウントアップモードに切り替え
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       // 全プレイヤーが0秒にリセット
       result.current.gameState.players.forEach(player => {
         expect(player.elapsedTimeSeconds).toBe(0);
       });
-      expect(result.current.gameState.timerMode).toBe('count-up');
+      expect(result.current.gameState.timerMode).toBe('countup');
     });
 
     it('カウントダウンモードに切り替えると全プレイヤーの時間が初期時間になる', () => {
@@ -153,7 +153,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
 
       // カウントダウンモードに切り替え（初期時間300秒）
       act(() => {
-        result.current.setTimerMode('count-down', 300);
+        result.current.setTimerMode('countdown', 300);
       });
 
       // 全プレイヤーが300秒に設定
@@ -161,7 +161,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
         expect(player.elapsedTimeSeconds).toBe(300);
         expect(player.initialTimeSeconds).toBe(300);
       });
-      expect(result.current.gameState.timerMode).toBe('count-down');
+      expect(result.current.gameState.timerMode).toBe('countdown');
     });
 
     it('カウントダウンモードで初期時間を指定しない場合はデフォルト値（600秒）が設定される', () => {
@@ -169,7 +169,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
 
       // カウントダウンモードに切り替え（初期時間指定なし）
       act(() => {
-        result.current.setTimerMode('count-down');
+        result.current.setTimerMode('countdown');
       });
 
       // 全プレイヤーがデフォルト値（600秒）に設定
@@ -177,7 +177,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
         expect(player.elapsedTimeSeconds).toBe(600);
         expect(player.initialTimeSeconds).toBe(600);
       });
-      expect(result.current.gameState.timerMode).toBe('count-down');
+      expect(result.current.gameState.timerMode).toBe('countdown');
     });
 
     it('カウントダウンモードでカスタム初期時間（120秒）を設定できる', () => {
@@ -185,7 +185,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
 
       // カウントダウンモードに切り替え（初期時間120秒）
       act(() => {
-        result.current.setTimerMode('count-down', 120);
+        result.current.setTimerMode('countdown', 120);
       });
 
       // 全プレイヤーが120秒に設定
@@ -193,7 +193,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
         expect(player.elapsedTimeSeconds).toBe(120);
         expect(player.initialTimeSeconds).toBe(120);
       });
-      expect(result.current.gameState.timerMode).toBe('count-down');
+      expect(result.current.gameState.timerMode).toBe('countdown');
     });
   });
 
@@ -222,10 +222,10 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
 
       // カウントダウンモードに切り替え
       act(() => {
-        result.current.setTimerMode('count-down', 300);
+        result.current.setTimerMode('countdown', 300);
       });
 
-      expect(result.current.gameState.timerMode).toBe('count-down');
+      expect(result.current.gameState.timerMode).toBe('countdown');
 
       // リセット
       act(() => {
@@ -233,7 +233,7 @@ describe('useGameState - ゲームコントロール機能（Task 10.4）', () =
       });
 
       // カウントダウンモードが維持される
-      expect(result.current.gameState.timerMode).toBe('count-down');
+      expect(result.current.gameState.timerMode).toBe('countdown');
       // 初期時間も維持される
       result.current.gameState.players.forEach(player => {
         expect(player.elapsedTimeSeconds).toBe(300);

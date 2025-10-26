@@ -33,7 +33,7 @@ describe('useGameTimer', () => {
     ],
     activePlayerId: 'player-1',
     isPaused: false,
-    timerMode: 'count-up',
+    timerMode: 'countup',
     createdAt: new Date(),
     lastUpdatedAt: new Date()
   };
@@ -61,7 +61,7 @@ describe('useGameTimer', () => {
     const onTimerTick = vi.fn();
     const countdownState: GameState = {
       ...mockGameState,
-      timerMode: 'count-down',
+      timerMode: 'countdown',
       players: [
         {
           ...mockGameState.players[0],
@@ -143,7 +143,7 @@ describe('useGameTimer', () => {
     const onTimeExpired = vi.fn();
     const countdownState: GameState = {
       ...mockGameState,
-      timerMode: 'count-down',
+      timerMode: 'countdown',
       players: [
         {
           ...mockGameState.players[0],

@@ -50,7 +50,7 @@ export function useGameTimer(
     const activePlayer = gameState.players.find(p => p.id === gameState.activePlayerId);
 
     // タイマー実行条件をチェック
-    if (!activePlayer || gameState.isPaused || activePlayer.elapsedTimeSeconds === 0 && gameState.timerMode === 'count-down') {
+    if (!activePlayer || gameState.isPaused || activePlayer.elapsedTimeSeconds === 0 && gameState.timerMode === 'countdown') {
       // タイマーをクリア
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -70,7 +70,7 @@ export function useGameTimer(
 
       let newElapsedTime: number;
 
-      if (gameState.timerMode === 'count-up') {
+      if (gameState.timerMode === 'countup') {
         // カウントアップモード: 経過時間を増やす
         newElapsedTime = currentElapsedTimeRef.current + 1;
       } else {
@@ -83,7 +83,7 @@ export function useGameTimer(
       onTimerTick(currentPlayer.id, newElapsedTime);
 
       // カウントダウンモードで時間切れ検出
-      if (gameState.timerMode === 'count-down' && newElapsedTime === 0) {
+      if (gameState.timerMode === 'countdown' && newElapsedTime === 0) {
         if (onTimeExpired) {
           onTimeExpired(currentPlayer.id);
         }

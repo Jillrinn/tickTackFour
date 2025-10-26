@@ -20,7 +20,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントアップモードに設定
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       // プレイヤーの時間を設定
@@ -44,7 +44,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントアップモードに設定
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       // 複数のプレイヤーを同じ時間に設定
@@ -68,7 +68,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントアップモードに設定（全員0秒の初期状態）
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       const longestPlayer = result.current.getLongestTimePlayer();
@@ -84,7 +84,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントダウンモードに設定
       act(() => {
-        result.current.setTimerMode('count-down', 600); // 10分
+        result.current.setTimerMode('countdown', 600); // 10分
       });
 
       // プレイヤーの時間を変更（カウントダウンモードでは残り時間）
@@ -106,7 +106,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントアップモードに設定
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       // 初期プレイヤー（4人）の時間を設定
@@ -143,7 +143,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントアップモードに設定
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       // プレイヤー数を0にする（異常ケース、バリデーションチェック）
@@ -166,7 +166,7 @@ describe('useGameState - getLongestTimePlayer()', () => {
 
       // カウントアップモードに設定
       act(() => {
-        result.current.setTimerMode('count-up');
+        result.current.setTimerMode('countup');
       });
 
       // 1人のみ時間を設定

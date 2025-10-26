@@ -22,7 +22,7 @@ describe('usePollingSync', () => {
           { name: 'プレイヤー2', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -58,7 +58,7 @@ describe('usePollingSync', () => {
           { name: 'プレイヤー2', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -84,7 +84,7 @@ describe('usePollingSync', () => {
       const mockResponse: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag'
@@ -125,7 +125,7 @@ describe('usePollingSync', () => {
           json: async () => ({
             players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
             activePlayerIndex: 0,
-            timerMode: 'count-up',
+            timerMode: 'countup',
             countdownSeconds: 600,
             isPaused: false,
             etag: 'test-etag'
@@ -164,7 +164,7 @@ describe('usePollingSync', () => {
           json: async () => ({
             players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
             activePlayerIndex: 0,
-            timerMode: 'count-up',
+            timerMode: 'countup',
             countdownSeconds: 600,
             isPaused: false,
             etag: 'test-etag'
@@ -206,7 +206,7 @@ describe('usePollingSync', () => {
       const mockResponse: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag'
@@ -284,7 +284,7 @@ describe('usePollingSync', () => {
           json: async () => ({
             players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
             activePlayerIndex: 0,
-            timerMode: 'count-up',
+            timerMode: 'countup',
             countdownSeconds: 600,
             isPaused: false,
             etag: 'test-etag'

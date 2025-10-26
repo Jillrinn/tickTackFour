@@ -26,7 +26,7 @@ describe('TimerControls', () => {
     ],
     activePlayerId: null,
     isPaused: false,
-    timerMode: 'count-up',
+    timerMode: 'countup',
     createdAt: new Date(),
     lastUpdatedAt: new Date()
   };
@@ -242,6 +242,6 @@ describe('TimerControls', () => {
     );
 
     await user.click(screen.getByText(/カウントダウンモード/));
-    expect(onSetTimerMode).toHaveBeenCalledWith('count-down', expect.any(Number));
+    expect(onSetTimerMode).toHaveBeenCalledWith('countdown', expect.any(Number));
   });
 });

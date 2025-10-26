@@ -16,7 +16,7 @@ describe('useGameState - カウントダウン時間切れの視覚通知（Task
       const { result } = renderHook(() => useGameState());
 
       // カウントアップモード（デフォルト）
-      expect(result.current.gameState.timerMode).toBe('count-up');
+      expect(result.current.gameState.timerMode).toBe('countup');
 
       // プレイヤーが何秒でもタイムアウトとみなされない
       const player1Id = result.current.gameState.players[0].id;
@@ -32,7 +32,7 @@ describe('useGameState - カウントダウン時間切れの視覚通知（Task
 
       // カウントダウンモードに変更（初期時間300秒）
       act(() => {
-        result.current.setTimerMode('count-down', 300);
+        result.current.setTimerMode('countdown', 300);
       });
 
       // プレイヤー1の時間を0秒に設定
@@ -49,7 +49,7 @@ describe('useGameState - カウントダウン時間切れの視覚通知（Task
 
       // カウントダウンモードに変更
       act(() => {
-        result.current.setTimerMode('count-down', 300);
+        result.current.setTimerMode('countdown', 300);
       });
 
       // プレイヤー1と2の時間を0秒に設定
@@ -69,7 +69,7 @@ describe('useGameState - カウントダウン時間切れの視覚通知（Task
 
       // カウントダウンモードに変更
       act(() => {
-        result.current.setTimerMode('count-down', 300);
+        result.current.setTimerMode('countdown', 300);
       });
 
       // 全プレイヤーが1秒以上
@@ -88,7 +88,7 @@ describe('useGameState - カウントダウン時間切れの視覚通知（Task
 
       // カウントダウンモードに変更
       act(() => {
-        result.current.setTimerMode('count-down', 300);
+        result.current.setTimerMode('countdown', 300);
       });
 
       // プレイヤー1の時間を1秒に設定

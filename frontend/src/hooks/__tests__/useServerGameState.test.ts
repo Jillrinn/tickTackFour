@@ -20,7 +20,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー2', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -42,7 +42,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー2', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 0,  // プレイヤー1がアクティブ
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -65,7 +65,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー2', elapsedSeconds: 20 }
         ],
         activePlayerIndex: -1,  // ゲーム未開始
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -87,7 +87,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -117,7 +117,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: true,  // 一時停止中
         pausedAt: new Date().toISOString(),  // 一時停止時刻を追加
@@ -151,7 +151,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: -1,  // ゲーム未開始
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -182,7 +182,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-1'
@@ -203,7 +203,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 15 }],
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-2'
@@ -256,7 +256,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー3', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -283,7 +283,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー2', elapsedSeconds: 50 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-down',  // カウントダウン
+        timerMode: 'countdown',  // カウントダウン
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -305,7 +305,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー2', elapsedSeconds: 0 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -329,7 +329,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー4', elapsedSeconds: 20 }
         ],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -362,7 +362,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1'
@@ -395,7 +395,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 45 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1',
@@ -417,7 +417,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-1',
@@ -449,7 +449,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }], // サーバー計算済み: 10秒
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-1',
@@ -479,7 +479,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-1',
@@ -493,7 +493,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 15 }],
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-2',
@@ -518,7 +518,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-1',
@@ -542,7 +542,7 @@ describe('useServerGameState - APIモード状態管理', () => {
         result.current.updateFromServer({
           players: [{ name: 'プレイヤー1', elapsedSeconds: 10.5 }],
           activePlayerIndex: 0,
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-2',
@@ -572,7 +572,7 @@ describe('useServerGameState - APIモード状態管理', () => {
             { name: 'プレイヤー2', elapsedSeconds: 0 }
           ],
           activePlayerIndex: -1, // ゲーム開始前
-          timerMode: 'count-up',
+          timerMode: 'countup',
           countdownSeconds: 600,
           isPaused: false,
           etag: 'test-etag-reset',
@@ -607,7 +607,7 @@ describe('useServerGameState - APIモード状態管理', () => {
           { name: 'プレイヤー2', elapsedSeconds: 45 }
         ],
         activePlayerIndex: 1,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-sync'
@@ -646,7 +646,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-debounce'
@@ -679,7 +679,7 @@ describe('useServerGameState - APIモード状態管理', () => {
       const mockState: GameStateWithTime = {
         players: [{ name: 'プレイヤー1', elapsedSeconds: 10 }],
         activePlayerIndex: 0,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         countdownSeconds: 600,
         isPaused: false,
         etag: 'test-etag-duplicate'
