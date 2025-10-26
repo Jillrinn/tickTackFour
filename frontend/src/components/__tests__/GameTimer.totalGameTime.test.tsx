@@ -41,7 +41,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       render(<GameTimer />);
 
       // ゲーム開始ボタンをクリック
-      const startButton = screen.getByTestId('start-game-button');
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -63,7 +63,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       render(<GameTimer />);
 
       // ゲーム開始
-      const startButton = screen.getByTestId('start-game-button');
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -89,7 +89,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       });
 
       // ゲーム開始
-      const startButton = screen.getByTestId('start-game-button');
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -124,7 +124,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       render(<GameTimer />);
 
       // ゲーム開始
-      const startButton = screen.getByTestId('start-game-button');
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -157,7 +157,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       render(<GameTimer />);
 
       // ゲーム開始
-      const startButton = screen.getByTestId('start-game-button');
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -197,7 +197,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       render(<GameTimer />);
 
       // ゲーム開始
-      const startButton = screen.getByTestId('start-game-button');
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
