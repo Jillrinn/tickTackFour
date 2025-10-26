@@ -41,6 +41,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `player-count-range-expansion`: プレイヤー人数範囲の拡張（4-6人から2-6人に変更、UIとバックエンドの両対応）
 - `player-name-default-standardization`: プレイヤー名初期値の標準化（"player"と"プレイヤー"の混在を解消、初期値のDB保存を禁止）
 - `e2e-page-object-fixes`: E2E Page Objectセレクター修正（`.game-header`→`.sticky-header`の不一致を解消、69件のテスト失敗を修正）
+- `frontend-test-failures-fix`: フロントエンド単体テスト失敗修正（16ファイル90テストの体系的修正、タイマーモードトグル/ボタン状態管理/ゲーム全体時間同期等）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines

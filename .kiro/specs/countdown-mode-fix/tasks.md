@@ -26,6 +26,51 @@
   - デプロイ準備完了
   - _暫定対応: デプロイ可能な状態にする_
 
+## Phase 0.5: タイマーモードUI復元とテスト有効化（frontend-test-failures-fix要件1対応）
+
+- [ ] 0.3 暫定対応の非表示化を解除してタイマーモードUIを復元する
+- [ ] 0.3.1 GameTimer.tsxのタイマーモードUI非表示化を解除する
+  - **ファイル**: frontend/src/components/GameTimer.tsx
+  - **実装内容**:
+    - タイマーモードトグル非表示化（`{false &&`）を削除
+    - カウントダウン秒数入力フィールドの非表示化を削除
+    - タイマーモードトグルスイッチ（data-testid="timer-mode-toggle"）が表示されるようにする
+    - カウントダウンモード選択時にカウントダウン秒数入力フィールドが表示されるようにする
+  - **検証方法**:
+    - ブラウザでタイマーモードUIが正常に表示されることを確認
+    - タイマーモード切り替え（カウントアップ↔カウントダウン）が動作することを確認
+    - カウントダウンモード選択時にカウントダウン秒数入力が表示されることを確認
+  - **完了条件**: ブラウザで手動確認 + 次のタスクのテストパス
+  - _関連仕様: frontend-test-failures-fix（要件1: タイマーモードトグル表示機能）_
+
+- [ ] 0.3.2 GameTimer.conditionalRendering.test.tsxのテストを有効化する
+  - **ファイル**: frontend/src/components/__tests__/GameTimer.conditionalRendering.test.tsx
+  - **実装内容**:
+    - テストファイル内のスキップ設定を解除（もし設定されている場合）
+    - 5件のテストケースが実行されることを確認
+    - テスト内容:
+      1. カウントアップモード選択時にカウントダウン秒数設定UIが非表示
+      2. カウントダウンモード選択時にカウントダウン秒数設定UIが表示
+      3. タイマーモード切り替え時に関連UI要素の表示・非表示を即座に切り替え
+      4. カウントアップモード時にカウントダウン専用設定項目を一切表示しない
+      5. カウントダウンモードからカウントアップモードに切り替えても設定値が保持される
+  - **検証コマンド**: `npm test GameTimer.conditionalRendering.test.tsx`
+  - **完了条件**: 5/5テストパス
+  - _関連仕様: frontend-test-failures-fix（要件1）_
+
+- [ ] 0.3.3 統合テストとE2E検証
+  - 全てのユニットテストが成功することを確認（`npm test`）
+  - カウントダウンモード + タイマーモードトグルの組み合わせをE2Eテストで検証
+  - タイマーモード切り替え（カウントアップ↔カウントダウン）が正常に動作することを確認
+  - 全てのE2Eテストが成功することを確認（`npx playwright test`）
+  - _関連仕様: frontend-test-failures-fix_
+
+- [ ] 0.3.4 コミット作成
+  - tasks.mdの該当タスクをチェック済み[x]に更新
+  - 詳細なコミットメッセージを作成（タイマーモードUI復元、frontend-test-failures-fix要件1対応完了）
+  - Gitコミット作成
+  - _関連仕様: countdown-mode-fix + frontend-test-failures-fix_
+
 ## Phase 1: フォールバックモード（ローカル状態管理）の検証と修正
 
 - [ ] 1. フォールバックモードのカウントダウン初期化を検証する
@@ -189,4 +234,6 @@
   - tasks.mdの全タスクをチェック済み[x]に更新
   - 詳細なコミットメッセージを作成（実装内容、テスト結果含む）
   - Gitコミット作成（実装完了の最終コミット）
+  - frontend-test-failures-fixのspec.jsonも更新（要件1を対象に含める）
   - _Requirements: All requirements_
+  - _関連仕様: countdown-mode-fix + frontend-test-failures-fix_
