@@ -40,6 +40,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `longest-player-timer-realtime-update`: 最長時間プレイヤータイマーのリアルタイム更新（ゲーム全体タイマーと同様の実装パターン、バックエンドを信頼できる情報源としつつフロントエンドでリアルタイム更新）
 - `player-count-range-expansion`: プレイヤー人数範囲の拡張（4-6人から2-6人に変更、UIとバックエンドの両対応）
 - `player-name-default-standardization`: プレイヤー名初期値の標準化（"player"と"プレイヤー"の混在を解消、初期値のDB保存を禁止）
+- `e2e-page-object-fixes`: E2E Page Objectセレクター修正（`.game-header`→`.sticky-header`の不一致を解消、69件のテスト失敗を修正）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
