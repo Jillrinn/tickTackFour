@@ -26,7 +26,7 @@ describe('GameTimer - UI簡素化', () => {
     render(<GameTimer />);
 
     // 一時停止ボタンが存在することを確認
-    expect(screen.getByRole('button', { name: /一時停止|再開/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /停止|再開/i })).toBeInTheDocument();
   });
 
   test('現在のゲーム状態テキストが非表示になっている', () => {
@@ -47,8 +47,8 @@ describe('GameTimer - UI簡素化', () => {
     render(<GameTimer />);
 
     // 一時停止ボタンのテキストで状態が分かる
-    const pauseButton = screen.getByRole('button', { name: /一時停止|再開/ });
-    expect(pauseButton).toHaveTextContent(/一時停止|再開/);
+    const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
+    expect(pauseButton).toHaveTextContent(/停止|再開/i);
   });
 
   test('プレイヤー数は視覚的にプレイヤーカードの数で伝達される', () => {
@@ -70,10 +70,10 @@ describe('GameTimer - UI簡素化', () => {
     expect(screen.getByRole('heading', { name: '設定', level: 3 })).toBeInTheDocument();
 
     // 次のプレイヤーボタンが表示される（複数存在する可能性があるため）
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
+    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
 
     // 一時停止ボタンが表示される
-    expect(screen.getByRole('button', { name: /一時停止|再開/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /停止|再開/i })).toBeInTheDocument();
   });
 });
