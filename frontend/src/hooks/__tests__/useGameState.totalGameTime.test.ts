@@ -48,7 +48,7 @@ describe('useGameState - ゲーム全体のプレイ時間（Task 3.2）', () =>
 
       // カウントダウンモード（初期時間600秒）に設定
       act(() => {
-        result.current.setTimerMode('count-down', 600);
+        result.current.setTimerMode('countdown', 600);
       });
 
       // カウントダウンモードでも、elapsedTimeSecondsの合計を返す（design.md line 363）
@@ -66,7 +66,7 @@ describe('useGameState - ゲーム全体のプレイ時間（Task 3.2）', () =>
       expect(totalTime).toBe(1900);
     });
 
-    it('プレイヤー数が変更された後も正しく計算する', () => {
+    it('プレイヤー数が変更された後、全プレイヤーの時間がリセットされるため0を返す（要件3.5）', () => {
       const { result } = renderHook(() => useGameState());
 
       // 初期4人の時間を設定
@@ -77,18 +77,17 @@ describe('useGameState - ゲーム全体のプレイ時間（Task 3.2）', () =>
         result.current.updatePlayerTime(result.current.gameState.players[3].id, 90);
       });
 
-      // プレイヤー数を5人に変更
+      // 合計時間を確認（変更前）
+      expect(result.current.getTotalGameTime()).toBe(300);
+
+      // プレイヤー数を5人に変更（要件3.5: 全プレイヤーの時間が0にリセットされる）
       act(() => {
         result.current.setPlayerCount(5);
       });
 
-      // 新しいプレイヤー（5人目）の時間を設定
-      act(() => {
-        result.current.updatePlayerTime(result.current.gameState.players[4].id, 50);
-      });
-
+      // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
       const totalTime = result.current.getTotalGameTime();
-      expect(totalTime).toBe(350); // 60 + 120 + 30 + 90 + 50 = 350秒
+      expect(totalTime).toBe(0); // 全プレイヤーの時間がリセットされたため0
     });
 
     it('全プレイヤーの時間が0の場合は0を返す', () => {

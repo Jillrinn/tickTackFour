@@ -22,12 +22,31 @@ describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', (
     expect(dropdown).toBeInTheDocument();
   });
 
-  it('ドロップダウンが4人、5人、6人の選択肢を表示すること', () => {
+  // Task 2.1: 2人と3人の選択肢を追加
+  it('ドロップダウンが2人、3人、4人、5人、6人の選択肢を表示すること', () => {
     render(<GameTimer />);
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     const options = Array.from(dropdown.options).map(option => option.value);
-    expect(options).toEqual(['4', '5', '6']);
+    expect(options).toEqual(['2', '3', '4', '5', '6']);
+  });
+
+  it('ドロップダウンに2人の選択肢が存在すること', () => {
+    render(<GameTimer />);
+    const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
+
+    const option2 = Array.from(dropdown.options).find(opt => opt.value === '2');
+    expect(option2).toBeDefined();
+    expect(option2?.textContent).toBe('2人');
+  });
+
+  it('ドロップダウンに3人の選択肢が存在すること', () => {
+    render(<GameTimer />);
+    const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
+
+    const option3 = Array.from(dropdown.options).find(opt => opt.value === '3');
+    expect(option3).toBeDefined();
+    expect(option3?.textContent).toBe('3人');
   });
 
   it('ドロップダウンのデフォルト値が4人であること', () => {
@@ -101,7 +120,7 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     expect(dropdown.value).toBe('6');
   });
 
-  it('プレイヤー数を減らしても既存プレイヤーの時間データが保持されること', async () => {
+  it('プレイヤー数を変更すると全プレイヤーの時間が0にリセットされること（要件3.5）', async () => {
     const user = userEvent.setup();
     const { container } = render(<GameTimer />);
 
@@ -126,10 +145,10 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     const playerCardsAfterDecrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(playerCardsAfterDecrease).toHaveLength(4);
 
-    // プレイヤー1の時間が保持されていることを確認
+    // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
     const updatedPlayersGrid = container.querySelector('.players-grid') as HTMLElement;
     const updatedPlayerCards = updatedPlayersGrid.querySelectorAll('.player-card');
-    expect(updatedPlayerCards[0]).toHaveTextContent('00:10');
+    expect(updatedPlayerCards[0]).toHaveTextContent('00:00');
   });
 
   it('ゲーム進行中（タイマー動作中）はプレイヤー人数変更が無効化されること', async () => {
