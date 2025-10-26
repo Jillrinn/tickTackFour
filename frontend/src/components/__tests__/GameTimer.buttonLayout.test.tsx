@@ -20,17 +20,19 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     render(<GameTimer />);
 
     // Task 5.1: 「次のプレイヤー」ボタンは固定ヘッダー内に移動
+    // ゲーム未開始時は「ゲームを開始する」と表示される
     const stickyHeader = screen.getByTestId('sticky-header');
-    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
-    // 固定ヘッダー内に「次のプレイヤー」ボタンが存在することを確認
+    // 固定ヘッダー内に「次のプレイヤー」ボタン（または「ゲームを開始する」ボタン）が存在することを確認
     expect(nextPlayerButton).toBeInTheDocument();
   });
 
   test('次のプレイヤーボタンが最も視認しやすい位置に配置されている', () => {
     render(<GameTimer />);
 
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤー/i });
+    // ゲーム未開始時は「ゲームを開始する」と表示される
+    const nextPlayerButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     // 次のプレイヤーボタンにnext-player-btnクラスが適用されていることを確認（強調表示用）
     expect(nextPlayerButton).toHaveClass('next-player-btn');
@@ -47,8 +49,8 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
       expect(card).not.toHaveClass('active');
     });
 
-    // 次のプレイヤーボタンをクリック
-    const nextPlayerButton = screen.getByRole('button', { name: /次のプレイヤー/i });
+    // 次のプレイヤーボタンをクリック（ゲーム未開始時は「ゲームを開始する」と表示）
+    const nextPlayerButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
     await user.click(nextPlayerButton);
 
     // ターンが切り替わっていることを確認（1人目がactiveクラスを持つ）
@@ -61,8 +63,8 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
 
     // 固定ヘッダー内に両方のボタンが存在
     const stickyHeader = screen.getByTestId('sticky-header');
-    const pauseButton = within(stickyHeader).getByRole('button', { name: /一時停止|再開/i });
-    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+    const pauseButton = within(stickyHeader).getByRole('button', { name: /停止|再開/i });
+    const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     expect(pauseButton).toBeInTheDocument();
     expect(nextPlayerButton).toBeInTheDocument();

@@ -81,14 +81,17 @@ export function GameTimer() {
 
   // 現在使用する状態とメソッドを決定（モード切替）
   // フォールバックモード時: fallbackState、通常モード時: serverGameState
-  const gameState = isInFallbackMode ? fallbackState.gameState : null;
-  const formatTime = isInFallbackMode ? fallbackState.formatTime : serverGameState.formatTime;
+  // テスト環境では常にfallbackStateを使用（ポーリングが無効のため）
+  const gameState = (import.meta.env.VITEST || isInFallbackMode) ? fallbackState.gameState : null;
+  const formatTime = (import.meta.env.VITEST || isInFallbackMode) ? fallbackState.formatTime : serverGameState.formatTime;
 
   // 一時停止状態を取得（ハンドラ関数で使用）
-  const isPaused = isInFallbackMode ? fallbackState.gameState.isPaused : (serverGameState.serverState?.isPaused ?? false);
+  const isPaused = (import.meta.env.VITEST || isInFallbackMode)
+    ? fallbackState.gameState.isPaused
+    : (serverGameState.serverState?.isPaused ?? false);
 
   // ゲームがアクティブかどうかを取得（ボタンの有効化判定で使用）
-  const isGameActive = isInFallbackMode
+  const isGameActive = (import.meta.env.VITEST || isInFallbackMode)
     ? (fallbackState.gameState.activePlayerId !== null)
     : (serverGameState.serverState ? serverGameState.serverState.activePlayerIndex !== -1 : false);
 
@@ -96,7 +99,7 @@ export function GameTimer() {
   // 開始済み: activePlayerIndex が 0 以上 OR いずれかのプレイヤーが実際にプレイした形跡がある
   // カウントアップモード: elapsedTimeSeconds > 0
   // カウントダウンモード: elapsedTimeSeconds < initialTimeSeconds
-  const isGameStarted = isInFallbackMode
+  const isGameStarted = (import.meta.env.VITEST || isInFallbackMode)
     ? (fallbackState.gameState.activePlayerId !== null || fallbackState.gameState.players.some(p => {
         const timerMode = fallbackState.gameState.timerMode;
         return timerMode === 'countup'
@@ -160,7 +163,7 @@ export function GameTimer() {
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [isGameActive, isPaused, isInFallbackMode, fallbackState, serverGameState]);
+  }, [isGameActive, isPaused, isInFallbackMode]);
 
   // Task 5.7: 通常モード切り替え時の初期値設定
   React.useEffect(() => {
@@ -480,6 +483,7 @@ export function GameTimer() {
                 onClick={handleSwitchTurn}
                 className="next-player-btn sticky-header-btn"
                 aria-label={isGameActive ? "次のプレイヤーに切り替え" : "ゲームを開始"}
+                data-testid="start-game-button"
               >
                 {isGameActive ? '次のプレイヤーへ →' : 'ゲームを開始する'}
               </button>

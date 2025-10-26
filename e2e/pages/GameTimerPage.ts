@@ -51,7 +51,7 @@ export class GameTimerPage {
     this.countUpButton = page.locator('button:has-text("カウントアップ")');
     this.countDownButton = page.locator('button:has-text("カウントダウン")');
     this.countdownSecondsInput = page.locator('.countdown-control input[type="number"]');
-    this.pauseResumeButton = page.locator('button:has-text("一時停止"), button:has-text("再開")');
+    this.pauseResumeButton = page.locator('button:has-text("タイマー停止"), button:has-text("タイマー再開")');
     this.resetButton = page.locator('button:has-text("リセット")');
 
     // Task 2-6: 新規UIコンポーネント
@@ -73,10 +73,21 @@ export class GameTimerPage {
 
   /**
    * ページが正しくロードされたことを検証
+   * Phase 2 UI（通常モード）では、APIポーリング完了までも待機
    */
   async verifyPageLoaded(): Promise<void> {
     await this.gameHeader.waitFor({ state: 'visible' });
     await this.playersSection.waitFor({ state: 'visible' });
+
+    // Phase 2 UI: ポーリング同期が完了してAPIから状態を取得するまで待機
+    // usePollingSync()は即座に最初のfetchを実行するため、コンソールログで完了を確認
+    await this.page.waitForEvent('console', {
+      predicate: (msg) => msg.text().includes('[PollingSync] Server state updated:'),
+      timeout: 3000,
+    }).catch(() => {
+      // タイムアウト時は警告のみ（フォールバックモードに切り替わっている可能性）
+      console.warn('Polling sync did not complete within 3 seconds, continuing anyway');
+    });
   }
 
   /**
@@ -117,6 +128,11 @@ export class GameTimerPage {
 
   /**
    * タイマーモードをカウントアップに設定（Task 4: トグルスイッチに更新）
+   *
+   * 注意: 現在、タイマーモードUIは暫定的に非表示になっています。
+   * （GameTimer.tsx line 620: {false && (...)）
+   * この暫定措置により、タイマーモードトグルは表示されず、このメソッドはタイムアウトします。
+   * このメソッドを使用するテストはスキップする必要があります。
    */
   async setTimerModeCountUp(): Promise<void> {
     const isChecked = await this.timerModeToggle.isChecked();
@@ -129,6 +145,11 @@ export class GameTimerPage {
 
   /**
    * タイマーモードをカウントダウンに設定（Task 4: トグルスイッチに更新）
+   *
+   * 注意: 現在、タイマーモードUIは暫定的に非表示になっています。
+   * （GameTimer.tsx line 620: {false && (...)）
+   * この暫定措置により、タイマーモードトグルは表示されず、このメソッドはタイムアウトします。
+   * このメソッドを使用するテストはスキップする必要があります。
    *
    * 重要: 秒数を指定する場合、以下の手順で設定されます：
    * 1. 一度カウントアップに切り替え（秒数入力UIを非表示）
@@ -273,15 +294,50 @@ export class GameTimerPage {
 
   /**
    * 指定プレイヤーをアクティブに設定
+   * 通常モード（Phase 2 UI）では「次のプレイヤーへ」ボタンを使用して目標プレイヤーまで順番に切り替え
    */
   async setPlayerActive(index: number): Promise<void> {
-    const playerCard = this.getPlayerCardByIndex(index);
-    const setActiveButton = playerCard.locator('button:has-text("アクティブに設定")');
-    await setActiveButton.click();
+    // 現在のアクティブプレイヤーを取得
+    const currentActiveIndex = await this.getActivePlayerIndex();
+
+    // 既に目標のプレイヤーがアクティブな場合は何もしない
+    if (currentActiveIndex === index) {
+      return;
+    }
+
+    // 目標のプレイヤーまで「次のプレイヤーへ」ボタンをクリック
+    const playerCount = await this.getPlayerCount();
+    let clickCount = 0;
+
+    if (currentActiveIndex === -1) {
+      // アクティブなプレイヤーがいない場合は、「ゲームを開始」ボタンをクリック
+      const startButton = this.page.locator('button:has-text("ゲームを開始する")');
+      await startButton.click();
+
+      // ゲームが実際に開始されるまで待機（プレイヤー0がアクティブになるまで）
+      await this.page.waitForFunction(() => {
+        const firstCard = document.querySelector('.player-card');
+        return firstCard?.classList.contains('active');
+      }, { timeout: 5000 });
+
+      clickCount = index; // プレイヤー0がアクティブになったので、indexまでクリック
+    } else {
+      // currentActiveIndexからindexまでの距離を計算（循環考慮）
+      clickCount = (index - currentActiveIndex + playerCount) % playerCount;
+    }
+
+    // 「次のプレイヤーへ」ボタンをclickCount回クリック
+    for (let i = 0; i < clickCount; i++) {
+      await this.switchToNextPlayer();
+      await this.page.waitForTimeout(100);
+    }
   }
 
   /**
    * 指定プレイヤーに10秒追加
+   * 注意: 通常モード（Phase 2 UI）では「+10秒」ボタンが実装されていないため、
+   * このメソッドはフォールバックモードでのみ動作します。
+   * 通常モードではタイムアウトエラーになります。
    */
   async addTenSeconds(index: number): Promise<void> {
     const playerCard = this.getPlayerCardByIndex(index);

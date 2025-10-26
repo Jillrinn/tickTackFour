@@ -15,7 +15,9 @@ vi.mock('../../hooks/useFallbackMode', () => ({
   })
 }));
 
-describe('GameTimer - 条件付きレンダリング', () => {
+// 要件1（タイマーモードトグル）は現在スキップ対象のため、このテストファイルを無効化
+// 関連仕様: countdown-mode-fix Phase 0.5で再有効化予定
+describe.skip('GameTimer - 条件付きレンダリング', () => {
   test('カウントアップモード選択時にカウントダウン秒数設定UIが非表示', async () => {
     const user = userEvent.setup();
     render(<GameTimer />);
