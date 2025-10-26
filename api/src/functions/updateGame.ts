@@ -8,7 +8,7 @@ import { hasStatusCodeValue } from '../utils/errorUtils';
  * 汎用更新エンドポイント（POST /api/updateGame）
  *
  * 機能:
- * - プレイヤー数変更（4-6人の範囲バリデーション）
+ * - プレイヤー数変更（2-6人の範囲バリデーション）
  * - タイマーモード変更（countup/countdown切替）
  * - カウントダウン秒数変更
  * - プレイヤー名変更
@@ -62,7 +62,7 @@ async function updateGame(
 
     // プレイヤー数変更のバリデーションと処理
     if (playerCount !== undefined) {
-      if (playerCount < 4 || playerCount > 6) {
+      if (playerCount < 2 || playerCount > 6) {
         return {
           status: 400,
           headers: {
@@ -70,7 +70,7 @@ async function updateGame(
           },
           body: JSON.stringify({
             error: 'BadRequest',
-            message: 'プレイヤー数は4人から6人の範囲で指定してください'
+            message: 'プレイヤー数は2人から6人の範囲で指定してください'
           })
         };
       }

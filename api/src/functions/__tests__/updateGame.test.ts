@@ -57,13 +57,13 @@ async function updateGame(
 
     // プレイヤー数変更のバリデーションと処理
     if (playerCount !== undefined) {
-      if (playerCount < 4 || playerCount > 6) {
+      if (playerCount < 2 || playerCount > 6) {
         return {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             error: 'BadRequest',
-            message: 'プレイヤー数は4人から6人の範囲で指定してください'
+            message: 'プレイヤー数は2人から6人の範囲で指定してください'
           })
         };
       }
@@ -273,6 +273,69 @@ describe('POST /api/updateGame', () => {
       expect(body.players[5].name).toBe('Player 6');
     });
 
+    it('プレイヤー数を4人から2人に変更する（Task 3.2）', async () => {
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'test-etag',
+          playerCount: 2
+        })
+      } as HttpRequest;
+
+      const expectedState: GameState = {
+        ...mockGameState,
+        playerCount: 2,
+        players: mockGameState.players.slice(0, 2)
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: expectedState,
+        etag: 'new-etag'
+      });
+
+      const response = await updateGame(request, context);
+
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+      expect(body.players).toHaveLength(2);
+      expect(body.players[0].name).toBe('Player 1');
+      expect(body.players[1].name).toBe('Player 2');
+      expect(body.etag).toBe('new-etag');
+    });
+
+    it('プレイヤー数を4人から3人に変更する（Task 3.2）', async () => {
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'test-etag',
+          playerCount: 3
+        })
+      } as HttpRequest;
+
+      const expectedState: GameState = {
+        ...mockGameState,
+        playerCount: 3,
+        players: mockGameState.players.slice(0, 3)
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: expectedState,
+        etag: 'new-etag'
+      });
+
+      const response = await updateGame(request, context);
+
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+      expect(body.players).toHaveLength(3);
+      expect(body.players[0].name).toBe('Player 1');
+      expect(body.players[1].name).toBe('Player 2');
+      expect(body.players[2].name).toBe('Player 3');
+      expect(body.etag).toBe('new-etag');
+    });
+
     it('プレイヤー数を6人から4人に減らす', async () => {
       const mockState6Players: GameState = {
         ...mockGameState,
@@ -317,6 +380,168 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(200);
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(4);
+    });
+
+    it('プレイヤー数を2人から4人に増やす（Task 3.3）', async () => {
+      const mockState2Players: GameState = {
+        ...mockGameState,
+        playerCount: 2,
+        players: [
+          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
+          { id: 2, name: 'Player 2', accumulatedSeconds: 0 }
+        ]
+      };
+
+      mockGetGameState.mockResolvedValueOnce({
+        state: mockState2Players,
+        etag: 'test-etag'
+      });
+
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'test-etag',
+          playerCount: 4
+        })
+      } as HttpRequest;
+
+      const expectedState: GameState = {
+        ...mockState2Players,
+        playerCount: 4,
+        players: [
+          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
+          { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
+          { id: 3, name: 'Player 3', accumulatedSeconds: 0 },
+          { id: 4, name: 'Player 4', accumulatedSeconds: 0 }
+        ]
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: expectedState,
+        etag: 'new-etag'
+      });
+
+      const response = await updateGame(request, context);
+
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+      expect(body.players).toHaveLength(4);
+      expect(body.players[2].id).toBe(3);
+      expect(body.players[2].name).toBe('Player 3');
+      expect(body.players[3].id).toBe(4);
+      expect(body.players[3].name).toBe('Player 4');
+    });
+
+    it('プレイヤー数を3人から6人に増やす（Task 3.3）', async () => {
+      const mockState3Players: GameState = {
+        ...mockGameState,
+        playerCount: 3,
+        players: [
+          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
+          { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
+          { id: 3, name: 'Player 3', accumulatedSeconds: 0 }
+        ]
+      };
+
+      mockGetGameState.mockResolvedValueOnce({
+        state: mockState3Players,
+        etag: 'test-etag'
+      });
+
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'test-etag',
+          playerCount: 6
+        })
+      } as HttpRequest;
+
+      const expectedState: GameState = {
+        ...mockState3Players,
+        playerCount: 6,
+        players: [
+          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
+          { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
+          { id: 3, name: 'Player 3', accumulatedSeconds: 0 },
+          { id: 4, name: 'Player 4', accumulatedSeconds: 0 },
+          { id: 5, name: 'Player 5', accumulatedSeconds: 0 },
+          { id: 6, name: 'Player 6', accumulatedSeconds: 0 }
+        ]
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: expectedState,
+        etag: 'new-etag'
+      });
+
+      const response = await updateGame(request, context);
+
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+      expect(body.players).toHaveLength(6);
+      expect(body.players[3].id).toBe(4);
+      expect(body.players[3].name).toBe('Player 4');
+      expect(body.players[4].id).toBe(5);
+      expect(body.players[4].name).toBe('Player 5');
+      expect(body.players[5].id).toBe(6);
+      expect(body.players[5].name).toBe('Player 6');
+    });
+
+    it('プレイヤー数を6人から2人に減らす（Task 3.3）', async () => {
+      const mockState6Players: GameState = {
+        ...mockGameState,
+        playerCount: 6,
+        players: [
+          { id: 1, name: 'Player 1', accumulatedSeconds: 10 },
+          { id: 2, name: 'Player 2', accumulatedSeconds: 20 },
+          { id: 3, name: 'Player 3', accumulatedSeconds: 30 },
+          { id: 4, name: 'Player 4', accumulatedSeconds: 40 },
+          { id: 5, name: 'Player 5', accumulatedSeconds: 50 },
+          { id: 6, name: 'Player 6', accumulatedSeconds: 60 }
+        ]
+      };
+
+      mockGetGameState.mockResolvedValueOnce({
+        state: mockState6Players,
+        etag: 'test-etag'
+      });
+
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'test-etag',
+          playerCount: 2
+        })
+      } as HttpRequest;
+
+      const expectedState: GameState = {
+        ...mockState6Players,
+        playerCount: 2,
+        players: mockState6Players.players.slice(0, 2)
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: expectedState,
+        etag: 'new-etag'
+      });
+
+      const response = await updateGame(request, context);
+
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+      expect(body.players).toHaveLength(2);
+      expect(body.players[0].id).toBe(1);
+      expect(body.players[0].name).toBe('Player 1');
+      expect(body.players[1].id).toBe(2);
+      expect(body.players[1].name).toBe('Player 2');
+      // プレイヤー3-6が削除されていることを確認
+      expect(body.players.find((p: Player) => p.id === 3)).toBeUndefined();
+      expect(body.players.find((p: Player) => p.id === 4)).toBeUndefined();
+      expect(body.players.find((p: Player) => p.id === 5)).toBeUndefined();
+      expect(body.players.find((p: Player) => p.id === 6)).toBeUndefined();
     });
 
     it('タイマーモードをcountupからcountdownに変更する', async () => {
@@ -470,13 +695,13 @@ describe('POST /api/updateGame', () => {
       expect(body.message).toContain('ETag');
     });
 
-    it('プレイヤー数が4未満の場合は400エラーを返す', async () => {
+    it('プレイヤー数が2未満の場合は400エラーを返す', async () => {
       const request = {
         method: 'POST',
         url: 'http://localhost/api/updateGame',
         text: async () => JSON.stringify({
           etag: 'test-etag',
-          playerCount: 3
+          playerCount: 1
         })
       } as HttpRequest;
 
@@ -485,7 +710,7 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(400);
       const body = JSON.parse(response.body as string);
       expect(body.error).toBe('BadRequest');
-      expect(body.message).toContain('4');
+      expect(body.message).toContain('2');
       expect(body.message).toContain('6');
     });
 
@@ -504,7 +729,7 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(400);
       const body = JSON.parse(response.body as string);
       expect(body.error).toBe('BadRequest');
-      expect(body.message).toContain('4');
+      expect(body.message).toContain('2');
       expect(body.message).toContain('6');
     });
 
