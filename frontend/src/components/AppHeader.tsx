@@ -1,6 +1,6 @@
 import './AppHeader.css';
 
-export function AppHeader(): JSX.Element {
+export function AppHeader() {
   return (
     <header className="app-header">
       <img

@@ -105,10 +105,8 @@ export function GameTimer() {
       }))
     : (serverGameState.serverState
         ? (serverGameState.serverState.activePlayerIndex !== -1 || serverGameState.serverState.players.some(p => {
-            const timerMode = serverGameState.serverState?.timerMode;
-            return timerMode === 'countup'
-              ? p.elapsedTimeSeconds > 0
-              : p.elapsedTimeSeconds < p.initialTimeSeconds;
+            // Phase 0暫定対応: カウントダウンモードUI非表示のため、カウントアップモードのみチェック
+            return p.elapsedSeconds > 0;
           }))
         : false // serverGameState.serverStateがnullの場合、未開始と判定
       );
@@ -121,7 +119,8 @@ export function GameTimer() {
 
   // timer-display-sync-fix Phase 3: 単一タイマー更新メカニズム（Task 4.1）
   // forceUpdate状態: 全タイマー表示を強制再レンダリングするためのダミー状態
-  const [forceUpdateCounter, setForceUpdateCounter] = React.useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_forceUpdateCounter, setForceUpdateCounter] = React.useState(0);
 
   // timer-synchronization Phase 5: ゲーム全体時間の同期状態管理
   // Task 5.1: getTotalGameTime()結果をstateで管理し、タイマーtickで明示的に更新
