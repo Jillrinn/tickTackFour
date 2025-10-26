@@ -39,6 +39,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - `countdown-mode-fix`: カウントダウンモード動作修正（カウントダウンモード選択時の正しい初期化と動作、フォールバックモード/APIモード両対応）
 - `longest-player-timer-realtime-update`: 最長時間プレイヤータイマーのリアルタイム更新（ゲーム全体タイマーと同様の実装パターン、バックエンドを信頼できる情報源としつつフロントエンドでリアルタイム更新）
 - `player-count-range-expansion`: プレイヤー人数範囲の拡張（4-6人から2-6人に変更、UIとバックエンドの両対応）
+- `player-name-default-standardization`: プレイヤー名初期値の標準化（"player"と"プレイヤー"の混在を解消、初期値のDB保存を禁止）
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ## Development Guidelines
