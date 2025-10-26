@@ -615,39 +615,44 @@ export function GameTimer() {
                 </select>
               </div>
 
-              {/* Task 4.1 & 4.2: カウントモードトグルスイッチ */}
-              <div className="setting-item">
-                <label className="setting-label">タイマーモード</label>
-                <label className="toggle-switch-enhanced">
-                  <input
-                    type="checkbox"
-                    checked={isInFallbackMode ? (gameState?.timerMode === 'countdown') : (serverGameState.serverState?.timerMode === 'countdown')}
-                    onChange={(e) => handleTimerModeChange(e.target.checked)}
-                    disabled={isGameStarted}
-                    title={isGameStarted ? 'ゲーム開始後はタイマーモードを変更できません' : ''}
-                    data-testid="timer-mode-toggle"
-                    aria-label="カウントモード切替"
-                  />
-                  <span className="toggle-slider">
-                    <span className="toggle-label-left">カウントアップ</span>
-                    <span className="toggle-label-right">カウントダウン</span>
-                  </span>
-                </label>
-              </div>
-              {(isInFallbackMode ? (gameState?.timerMode === 'countdown') : (serverGameState.serverState?.timerMode === 'countdown')) && (
-                <div className="countdown-control">
-                  <input
-                    type="number"
-                    value={countdownSeconds}
-                    onChange={(e) => setCountdownSeconds(Number(e.target.value))}
-                    min="1"
-                    max="3600"
-                    disabled={isGameStarted}
-                    title={isGameStarted ? 'ゲーム開始後はカウントダウン秒数を変更できません' : ''}
-                    data-testid="countdown-seconds-input"
-                  />
-                  <span>秒</span>
-                </div>
+              {/* Phase 0: 暫定対応 - タイマーモードUI非表示（カウントダウンモード修正完了までの暫定措置） */}
+              {false && (
+                <>
+                  {/* Task 4.1 & 4.2: カウントモードトグルスイッチ */}
+                  <div className="setting-item">
+                    <label className="setting-label">タイマーモード</label>
+                    <label className="toggle-switch-enhanced">
+                      <input
+                        type="checkbox"
+                        checked={isInFallbackMode ? (gameState?.timerMode === 'countdown') : (serverGameState.serverState?.timerMode === 'countdown')}
+                        onChange={(e) => handleTimerModeChange(e.target.checked)}
+                        disabled={isGameStarted}
+                        title={isGameStarted ? 'ゲーム開始後はタイマーモードを変更できません' : ''}
+                        data-testid="timer-mode-toggle"
+                        aria-label="カウントモード切替"
+                      />
+                      <span className="toggle-slider">
+                        <span className="toggle-label-left">カウントアップ</span>
+                        <span className="toggle-label-right">カウントダウン</span>
+                      </span>
+                    </label>
+                  </div>
+                  {(isInFallbackMode ? (gameState?.timerMode === 'countdown') : (serverGameState.serverState?.timerMode === 'countdown')) && (
+                    <div className="countdown-control">
+                      <input
+                        type="number"
+                        value={countdownSeconds}
+                        onChange={(e) => setCountdownSeconds(Number(e.target.value))}
+                        min="1"
+                        max="3600"
+                        disabled={isGameStarted}
+                        title={isGameStarted ? 'ゲーム開始後はカウントダウン秒数を変更できません' : ''}
+                        data-testid="countdown-seconds-input"
+                      />
+                      <span>秒</span>
+                    </div>
+                  )}
+                </>
               )}
               <div className="setting-item">
                 <button onClick={handleResetGame} className="reset-btn">リセット</button>
