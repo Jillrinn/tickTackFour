@@ -89,9 +89,21 @@ export function useGameState() {
         newPlayers = currentPlayers.slice(0, count);
       }
 
+      // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間を0にリセット
+      newPlayers = newPlayers.map(player => ({
+        ...player,
+        elapsedTimeSeconds: 0,
+        isActive: false,
+        turnStartedAt: null,
+        totalPausedDuration: 0
+      }));
+
       return {
         ...prev,
         players: newPlayers,
+        activePlayerId: null,
+        isPaused: false,
+        pausedAt: null,
         lastUpdatedAt: new Date()
       };
     });

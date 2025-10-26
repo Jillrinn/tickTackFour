@@ -35,6 +35,88 @@ describe('useGameState', () => {
   });
 
   describe('プレイヤー数変更', () => {
+    // Task 1.3: 2人・3人設定時のプレイヤー配列管理テスト
+    it('2人設定時にプレイヤー配列が正しく2要素になる', () => {
+      const { result } = renderHook(() => useGameState());
+
+      act(() => {
+        result.current.setPlayerCount(2);
+      });
+
+      expect(result.current.gameState.players).toHaveLength(2);
+      expect(result.current.gameState.players[0].name).toBe('プレイヤー1');
+      expect(result.current.gameState.players[1].name).toBe('プレイヤー2');
+    });
+
+    it('3人設定時にプレイヤー配列が正しく3要素になる', () => {
+      const { result } = renderHook(() => useGameState());
+
+      act(() => {
+        result.current.setPlayerCount(3);
+      });
+
+      expect(result.current.gameState.players).toHaveLength(3);
+      expect(result.current.gameState.players[0].name).toBe('プレイヤー1');
+      expect(result.current.gameState.players[1].name).toBe('プレイヤー2');
+      expect(result.current.gameState.players[2].name).toBe('プレイヤー3');
+    });
+
+    it('4人から2人への変更時にプレイヤー3-4が削除される', () => {
+      const { result } = renderHook(() => useGameState());
+
+      // 初期状態は4人
+      expect(result.current.gameState.players).toHaveLength(4);
+
+      act(() => {
+        result.current.setPlayerCount(2);
+      });
+
+      expect(result.current.gameState.players).toHaveLength(2);
+      expect(result.current.gameState.players[0].name).toBe('プレイヤー1');
+      expect(result.current.gameState.players[1].name).toBe('プレイヤー2');
+    });
+
+    it('2人から4人への変更時にプレイヤー3-4が追加される', () => {
+      const { result } = renderHook(() => useGameState());
+
+      act(() => {
+        result.current.setPlayerCount(2);
+      });
+
+      expect(result.current.gameState.players).toHaveLength(2);
+
+      act(() => {
+        result.current.setPlayerCount(4);
+      });
+
+      expect(result.current.gameState.players).toHaveLength(4);
+      expect(result.current.gameState.players[0].name).toBe('プレイヤー1');
+      expect(result.current.gameState.players[1].name).toBe('プレイヤー2');
+      expect(result.current.gameState.players[2].name).toBe('プレイヤー3');
+      expect(result.current.gameState.players[3].name).toBe('プレイヤー4');
+    });
+
+    it('プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる', () => {
+      const { result } = renderHook(() => useGameState());
+
+      // プレイヤー1の経過時間を変更
+      act(() => {
+        result.current.updatePlayerTime(result.current.gameState.players[0].id, 100);
+      });
+
+      expect(result.current.gameState.players[0].elapsedTimeSeconds).toBe(100);
+
+      // プレイヤー人数を変更
+      act(() => {
+        result.current.setPlayerCount(3);
+      });
+
+      // 全プレイヤーの時間が0にリセットされている
+      result.current.gameState.players.forEach(player => {
+        expect(player.elapsedTimeSeconds).toBe(0);
+      });
+    });
+
     it('プレイヤー数を4人から5人に増やすことができる', () => {
       const { result } = renderHook(() => useGameState());
 
@@ -72,16 +154,17 @@ describe('useGameState', () => {
       expect(result.current.gameState.players).toHaveLength(4);
     });
 
-    it('プレイヤー数を減らした時、残ったプレイヤーの状態は保持される', () => {
+    it('プレイヤー数を減らした時、プレイヤーIDとデフォルト名は保持されるが時間はリセットされる', () => {
       const { result } = renderHook(() => useGameState());
+
+      const firstPlayerId = result.current.gameState.players[0].id;
 
       // プレイヤー1の経過時間を変更
       act(() => {
         result.current.updatePlayerTime(result.current.gameState.players[0].id, 100);
       });
 
-      const firstPlayerId = result.current.gameState.players[0].id;
-      const firstPlayerTime = result.current.gameState.players[0].elapsedTimeSeconds;
+      expect(result.current.gameState.players[0].elapsedTimeSeconds).toBe(100);
 
       // 5人に増やしてから4人に戻す
       act(() => {
@@ -92,9 +175,9 @@ describe('useGameState', () => {
         result.current.setPlayerCount(4);
       });
 
-      // プレイヤー1の状態は保持されている
+      // プレイヤーIDは保持されているが、時間は0にリセットされている（要件3.5）
       expect(result.current.gameState.players[0].id).toBe(firstPlayerId);
-      expect(result.current.gameState.players[0].elapsedTimeSeconds).toBe(firstPlayerTime);
+      expect(result.current.gameState.players[0].elapsedTimeSeconds).toBe(0);
     });
 
     it('範囲外のプレイヤー数（1人）はエラーをスローする', () => {
