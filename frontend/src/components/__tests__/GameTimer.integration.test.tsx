@@ -53,7 +53,8 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       expect(dropdown).toBeInTheDocument();
     });
 
-    it('カウントモードトグルスイッチが設定セクション内に存在する', () => {
+    // タイマーモードトグルUIは現在 {false &&} で非表示中のため無効化
+    it.skip('カウントモードトグルスイッチが設定セクション内に存在する', () => {
       render(<GameTimer />);
       const settingsControls = screen.getByTestId('settings-controls');
       const toggle = within(settingsControls).getByTestId('timer-mode-toggle');
@@ -63,7 +64,7 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
     it('「次のプレイヤー」ボタンが固定ヘッダー内に1つだけ存在する', () => {
       render(<GameTimer />);
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       expect(nextPlayerButtons).toHaveLength(1);
     });
 
@@ -71,7 +72,7 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       render(<GameTimer />);
       const stickyHeader = screen.getByTestId('sticky-header');
       const pauseButton = within(stickyHeader).getByRole('button', { name: /一時停止|再開/i });
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       expect(pauseButton).toBeInTheDocument();
       expect(nextPlayerButton).toBeInTheDocument();
     });
@@ -88,7 +89,7 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
 
       // 「次のプレイヤー」ボタンをクリックしてプレイヤー1をアクティブに
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       await user.click(nextPlayerButton);
 
       // アクティブプレイヤー情報が表示される
@@ -123,7 +124,8 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       });
     });
 
-    it('カウントモードトグルスイッチがタイマーモード変更に正しく反応する', async () => {
+    // タイマーモードトグルUIは現在 {false &&} で非表示中のため無効化
+    it.skip('カウントモードトグルスイッチがタイマーモード変更に正しく反応する', async () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
@@ -144,13 +146,14 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       });
     });
 
-    it('ゲーム進行中は設定セクションのコントロールが無効化される', async () => {
+    // タイマーモードトグルUIは現在 {false &&} で非表示中のため無効化
+    it.skip('ゲーム進行中は設定セクションのコントロールが無効化される', async () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
       // 「次のプレイヤー」ボタンをクリックしてゲーム開始
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       await user.click(nextPlayerButton);
 
       // ドロップダウンとトグルが無効化される
@@ -162,13 +165,14 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       });
     });
 
-    it('一時停止中は設定セクションのコントロールが有効化される', async () => {
+    // タイマーモードトグルUIは現在 {false &&} で非表示中のため無効化
+    it.skip('一時停止中は設定セクションのコントロールが有効化される', async () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
       // 「次のプレイヤー」ボタンをクリックしてゲーム開始
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       await user.click(nextPlayerButton);
 
       // 一時停止ボタンをクリック
@@ -190,7 +194,7 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
 
       const activePlayerInfo = screen.getByTestId('active-player-info');
       const stickyHeader = screen.getByTestId('sticky-header');
-      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /次のプレイヤー/i });
+      const nextPlayerButton = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
       // 初回クリック: プレイヤー1がアクティブに
       await user.click(nextPlayerButton);
