@@ -58,7 +58,7 @@ describe('useGameState - setPaused拡張（Task 3.5）', () => {
       expect(result.current.gameState.pausedAt).toBeNull();
     });
 
-    it('再開時にアクティブプレイヤーのturnStartedAtを一時停止期間分調整する', () => {
+    it('再開時にアクティブプレイヤーのtotalPausedDurationを累積する', () => {
       const { result } = renderHook(() => useGameState());
 
       // 現在時刻を固定: 00:00:00
@@ -73,6 +73,8 @@ describe('useGameState - setPaused拡張（Task 3.5）', () => {
       // プレイヤー1のturnStartedAtが設定されていることを確認
       const initialTurnStartedAt = result.current.gameState.players[0].turnStartedAt;
       expect(initialTurnStartedAt).toEqual(baseTime);
+      // 初期状態ではtotalPausedDuration = 0
+      expect(result.current.gameState.players[0].totalPausedDuration).toBe(0);
 
       // 10秒経過: 00:00:10
       const pauseTime = new Date('2025-01-01T00:00:10Z');
@@ -92,16 +94,14 @@ describe('useGameState - setPaused拡張（Task 3.5）', () => {
         result.current.setPaused(false);
       });
 
-      // turnStartedAtが一時停止期間（5秒）分調整されていることを確認
-      // 元のturnStartedAt: 00:00:00
-      // 一時停止期間: 5秒（00:00:10 → 00:00:15）
-      // 調整後のturnStartedAt: 00:00:00 + 5秒 = 00:00:05
-      const adjustedTurnStartedAt = result.current.gameState.players[0].turnStartedAt;
-      expect(adjustedTurnStartedAt).not.toBeNull();
-      expect(adjustedTurnStartedAt).toEqual(new Date('2025-01-01T00:00:05Z'));
+      // totalPausedDurationが一時停止期間（5秒 = 5000ms）分累積されていることを確認
+      const totalPausedDuration = result.current.gameState.players[0].totalPausedDuration;
+      expect(totalPausedDuration).toBe(5000);
+      // turnStartedAtは変更されない
+      expect(result.current.gameState.players[0].turnStartedAt).toEqual(baseTime);
     });
 
-    it('アクティブプレイヤーのみturnStartedAtが調整され、他プレイヤーは影響なし', () => {
+    it('アクティブプレイヤーのみtotalPausedDurationが累積され、他プレイヤーは影響なし', () => {
       const { result } = renderHook(() => useGameState());
 
       // 現在時刻を固定: 00:00:00
@@ -129,16 +129,20 @@ describe('useGameState - setPaused拡張（Task 3.5）', () => {
         result.current.setPaused(false);
       });
 
-      // プレイヤー2のみturnStartedAtが調整されていることを確認
-      // 元のturnStartedAt: 00:00:00
-      // 一時停止期間: 3秒（00:00:05 → 00:00:08）
-      // 調整後のturnStartedAt: 00:00:00 + 3秒 = 00:00:03
-      expect(result.current.gameState.players[1].turnStartedAt).toEqual(new Date('2025-01-01T00:00:03Z'));
+      // プレイヤー2のみtotalPausedDurationが累積されていることを確認
+      // 一時停止期間: 3秒（00:00:05 → 00:00:08） = 3000ms
+      expect(result.current.gameState.players[1].totalPausedDuration).toBe(3000);
+      // turnStartedAtは変更されない
+      expect(result.current.gameState.players[1].turnStartedAt).toEqual(baseTime);
 
       // 他プレイヤーのturnStartedAtはnull（影響なし）
       expect(result.current.gameState.players[0].turnStartedAt).toBeNull();
       expect(result.current.gameState.players[2].turnStartedAt).toBeNull();
       expect(result.current.gameState.players[3].turnStartedAt).toBeNull();
+      // 他プレイヤーのtotalPausedDurationも0のまま
+      expect(result.current.gameState.players[0].totalPausedDuration).toBe(0);
+      expect(result.current.gameState.players[2].totalPausedDuration).toBe(0);
+      expect(result.current.gameState.players[3].totalPausedDuration).toBe(0);
     });
 
     it('アクティブプレイヤーなしで一時停止・再開してもエラーにならない', () => {

@@ -9,7 +9,7 @@ describe('useGameState', () => {
       const { result } = renderHook(() => useGameState());
 
       expect(result.current.gameState.players).toHaveLength(DEFAULT_PLAYER_COUNT);
-      expect(result.current.gameState.timerMode).toBe('count-up');
+      expect(result.current.gameState.timerMode).toBe('countup');
       expect(result.current.gameState.activePlayerId).toBeNull();
       expect(result.current.gameState.isPaused).toBe(false);
     });
@@ -249,7 +249,7 @@ describe('useGameState', () => {
 
         // カウントダウンモードに設定（初期時間10秒）
         act(() => {
-          result.current.setTimerMode('count-down', 10);
+          result.current.setTimerMode('countdown', 10);
         });
 
         // プレイヤー1をアクティブに設定
@@ -272,7 +272,7 @@ describe('useGameState', () => {
 
         // カウントダウンモードに設定（初期時間2秒）
         act(() => {
-          result.current.setTimerMode('count-down', 2);
+          result.current.setTimerMode('countdown', 2);
         });
 
         // プレイヤー1をアクティブに設定
@@ -296,7 +296,7 @@ describe('useGameState', () => {
 
         // カウントダウンモードに設定（初期時間1秒）
         act(() => {
-          result.current.setTimerMode('count-down', 1);
+          result.current.setTimerMode('countdown', 1);
         });
 
         // プレイヤー1をアクティブに設定
@@ -455,7 +455,7 @@ describe('useGameState', () => {
 
         // カウントダウンモードに設定（初期時間100秒）
         act(() => {
-          result.current.setTimerMode('count-down', 100);
+          result.current.setTimerMode('countdown', 100);
         });
 
         // 全プレイヤー初期時間100秒 × 4人 = 400秒
@@ -541,7 +541,7 @@ describe('useGameState', () => {
         expect(result.current.gameState.pausedAt).toBeInstanceOf(Date);
       });
 
-      it('再開時にturnStartedAtを調整して一時停止期間を除外', () => {
+      it('再開時にtotalPausedDurationを累積して一時停止期間を除外', () => {
         const { result } = renderHook(() => useGameState());
         const playerId = result.current.gameState.players[0].id;
 
@@ -550,7 +550,8 @@ describe('useGameState', () => {
           result.current.setActivePlayer(playerId);
         });
 
-        const turnStartedAtBefore = result.current.gameState.players[0].turnStartedAt;
+        // 初期状態ではtotalPausedDuration = 0
+        expect(result.current.gameState.players[0].totalPausedDuration).toBe(0);
 
         // 一時停止
         act(() => {
@@ -567,13 +568,9 @@ describe('useGameState', () => {
           result.current.setPaused(false);
         });
 
-        const turnStartedAtAfter = result.current.gameState.players[0].turnStartedAt;
-
-        // turnStartedAtが調整されている（3秒分進んでいる）
-        if (turnStartedAtBefore && turnStartedAtAfter) {
-          const diff = turnStartedAtAfter.getTime() - turnStartedAtBefore.getTime();
-          expect(diff).toBeGreaterThanOrEqual(2500);  // 約3秒（タイマー精度を考慮）
-        }
+        // totalPausedDurationが累積されている（約3秒 = 3000ミリ秒）
+        const totalPausedDuration = result.current.gameState.players[0].totalPausedDuration;
+        expect(totalPausedDuration).toBeGreaterThanOrEqual(2500);  // 約3000ms（タイマー精度を考慮）
       });
 
       it('再開時にpausedAtをnullにクリア', () => {
@@ -692,7 +689,7 @@ describe('useGameState', () => {
       const { result } = renderHook(() => useGameState());
 
       // カウントアップモードに設定（デフォルト）
-      expect(result.current.gameState.timerMode).toBe('count-up');
+      expect(result.current.gameState.timerMode).toBe('countup');
 
       // 各プレイヤーに経過時間を設定
       act(() => {
@@ -718,7 +715,7 @@ describe('useGameState', () => {
 
       // カウントダウンモードに設定
       act(() => {
-        result.current.setTimerMode('count-down', initialTime);
+        result.current.setTimerMode('countdown', initialTime);
       });
 
       // 各プレイヤーの時間を変更

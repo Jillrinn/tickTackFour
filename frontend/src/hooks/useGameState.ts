@@ -118,8 +118,9 @@ export function useGameState() {
   }, []);
 
   /**
-   * アクティブプレイヤーを設定（Task 3.4で拡張）
+   * アクティブプレイヤーを設定（timer-display-sync-fix: totalPausedDurationリセット追加）
    * - 新しいアクティブプレイヤーのturnStartedAtに現在時刻を設定
+   * - 新しいアクティブプレイヤーのtotalPausedDurationを0にリセット
    * - 前のアクティブプレイヤーのturnStartedAtをnullにクリア
    */
   const setActivePlayer = useCallback((playerId: string | null) => {
@@ -130,15 +131,16 @@ export function useGameState() {
       players: prev.players.map(p => ({
         ...p,
         isActive: p.id === playerId,
-        // 新しいアクティブプレイヤーにはturnStartedAtを設定、それ以外はnull
-        turnStartedAt: p.id === playerId ? now : null
+        // 新しいアクティブプレイヤーにはturnStartedAtを設定、totalPausedDurationを0にリセット
+        turnStartedAt: p.id === playerId ? now : null,
+        totalPausedDuration: p.id === playerId ? 0 : (p.totalPausedDuration ?? 0)
       })),
       lastUpdatedAt: now
     }));
   }, []);
 
   /**
-   * 一時停止状態を設定
+   * 一時停止状態を設定（timer-display-sync-fix: 累積時間管理方式）
    */
   const setPaused = useCallback((isPaused: boolean) => {
     const now = new Date();
@@ -153,7 +155,7 @@ export function useGameState() {
         };
       }
 
-      // 再開する場合: 一時停止期間をターン開始時刻から除外
+      // 再開する場合: 一時停止期間をtotalPausedDurationに累積
       if (prev.pausedAt && prev.activePlayerId) {
         const pauseDuration = now.getTime() - prev.pausedAt.getTime();
 
@@ -162,11 +164,11 @@ export function useGameState() {
           isPaused: false,
           pausedAt: null,
           players: prev.players.map(p => {
-            // アクティブプレイヤーのturnStartedAtを調整
-            if (p.id === prev.activePlayerId && p.turnStartedAt) {
+            // アクティブプレイヤーのtotalPausedDurationを累積
+            if (p.id === prev.activePlayerId) {
               return {
                 ...p,
-                turnStartedAt: new Date(p.turnStartedAt.getTime() + pauseDuration)
+                totalPausedDuration: (p.totalPausedDuration ?? 0) + pauseDuration
               };
             }
             return p;
@@ -202,12 +204,11 @@ export function useGameState() {
   }, []);
 
   /**
-   * 次のプレイヤーへターン切り替え（Task 10.3）
+   * 次のプレイヤーへターン切り替え（timer-display-sync-fix: totalPausedDurationリセット追加）
    * - 現在のアクティブプレイヤーから次のプレイヤーへターンを切り替える
    * - 最後のプレイヤーから最初のプレイヤーへ循環
    * - アクティブプレイヤーがいない場合は最初のプレイヤーをアクティブに
-   *
-   * 修正: setActivePlayerと同じロジックでturnStartedAtを設定
+   * - 新しいアクティブプレイヤーのtotalPausedDurationを0にリセット
    */
   const switchToNextPlayer = useCallback(() => {
     setGameState((prev) => {
@@ -219,7 +220,7 @@ export function useGameState() {
       const nextIndex = (currentIndex + 1) % prev.players.length;
       const nextPlayerId = prev.players[nextIndex].id;
 
-      // setActivePlayerと同じロジックでturnStartedAtを設定
+      // setActivePlayerと同じロジックでturnStartedAtとtotalPausedDurationを設定
       const now = new Date();
       return {
         ...prev,
@@ -227,8 +228,9 @@ export function useGameState() {
         players: prev.players.map(p => ({
           ...p,
           isActive: p.id === nextPlayerId,
-          // 新しいアクティブプレイヤーにはturnStartedAtを設定、それ以外はnull
-          turnStartedAt: p.id === nextPlayerId ? now : null
+          // 新しいアクティブプレイヤーにはturnStartedAtを設定、totalPausedDurationを0にリセット
+          turnStartedAt: p.id === nextPlayerId ? now : null,
+          totalPausedDuration: p.id === nextPlayerId ? 0 : (p.totalPausedDuration ?? 0)
         })),
         lastUpdatedAt: now
       };
@@ -236,7 +238,7 @@ export function useGameState() {
   }, []);
 
   /**
-   * ゲームをリセット
+   * ゲームをリセット（timer-display-sync-fix: totalPausedDurationリセット追加）
    */
   const resetGame = useCallback(() => {
     setGameState((prev) => ({
@@ -245,7 +247,8 @@ export function useGameState() {
         ...p,
         elapsedTimeSeconds: prev.timerMode === 'countdown' ? p.initialTimeSeconds : 0,
         isActive: false,
-        turnStartedAt: null  // Task 3.6: turnStartedAtをnullにリセット
+        turnStartedAt: null,  // Task 3.6: turnStartedAtをnullにリセット
+        totalPausedDuration: 0  // timer-display-sync-fix: totalPausedDurationを0にリセット
       })),
       activePlayerId: null,
       isPaused: true,  // reset-button-fix: タイマー停止状態にする
@@ -475,16 +478,18 @@ export function useGameState() {
     // 現在時刻を取得
     const now = new Date();
 
-    // 一時停止中の場合、pausedAtからの経過時間を除外
-    let effectiveNow = now;
-    if (gameState.isPaused && gameState.pausedAt) {
-      // 一時停止中は、一時停止開始時点での経過時間を返す
-      effectiveNow = gameState.pausedAt;
-    }
+    // 一時停止中の場合、pausedAtを使用（現在の一時停止期間を除外）
+    const effectiveNow = (gameState.isPaused && gameState.pausedAt) ? gameState.pausedAt : now;
 
-    // ターン開始からの経過時間を計算（秒単位）
+    // ターン開始からの経過時間を計算（ミリ秒）
     const elapsedMs = effectiveNow.getTime() - activePlayer.turnStartedAt.getTime();
-    const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+    // 累積一時停止時間を除外（timer-display-sync-fix）
+    const totalPausedDuration = activePlayer.totalPausedDuration ?? 0;
+    const netMs = elapsedMs - totalPausedDuration;
+
+    // 秒単位に変換（非負を保証）
+    const elapsedSeconds = Math.floor(netMs / 1000);
 
     return Math.max(0, elapsedSeconds);
   }, [gameState.activePlayerId, gameState.players, gameState.isPaused, gameState.pausedAt]);
