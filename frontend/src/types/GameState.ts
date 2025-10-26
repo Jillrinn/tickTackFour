@@ -13,15 +13,15 @@ export interface GameState {
 
 /**
  * タイマーモード
- * - count-up: 0から開始してカウントアップ（デフォルト）
- * - count-down: 初期時間から開始してカウントダウン
+ * - countup: 0から開始してカウントアップ（デフォルト）
+ * - countdown: 初期時間から開始してカウントダウン
  */
-export type TimerMode = 'count-up' | 'count-down';
+export type TimerMode = 'countup' | 'countdown';
 
 /**
  * デフォルトのタイマーモード
  */
-export const DEFAULT_TIMER_MODE: TimerMode = 'count-up';
+export const DEFAULT_TIMER_MODE: TimerMode = 'countup';
 
 /**
  * デフォルトの初期時間（秒）
@@ -39,6 +39,7 @@ export interface Player {
   isActive: boolean;
   createdAt: Date;
   turnStartedAt: Date | null; // アクティブプレイヤーのターン開始時刻（非アクティブの場合はnull）
+  totalPausedDuration: number; // アクティブプレイヤーがターン開始から累積した一時停止時間（ミリ秒）
 }
 
 /**
@@ -55,7 +56,7 @@ export const DEFAULT_PLAYER_COUNT = 4;
 export interface GameStateWithTime {
   players: Array<{ name: string; elapsedSeconds: number }>;
   activePlayerIndex: number;
-  timerMode: 'count-up' | 'count-down';
+  timerMode: 'countup' | 'countdown';
   countdownSeconds: number;
   isPaused: boolean;
   etag: string;

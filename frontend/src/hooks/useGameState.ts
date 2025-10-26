@@ -25,7 +25,8 @@ function createDefaultPlayer(index: number): Player {
     initialTimeSeconds: DEFAULT_INITIAL_TIME_SECONDS,
     isActive: false,
     createdAt: new Date(),
-    turnStartedAt: null // Phase 2で追加: ターン開始時刻
+    turnStartedAt: null, // Phase 2で追加: ターン開始時刻
+    totalPausedDuration: 0 // timer-display-sync-fix: 累積一時停止時間（ミリ秒）
   };
 }
 
@@ -193,7 +194,7 @@ export function useGameState() {
       timerMode: mode,
       players: prev.players.map(p => ({
         ...p,
-        elapsedTimeSeconds: mode === 'count-down' ? initialTimeSeconds : 0,
+        elapsedTimeSeconds: mode === 'countdown' ? initialTimeSeconds : 0,
         initialTimeSeconds
       })),
       lastUpdatedAt: new Date()
@@ -242,7 +243,7 @@ export function useGameState() {
       ...prev,
       players: prev.players.map(p => ({
         ...p,
-        elapsedTimeSeconds: prev.timerMode === 'count-down' ? p.initialTimeSeconds : 0,
+        elapsedTimeSeconds: prev.timerMode === 'countdown' ? p.initialTimeSeconds : 0,
         isActive: false,
         turnStartedAt: null  // Task 3.6: turnStartedAtをnullにリセット
       })),
@@ -279,7 +280,7 @@ export function useGameState() {
         }
 
         // カウントダウンモードで0秒に達した場合は停止
-        if (prev.timerMode === 'count-down' && activePlayer.elapsedTimeSeconds <= 0) {
+        if (prev.timerMode === 'countdown' && activePlayer.elapsedTimeSeconds <= 0) {
           return {
             ...prev,
             activePlayerId: null,
@@ -292,7 +293,7 @@ export function useGameState() {
         }
 
         // タイマー更新
-        const newElapsedTime = prev.timerMode === 'count-up'
+        const newElapsedTime = prev.timerMode === 'countup'
           ? activePlayer.elapsedTimeSeconds + 1
           : Math.max(0, activePlayer.elapsedTimeSeconds - 1);
 
@@ -303,7 +304,7 @@ export function useGameState() {
         );
 
         // カウントダウンモードで0秒に達した場合はアクティブ解除
-        const shouldStopTimer = prev.timerMode === 'count-down' && newElapsedTime === 0;
+        const shouldStopTimer = prev.timerMode === 'countdown' && newElapsedTime === 0;
 
         return {
           ...prev,
@@ -339,7 +340,7 @@ export function useGameState() {
    */
   const getTimedOutPlayerId = useCallback((): string | null => {
     // カウントアップモードでは常にnull
-    if (gameState.timerMode === 'count-up') {
+    if (gameState.timerMode === 'countup') {
       return null;
     }
 
@@ -417,7 +418,7 @@ export function useGameState() {
    */
   const getLongestTimePlayer = useCallback((): Player | null => {
     // カウントアップモードでない場合は非表示
-    if (gameState.timerMode !== 'count-up') {
+    if (gameState.timerMode !== 'countup') {
       return null;
     }
 

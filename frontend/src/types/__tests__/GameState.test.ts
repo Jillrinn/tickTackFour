@@ -107,7 +107,7 @@ describe('TimeFormatter', () => {
 
 describe('Constants', () => {
   it('デフォルトタイマーモードはcount-up', () => {
-    expect(DEFAULT_TIMER_MODE).toBe('count-up');
+    expect(DEFAULT_TIMER_MODE).toBe('countup');
   });
 
   it('デフォルト初期時間は600秒（10分）', () => {
@@ -130,7 +130,7 @@ describe('Type Definitions', () => {
         players: [],
         activePlayerId: null,
         isPaused: false,
-        timerMode: 'count-up',
+        timerMode: 'countup',
         createdAt: new Date(),
         lastUpdatedAt: new Date(),
         pausedAt: null
@@ -154,7 +154,8 @@ describe('Type Definitions', () => {
         initialTimeSeconds: 600,
         isActive: false,
         createdAt: new Date(),
-        turnStartedAt: null
+        turnStartedAt: null,
+        totalPausedDuration: 0
       };
       expect(player.turnStartedAt).toBeNull();
 
@@ -163,6 +164,35 @@ describe('Type Definitions', () => {
         turnStartedAt: new Date()
       };
       expect(activePlayer.turnStartedAt).toBeInstanceOf(Date);
+    });
+
+    it('totalPausedDurationフィールドは0で初期化される', () => {
+      const player: Player = {
+        id: '1',
+        name: 'Player 1',
+        elapsedTimeSeconds: 0,
+        initialTimeSeconds: 600,
+        isActive: false,
+        createdAt: new Date(),
+        turnStartedAt: null,
+        totalPausedDuration: 0
+      };
+      expect(player.totalPausedDuration).toBe(0);
+    });
+
+    it('totalPausedDurationフィールドは非負の数値である', () => {
+      const player: Player = {
+        id: '1',
+        name: 'Player 1',
+        elapsedTimeSeconds: 0,
+        initialTimeSeconds: 600,
+        isActive: false,
+        createdAt: new Date(),
+        turnStartedAt: null,
+        totalPausedDuration: 5000
+      };
+      expect(typeof player.totalPausedDuration).toBe('number');
+      expect(player.totalPausedDuration).toBeGreaterThanOrEqual(0);
     });
   });
 });
