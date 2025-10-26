@@ -46,7 +46,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       const totalGameTimeElement = screen.getByTestId('total-game-time');
 
       // 初期値が00:00であることを確認
-      expect(totalGameTimeElement).toHaveTextContent('00:00');
+      expect(totalGameTimeElement).toHaveTextContent(/00:00/);
     });
 
     test('1秒経過後、ゲーム全体時間が00:01に更新される（カウントアップモード）', () => {
@@ -60,7 +60,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // 初期値確認
       const totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:00');
+      expect(totalGameTimeElement).toHaveTextContent(/00:00/);
 
       // 1秒経過
       act(() => {
@@ -68,7 +68,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       });
 
       // 00:01に更新されることを確認
-      expect(totalGameTimeElement).toHaveTextContent('00:01');
+      expect(totalGameTimeElement).toHaveTextContent(/00:01/);
     });
 
     test('5秒経過後、ゲーム全体時間が00:05に更新される', () => {
@@ -87,7 +87,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // 00:05に更新されることを確認
       const totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:05');
+      expect(totalGameTimeElement).toHaveTextContent(/00:05/);
     });
 
     test('プレイヤー切り替え後も、ゲーム全体時間が継続して増加する（2プレイヤー）', () => {
@@ -112,7 +112,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       });
 
       let totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:03');
+      expect(totalGameTimeElement).toHaveTextContent(/00:03/);
 
       // Player 2に切り替え
       const switchTurnButton = screen.getByRole('button', { name: /次のプレイヤー/i });
@@ -127,7 +127,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // ゲーム全体時間が00:05（3秒+2秒）になることを確認
       totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:05');
+      expect(totalGameTimeElement).toHaveTextContent(/00:05/);
     });
   });
 
@@ -147,7 +147,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       });
 
       let totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:03');
+      expect(totalGameTimeElement).toHaveTextContent(/00:03/);
 
       // 一時停止
       const pauseButton = screen.getByRole('button', { name: /停止/i });
@@ -162,7 +162,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // ゲーム全体時間が00:03のまま（更新されない）
       totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:03');
+      expect(totalGameTimeElement).toHaveTextContent(/00:03/);
     });
 
     test('再開時、ゲーム全体時間が更新再開される', () => {
@@ -202,7 +202,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // ゲーム全体時間が00:05（3秒+2秒）になることを確認
       const totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:05');
+      expect(totalGameTimeElement).toHaveTextContent(/00:05/);
     });
 
     test('リセット時、ゲーム全体時間が00:00にリセットされる', () => {
@@ -220,7 +220,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
       });
 
       let totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:05');
+      expect(totalGameTimeElement).toHaveTextContent(/00:05/);
 
       // リセット
       const resetButton = screen.getByRole('button', { name: /リセット/i });
@@ -230,7 +230,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // ゲーム全体時間が00:00にリセットされることを確認
       totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:00');
+      expect(totalGameTimeElement).toHaveTextContent(/00:00/);
     });
   });
 
@@ -260,7 +260,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // 初期値が00:30であることを確認
       let totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:30');
+      expect(totalGameTimeElement).toHaveTextContent(/00:30/);
 
       // 5秒経過
       act(() => {
@@ -269,7 +269,7 @@ describe('GameTimer - ゲーム全体時間の同期', () => {
 
       // 00:25に減少することを確認
       totalGameTimeElement = screen.getByTestId('total-game-time');
-      expect(totalGameTimeElement).toHaveTextContent('00:25');
+      expect(totalGameTimeElement).toHaveTextContent(/00:25/);
     });
   });
 });

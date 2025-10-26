@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { GameTimer } from '../GameTimer';
 
@@ -144,9 +144,11 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     await user.selectOptions(dropdown, '4');
 
     // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
-    // 人数変更後の状態を取得
-    const playerCardsAfterDecrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(playerCardsAfterDecrease).toHaveLength(4);
+    // 人数変更後の状態を取得（waitForで状態更新を待つ）
+    await waitFor(() => {
+      const playerCardsAfterDecrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
+      expect(playerCardsAfterDecrease).toHaveLength(4);
+    });
 
     // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
     const updatedPlayersGrid = container.querySelector('.players-grid') as HTMLElement;
