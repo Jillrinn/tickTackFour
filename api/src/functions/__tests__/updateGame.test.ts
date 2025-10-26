@@ -76,7 +76,7 @@ async function updateGame(
           const newId = currentPlayerCount + i + 1;
           newState.players.push({
             id: newId,
-            name: `Player ${newId}`,
+            name: `プレイヤー${newId}`,
             accumulatedSeconds: 0
           });
         }
@@ -187,10 +187,10 @@ describe('POST /api/updateGame', () => {
     mockGameState = {
       playerCount: 4,
       players: [
-        { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
-        { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
-        { id: 3, name: 'Player 3', accumulatedSeconds: 0 },
-        { id: 4, name: 'Player 4', accumulatedSeconds: 0 }
+        { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
+        { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
+        { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
+        { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
       ],
       activePlayerIndex: 0,
       isPaused: false,
@@ -222,7 +222,7 @@ describe('POST /api/updateGame', () => {
         playerCount: 5,
         players: [
           ...mockGameState.players,
-          { id: 5, name: 'Player 5', accumulatedSeconds: 0 }
+          { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 }
         ]
       };
 
@@ -236,7 +236,7 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(200);
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(5);
-      expect(body.players[4].name).toBe('Player 5');
+      expect(body.players[4].name).toBe('プレイヤー5');
       expect(body.etag).toBe('new-etag');
     });
 
@@ -255,8 +255,8 @@ describe('POST /api/updateGame', () => {
         playerCount: 6,
         players: [
           ...mockGameState.players,
-          { id: 5, name: 'Player 5', accumulatedSeconds: 0 },
-          { id: 6, name: 'Player 6', accumulatedSeconds: 0 }
+          { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 },
+          { id: 6, name: 'プレイヤー6', accumulatedSeconds: 0 }
         ]
       };
 
@@ -270,7 +270,7 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(200);
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(6);
-      expect(body.players[5].name).toBe('Player 6');
+      expect(body.players[5].name).toBe('プレイヤー6');
     });
 
     it('プレイヤー数を4人から2人に変更する（Task 3.2）', async () => {
@@ -299,8 +299,8 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(200);
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(2);
-      expect(body.players[0].name).toBe('Player 1');
-      expect(body.players[1].name).toBe('Player 2');
+      expect(body.players[0].name).toBe('プレイヤー1');
+      expect(body.players[1].name).toBe('プレイヤー2');
       expect(body.etag).toBe('new-etag');
     });
 
@@ -330,9 +330,9 @@ describe('POST /api/updateGame', () => {
       expect(response.status).toBe(200);
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(3);
-      expect(body.players[0].name).toBe('Player 1');
-      expect(body.players[1].name).toBe('Player 2');
-      expect(body.players[2].name).toBe('Player 3');
+      expect(body.players[0].name).toBe('プレイヤー1');
+      expect(body.players[1].name).toBe('プレイヤー2');
+      expect(body.players[2].name).toBe('プレイヤー3');
       expect(body.etag).toBe('new-etag');
     });
 
@@ -341,12 +341,12 @@ describe('POST /api/updateGame', () => {
         ...mockGameState,
         playerCount: 6,
         players: [
-          { id: 1, name: 'Player 1', accumulatedSeconds: 10 },
-          { id: 2, name: 'Player 2', accumulatedSeconds: 20 },
-          { id: 3, name: 'Player 3', accumulatedSeconds: 30 },
-          { id: 4, name: 'Player 4', accumulatedSeconds: 40 },
-          { id: 5, name: 'Player 5', accumulatedSeconds: 50 },
-          { id: 6, name: 'Player 6', accumulatedSeconds: 60 }
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 10 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 20 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 30 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 40 },
+          { id: 5, name: 'プレイヤー5', accumulatedSeconds: 50 },
+          { id: 6, name: 'プレイヤー6', accumulatedSeconds: 60 }
         ]
       };
 
@@ -387,8 +387,8 @@ describe('POST /api/updateGame', () => {
         ...mockGameState,
         playerCount: 2,
         players: [
-          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
-          { id: 2, name: 'Player 2', accumulatedSeconds: 0 }
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 }
         ]
       };
 
@@ -410,10 +410,10 @@ describe('POST /api/updateGame', () => {
         ...mockState2Players,
         playerCount: 4,
         players: [
-          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
-          { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
-          { id: 3, name: 'Player 3', accumulatedSeconds: 0 },
-          { id: 4, name: 'Player 4', accumulatedSeconds: 0 }
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ]
       };
 
@@ -428,9 +428,9 @@ describe('POST /api/updateGame', () => {
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(4);
       expect(body.players[2].id).toBe(3);
-      expect(body.players[2].name).toBe('Player 3');
+      expect(body.players[2].name).toBe('プレイヤー3');
       expect(body.players[3].id).toBe(4);
-      expect(body.players[3].name).toBe('Player 4');
+      expect(body.players[3].name).toBe('プレイヤー4');
     });
 
     it('プレイヤー数を3人から6人に増やす（Task 3.3）', async () => {
@@ -438,9 +438,9 @@ describe('POST /api/updateGame', () => {
         ...mockGameState,
         playerCount: 3,
         players: [
-          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
-          { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
-          { id: 3, name: 'Player 3', accumulatedSeconds: 0 }
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 }
         ]
       };
 
@@ -462,12 +462,12 @@ describe('POST /api/updateGame', () => {
         ...mockState3Players,
         playerCount: 6,
         players: [
-          { id: 1, name: 'Player 1', accumulatedSeconds: 0 },
-          { id: 2, name: 'Player 2', accumulatedSeconds: 0 },
-          { id: 3, name: 'Player 3', accumulatedSeconds: 0 },
-          { id: 4, name: 'Player 4', accumulatedSeconds: 0 },
-          { id: 5, name: 'Player 5', accumulatedSeconds: 0 },
-          { id: 6, name: 'Player 6', accumulatedSeconds: 0 }
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 },
+          { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 },
+          { id: 6, name: 'プレイヤー6', accumulatedSeconds: 0 }
         ]
       };
 
@@ -482,11 +482,11 @@ describe('POST /api/updateGame', () => {
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(6);
       expect(body.players[3].id).toBe(4);
-      expect(body.players[3].name).toBe('Player 4');
+      expect(body.players[3].name).toBe('プレイヤー4');
       expect(body.players[4].id).toBe(5);
-      expect(body.players[4].name).toBe('Player 5');
+      expect(body.players[4].name).toBe('プレイヤー5');
       expect(body.players[5].id).toBe(6);
-      expect(body.players[5].name).toBe('Player 6');
+      expect(body.players[5].name).toBe('プレイヤー6');
     });
 
     it('プレイヤー数を6人から2人に減らす（Task 3.3）', async () => {
@@ -494,12 +494,12 @@ describe('POST /api/updateGame', () => {
         ...mockGameState,
         playerCount: 6,
         players: [
-          { id: 1, name: 'Player 1', accumulatedSeconds: 10 },
-          { id: 2, name: 'Player 2', accumulatedSeconds: 20 },
-          { id: 3, name: 'Player 3', accumulatedSeconds: 30 },
-          { id: 4, name: 'Player 4', accumulatedSeconds: 40 },
-          { id: 5, name: 'Player 5', accumulatedSeconds: 50 },
-          { id: 6, name: 'Player 6', accumulatedSeconds: 60 }
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 10 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 20 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 30 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 40 },
+          { id: 5, name: 'プレイヤー5', accumulatedSeconds: 50 },
+          { id: 6, name: 'プレイヤー6', accumulatedSeconds: 60 }
         ]
       };
 
@@ -534,9 +534,9 @@ describe('POST /api/updateGame', () => {
       const body = JSON.parse(response.body as string);
       expect(body.players).toHaveLength(2);
       expect(body.players[0].id).toBe(1);
-      expect(body.players[0].name).toBe('Player 1');
+      expect(body.players[0].name).toBe('プレイヤー1');
       expect(body.players[1].id).toBe(2);
-      expect(body.players[1].name).toBe('Player 2');
+      expect(body.players[1].name).toBe('プレイヤー2');
       // プレイヤー3-6が削除されていることを確認
       expect(body.players.find((p: Player) => p.id === 3)).toBeUndefined();
       expect(body.players.find((p: Player) => p.id === 4)).toBeUndefined();
@@ -900,7 +900,7 @@ describe('POST /api/updateGame', () => {
         state: {
           ...mockGameState,
           playerCount: 5,
-          players: [...mockGameState.players, { id: 5, name: 'Player 5', accumulatedSeconds: 0 }]
+          players: [...mockGameState.players, { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 }]
         },
         etag: 'new-etag'
       });

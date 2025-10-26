@@ -83,7 +83,7 @@ async function updateGame(
           const newId = currentPlayerCount + i + 1;
           newState.players.push({
             id: newId,
-            name: `Player ${newId}`,
+            name: `プレイヤー${newId}`,
             accumulatedSeconds: 0
           });
         }
