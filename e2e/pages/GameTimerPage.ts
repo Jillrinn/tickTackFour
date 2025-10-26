@@ -38,7 +38,7 @@ export class GameTimerPage {
   constructor(page: Page) {
     this.page = page;
     this.gameTimer = page.locator('.game-timer');
-    this.gameHeader = page.locator('.game-header');
+    this.gameHeader = page.getByTestId('sticky-header');
     this.playersSection = page.locator('.players-section');
     this.controlsSection = page.locator('.controls-section');
 

@@ -9,7 +9,7 @@ test.describe('スモークテスト', () => {
     await page.goto('/');
 
     // ページタイトルの確認
-    await expect(page).toHaveTitle('frontend');
+    await expect(page).toHaveTitle('ONEmore Turn');
 
     // メインコンテンツの表示確認
     const gameTimer = page.locator('#root');
