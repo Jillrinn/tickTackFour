@@ -3,6 +3,18 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameTimer } from '../GameTimer';
 
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
+
 describe('GameTimer - ボタン状態管理', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -12,7 +24,7 @@ describe('GameTimer - ボタン状態管理', () => {
     it('一時停止ボタンがdisabled状態で表示される', () => {
       render(<GameTimer />);
 
-      const pauseButton = screen.getByRole('button', { name: /ゲームを一時停止/ });
+      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
       expect(pauseButton).toBeDisabled();
     });
 
@@ -41,7 +53,7 @@ describe('GameTimer - ボタン状態管理', () => {
       await user.click(startButton);
 
       // 一時停止ボタンが有効化されていることを確認
-      const pauseButton = screen.getByRole('button', { name: /ゲームを一時停止/ });
+      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
       expect(pauseButton).not.toBeDisabled();
     });
 

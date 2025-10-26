@@ -140,8 +140,11 @@ describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
     // プレイヤー1の時間が10秒になることを確認
     expect(playerCards[0]).toHaveTextContent('00:10');
 
-    // 6人から4人に減らす
+    // 5人から4人に減らす
     await user.selectOptions(dropdown, '4');
+
+    // 要件3.5: プレイヤー人数変更時に全プレイヤーの時間が0にリセットされる
+    // 人数変更後の状態を取得
     const playerCardsAfterDecrease = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
     expect(playerCardsAfterDecrease).toHaveLength(4);
 

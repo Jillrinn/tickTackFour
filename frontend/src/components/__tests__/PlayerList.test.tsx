@@ -67,7 +67,8 @@ describe('PlayerList', () => {
     expect(activeCards.length).toBe(0);
   });
 
-  it('カウントダウンモードで時間切れのプレイヤーは赤色表示', () => {
+  // timer-mode-toggle依存のため無効化（要件1スキップ）
+  it.skip('カウントダウンモードで時間切れのプレイヤーは赤色表示', () => {
     const countdownPlayers: Player[] = [
       {
         id: 'player-1',

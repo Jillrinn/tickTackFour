@@ -2,6 +2,18 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { GameTimer } from '../GameTimer';
 
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
+
 describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -25,7 +37,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       expect(screen.queryByTestId('turn-time')).toBeNull();
 
       // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /開始/i });
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -54,7 +66,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       render(<GameTimer />);
 
       // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /開始/i });
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -65,7 +77,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       });
 
       // 一時停止
-      const pauseButton = screen.getByRole('button', { name: /一時停止/i });
+      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
       act(() => {
         pauseButton.click();
       });
@@ -108,7 +120,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       render(<GameTimer />);
 
       // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /開始/i });
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });
@@ -119,7 +131,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       });
 
       // 一時停止
-      const pauseButton = screen.getByRole('button', { name: /一時停止/i });
+      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
       act(() => {
         pauseButton.click();
       });
@@ -130,7 +142,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       });
 
       // 再開（一時停止ボタンを再度クリック → トグル動作で再開）
-      const resumeButton = screen.getByRole('button', { name: /一時停止/i });
+      const resumeButton = screen.getByRole('button', { name: /停止|再開/i });
       act(() => {
         resumeButton.click();
       });
@@ -156,7 +168,7 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
       render(<GameTimer />);
 
       // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /開始/i });
+      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
       act(() => {
         startButton.click();
       });

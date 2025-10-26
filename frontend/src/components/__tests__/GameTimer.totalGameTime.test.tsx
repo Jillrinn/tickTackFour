@@ -3,6 +3,18 @@ import '@testing-library/jest-dom';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
 import { GameTimer } from '../GameTimer';
 
+// フォールバックモードを強制（テスト用）
+vi.mock('../../hooks/useFallbackMode', () => ({
+  useFallbackMode: () => ({
+    isInFallbackMode: true,
+    lastError: null,
+    retryCount: 0,
+    activateFallbackMode: vi.fn(),
+    deactivateFallbackMode: vi.fn(),
+    incrementRetryCount: vi.fn()
+  })
+}));
+
 /**
  * Task 5.1: GameTimer.tsxに`totalGameTime` state追加（フォールバックモード）
  *
