@@ -99,14 +99,14 @@ export function GameTimer() {
   const isGameStarted = isInFallbackMode
     ? (fallbackState.gameState.activePlayerId !== null || fallbackState.gameState.players.some(p => {
         const timerMode = fallbackState.gameState.timerMode;
-        return timerMode === 'count-up'
+        return timerMode === 'countup'
           ? p.elapsedTimeSeconds > 0
           : p.elapsedTimeSeconds < p.initialTimeSeconds;
       }))
     : (serverGameState.serverState
         ? (serverGameState.serverState.activePlayerIndex !== -1 || serverGameState.serverState.players.some(p => {
             const timerMode = serverGameState.serverState?.timerMode;
-            return timerMode === 'count-up'
+            return timerMode === 'countup'
               ? p.elapsedTimeSeconds > 0
               : p.elapsedTimeSeconds < p.initialTimeSeconds;
           }))
@@ -119,29 +119,49 @@ export function GameTimer() {
   // 最長時間プレイヤーを取得
   const longestPlayer = isInFallbackMode ? fallbackState.getLongestTimePlayer() : serverGameState.getLongestTimePlayer();
 
-  // timer-synchronization: ターン時間表示の同期状態管理
-  // forceUpdate()を排除し、useGameTimerフックによる統一的なタイマー管理を使用
-  const [turnTimeUpdateTrigger, setTurnTimeUpdateTrigger] = React.useState(0);
+  // timer-display-sync-fix Phase 3: 単一タイマー更新メカニズム（Task 4.1）
+  // forceUpdate状態: 全タイマー表示を強制再レンダリングするためのダミー状態
+  const [forceUpdateCounter, setForceUpdateCounter] = React.useState(0);
 
   // timer-synchronization Phase 5: ゲーム全体時間の同期状態管理
   // Task 5.1: getTotalGameTime()結果をstateで管理し、タイマーtickで明示的に更新
   const [totalGameTime, setTotalGameTime] = React.useState(0);
 
   // timer-synchronization: useGameTimerフック統合（フォールバックモードのみ）
-  // onTimerTickコールバックでターン時間表示も同期して再レンダリング
+  // onTimerTickコールバックでプレイヤー時間を更新
   useGameTimer(
-    isInFallbackMode && gameState ? gameState : { players: [], activePlayerId: null, isPaused: true, timerMode: 'count-up', createdAt: new Date(), lastUpdatedAt: new Date() },
+    isInFallbackMode && gameState ? gameState : { players: [], activePlayerId: null, isPaused: true, timerMode: 'countup', createdAt: new Date(), lastUpdatedAt: new Date(), pausedAt: null },
     (playerId, newElapsedTime) => {
       // フォールバックモードの場合のみ、プレイヤー時間を更新
       if (isInFallbackMode && gameState) {
         fallbackState.updatePlayerTime(playerId, newElapsedTime);
-        // ターン時間表示を再レンダリング（React自動バッチングで同期）
-        setTurnTimeUpdateTrigger(prev => prev + 1);
-        // Task 5.2: ゲーム全体時間も同期して更新
-        setTotalGameTime(fallbackState.getTotalGameTime());
       }
     }
   );
+
+  // timer-display-sync-fix Phase 3: 単一タイマー更新メカニズム（Task 4.1）
+  // 全タイマー表示を1秒間隔で同期更新
+  React.useEffect(() => {
+    // タイマー実行条件: アクティブプレイヤーが存在 かつ 一時停止中でない
+    const shouldRunTimer = isGameActive && !isPaused;
+
+    if (!shouldRunTimer) {
+      return;
+    }
+
+    // 1秒ごとにforceUpdateをトリガー → 全タイマー表示が再レンダリングされて同期
+    const timerId = setInterval(() => {
+      setForceUpdateCounter(prev => prev + 1);
+      // ゲーム全体時間も同時に更新（フォールバックモード・通常モード両対応）
+      if (isInFallbackMode) {
+        setTotalGameTime(fallbackState.getTotalGameTime());
+      } else {
+        setTotalGameTime(serverGameState.getTotalGameTime());
+      }
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [isGameActive, isPaused, isInFallbackMode, fallbackState, serverGameState]);
 
   // Task 5.7: 通常モード切り替え時の初期値設定
   React.useEffect(() => {
@@ -149,17 +169,6 @@ export function GameTimer() {
       setTotalGameTime(serverGameState.getTotalGameTime());
     }
   }, [isInFallbackMode, serverGameState]);
-
-  // Task 5.8: 通常モード用 - 1秒ごとにtotalGameTimeを更新
-  React.useEffect(() => {
-    if (!isInFallbackMode && serverGameState.serverState && !serverGameState.serverState.isPaused) {
-      const totalGameTimeTimer = setInterval(() => {
-        setTotalGameTime(serverGameState.getTotalGameTime());
-      }, 1000);
-
-      return () => clearInterval(totalGameTimeTimer);
-    }
-  }, [isInFallbackMode, serverGameState.serverState?.isPaused]);
 
   // Task 4.2: プレイヤー名変更のデバウンス処理用タイマー
   const debounceTimerRef = React.useRef<Record<number, number>>({});
@@ -365,9 +374,9 @@ export function GameTimer() {
   const handleTimerModeChange = React.useCallback(async (checked: boolean) => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       if (checked) {
-        fallbackState.setTimerMode('count-down', countdownSeconds);
+        fallbackState.setTimerMode('countdown', countdownSeconds);
       } else {
-        fallbackState.setTimerMode('count-up');
+        fallbackState.setTimerMode('countup');
       }
       return;
     }
@@ -376,8 +385,8 @@ export function GameTimer() {
       return;
     }
     const params = checked
-      ? { timerMode: 'count-down' as const, countdownSeconds }
-      : { timerMode: 'count-up' as const };
+      ? { timerMode: 'countdown' as const, countdownSeconds }
+      : { timerMode: 'countup' as const };
     const result = await updateGame(etag, params);
     if (result && 'etag' in result) {
       updateEtag(result.etag);
@@ -612,7 +621,7 @@ export function GameTimer() {
                 <label className="toggle-switch-enhanced">
                   <input
                     type="checkbox"
-                    checked={isInFallbackMode ? (gameState?.timerMode === 'count-down') : (serverGameState.serverState?.timerMode === 'count-down')}
+                    checked={isInFallbackMode ? (gameState?.timerMode === 'countdown') : (serverGameState.serverState?.timerMode === 'countdown')}
                     onChange={(e) => handleTimerModeChange(e.target.checked)}
                     disabled={isGameStarted}
                     title={isGameStarted ? 'ゲーム開始後はタイマーモードを変更できません' : ''}
@@ -625,7 +634,7 @@ export function GameTimer() {
                   </span>
                 </label>
               </div>
-              {(isInFallbackMode ? (gameState?.timerMode === 'count-down') : (serverGameState.serverState?.timerMode === 'count-down')) && (
+              {(isInFallbackMode ? (gameState?.timerMode === 'countdown') : (serverGameState.serverState?.timerMode === 'countdown')) && (
                 <div className="countdown-control">
                   <input
                     type="number"
