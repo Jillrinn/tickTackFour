@@ -111,7 +111,7 @@ describe.skip('GameTimer - Timer Mode Update Fix', () => {
   describe('カウントダウン秒数入力のdisable制御', () => {
     it('未開始状態ではカウントダウン秒数入力が有効化されていること', async () => {
       const user = userEvent.setup();
-      const { container } = render(<GameTimer />);
+      render(<GameTimer />);
 
       // 念のためリセットを実行してゲーム状態をクリア
       const resetButton = screen.getByRole('button', { name: /リセット/ });

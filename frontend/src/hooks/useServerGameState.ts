@@ -208,7 +208,7 @@ export function useServerGameState() {
       .reduce((total, player) => total + player.elapsedSeconds, 0);
 
     return inactiveTotal + displayTime;
-  }, [serverState, displayTime, serverState?.activePlayerIndex]);
+  }, [serverState, displayTime]);
 
   /**
    * Task 5.1: ゲーム全体時間をフォーマット（HH:MM:SSまたはMM:SS）

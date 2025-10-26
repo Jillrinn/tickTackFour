@@ -163,6 +163,7 @@ export function GameTimer() {
     }, 1000);
 
     return () => clearInterval(timerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGameActive, isPaused, isInFallbackMode]);
 
   // Task 5.7: 通常モード切り替え時の初期値設定
@@ -621,6 +622,7 @@ export function GameTimer() {
               </div>
 
               {/* Phase 0: 暫定対応 - タイマーモードUI非表示（カウントダウンモード修正完了までの暫定措置） */}
+              {/* eslint-disable-next-line no-constant-binary-expression */}
               {false && (
                 <>
                   {/* Task 4.1 & 4.2: カウントモードトグルスイッチ */}
