@@ -15,7 +15,10 @@ vi.mock('../../hooks/useFallbackMode', () => ({
   })
 }));
 
-describe('GameTimer - Timer Mode Update Fix', () => {
+// 要件4（タイマーモード変更制御）は、タイマーモードトグルUIの存在を前提としている
+// タイマーモードトグルUIは現在 {false &&} で非表示中のため、このテストファイルを無効化
+// 関連仕様: countdown-mode-fix Phase 0.5でタイマーモードUI復元後に再有効化予定
+describe.skip('GameTimer - Timer Mode Update Fix', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

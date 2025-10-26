@@ -15,7 +15,10 @@ vi.mock('../../hooks/useFallbackMode', () => ({
   })
 }));
 
-describe('GameTimer - Task 4.1: カウントモードトグルスイッチUI', () => {
+// 要件1（タイマーモードトグル）は現在スキップ対象のため、このテストファイルを無効化
+// タイマーモードトグルUIは {false &&} で非表示中
+// 関連仕様: countdown-mode-fix Phase 0.5で再有効化予定
+describe.skip('GameTimer - Task 4.1: カウントモードトグルスイッチUI', () => {
   it('カウントモードトグルスイッチが存在すること', () => {
     render(<GameTimer />);
     const toggle = screen.getByTestId('timer-mode-toggle');
@@ -63,7 +66,8 @@ describe('GameTimer - Task 4.1: カウントモードトグルスイッチUI', (
   });
 });
 
-describe('GameTimer - Task 4.2: カウントモード切替機能', () => {
+// 要件1（タイマーモードトグル）は現在スキップ対象のため、このテストファイルを無効化
+describe.skip('GameTimer - Task 4.2: カウントモード切替機能', () => {
   it('トグルスイッチをクリックするとカウントアップからカウントダウンに切り替わること', async () => {
     const user = userEvent.setup();
     render(<GameTimer />);
