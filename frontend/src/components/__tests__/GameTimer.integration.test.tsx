@@ -165,8 +165,8 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       });
     });
 
-    // タイマーモードトグルUIは現在 {false &&} で非表示中のため無効化
-    it.skip('一時停止中は設定セクションのコントロールが有効化される', async () => {
+    // 要件変更: 一時停止中も設定変更不可とする
+    it('一時停止中も設定セクションのコントロールが無効化される', async () => {
       const user = userEvent.setup();
       render(<GameTimer />);
 
@@ -176,15 +176,13 @@ describe('GameTimer Integration (Task 5.1 & 5.2)', () => {
       await user.click(nextPlayerButton);
 
       // 一時停止ボタンをクリック
-      const pauseButton = await screen.findByRole('button', { name: /一時停止/i });
+      const pauseButton = await screen.findByRole('button', { name: /停止/i });
       await user.click(pauseButton);
 
-      // ドロップダウンとトグルが有効化される
+      // 一時停止中もドロップダウンが無効化される
       await waitFor(() => {
         const dropdown = screen.getByTestId('player-count-dropdown');
-        const toggle = screen.getByTestId('timer-mode-toggle');
-        expect(dropdown).not.toBeDisabled();
-        expect(toggle).not.toBeDisabled();
+        expect(dropdown).toBeDisabled();
       });
     });
 

@@ -16,10 +16,9 @@ import { GameTimer } from '../GameTimer';
  * - トグルスイッチのホバー時視覚的フィードバック
  */
 
-// 要件1（タイマーモードトグル）に関連するテストが多数含まれるため、このテストファイルを無効化
-// タイマーモードトグルUIは現在 {false &&} で非表示中
-// 関連仕様: countdown-mode-fix Phase 0.5でタイマーモードUI復元後に再有効化予定
-describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
+// タイマーモードトグル関連テストは個別にit.skipで無効化
+// レスポンシブレイアウト関連テストは有効化
+describe('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', () => {
   // レスポンシブテストでは実際のビューポートサイズをシミュレート
   const setViewportSize = (width: number, height: number = 768) => {
     Object.defineProperty(window, 'innerWidth', {
@@ -65,7 +64,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
         expect(controlsSection).toHaveClass('controls-section');
       });
 
-      it('全てのボタンとコントロールが適切に表示される', () => {
+      // timer-mode-toggle依存のため無効化
+      it.skip('全てのボタンとコントロールが適切に表示される', () => {
         render(<GameTimer />);
 
         // 固定ヘッダーのボタン
@@ -140,7 +140,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
   });
 
   describe('Task 6.2: アクセシビリティとタップターゲットサイズ', () => {
-    it('全てのインタラクティブ要素にdata-testid属性が設定されている', () => {
+    // timer-mode-toggle依存のため無効化
+    it.skip('全てのインタラクティブ要素にdata-testid属性が設定されている', () => {
       render(<GameTimer />);
 
       // ドロップダウン
@@ -163,7 +164,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
       expect(dropdown).toHaveAttribute('aria-label', 'プレイヤー人数選択');
     });
 
-    it('トグルスイッチに適切なARIAラベルが設定されている', () => {
+    // timer-mode-toggle依存のため無効化
+    it.skip('トグルスイッチに適切なARIAラベルが設定されている', () => {
       render(<GameTimer />);
       const toggle = screen.getByTestId('timer-mode-toggle');
 
@@ -196,7 +198,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
       // CSSでmin-height: 44pxが適用されることを確認（jsdom環境ではスタイル値を直接テストできない）
     });
 
-    it('トグルスイッチがタップターゲットサイズ44px以上である', () => {
+    // timer-mode-toggle依存のため無効化
+    it.skip('トグルスイッチがタップターゲットサイズ44px以上である', () => {
       render(<GameTimer />);
       const toggle = screen.getByTestId('timer-mode-toggle');
       const toggleContainer = toggle.closest('.toggle-switch-enhanced');
@@ -205,7 +208,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
       // CSSでmin-height: 44pxが適用されることを確認（jsdom環境ではスタイル値を直接テストできない）
     });
 
-    it('トグルスイッチにホバー時の視覚的フィードバックがある', () => {
+    // timer-mode-toggle依存のため無効化
+    it.skip('トグルスイッチにホバー時の視覚的フィードバックがある', () => {
       render(<GameTimer />);
       const toggle = screen.getByTestId('timer-mode-toggle');
       const slider = toggle.nextElementSibling;
@@ -217,7 +221,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
       }
     });
 
-    it('キーボード操作でフォーカス順序が適切である', () => {
+    // timer-mode-toggle依存のため無効化（focusableElementsにtimer-mode-toggleが含まれている）
+    it.skip('キーボード操作でフォーカス順序が適切である', () => {
       render(<GameTimer />);
 
       // Tab順序を確認（固定ヘッダー → 主要操作 → 設定）
@@ -238,7 +243,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
       });
     });
 
-    it('全てのフォーム要素がラベルと関連付けられている', () => {
+    // timer-mode-toggle依存のため無効化（トグルスイッチのaria-label検証）
+    it.skip('全てのフォーム要素がラベルと関連付けられている', () => {
       render(<GameTimer />);
 
       // ドロップダウン
@@ -252,7 +258,8 @@ describe.skip('GameTimer Responsive Layout & Accessibility (Task 6.1 & 6.2)', ()
   });
 
   describe('クロスブラウザ対応', () => {
-    it('375pxから1440px以上まで任意の画面幅で全UIコントロールが操作可能', () => {
+    // timer-mode-toggle依存のため無効化（timer-mode-toggle要素の表示確認が含まれている）
+    it.skip('375pxから1440px以上まで任意の画面幅で全UIコントロールが操作可能', () => {
       const testWidths = [375, 500, 768, 1024, 1440, 1920];
 
       testWidths.forEach(width => {
