@@ -45,7 +45,7 @@ export interface Player {
 /**
  * プレイヤー数の範囲
  */
-export const PLAYER_COUNT_MIN = 4;
+export const PLAYER_COUNT_MIN = 2;
 export const PLAYER_COUNT_MAX = 6;
 export const DEFAULT_PLAYER_COUNT = 4;
 
@@ -69,7 +69,7 @@ export interface GameStateWithTime {
  */
 export class GameStateValidator {
   /**
-   * プレイヤー数が4〜6の範囲内かチェック
+   * プレイヤー数が2〜6の範囲内かチェック
    */
   static validatePlayerCount(count: number): boolean {
     return count >= PLAYER_COUNT_MIN && count <= PLAYER_COUNT_MAX;

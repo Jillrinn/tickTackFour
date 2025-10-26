@@ -12,22 +12,38 @@ import {
 
 describe('GameStateValidator', () => {
   describe('validatePlayerCount', () => {
-    it('4人のプレイヤー数は有効', () => {
-      expect(GameStateValidator.validatePlayerCount(4)).toBe(true);
+    it('2人のプレイヤー数は有効', () => {
+      expect(GameStateValidator.validatePlayerCount(2)).toBe(true);
     });
 
-    it('6人のプレイヤー数は有効', () => {
-      expect(GameStateValidator.validatePlayerCount(6)).toBe(true);
+    it('3人のプレイヤー数は有効', () => {
+      expect(GameStateValidator.validatePlayerCount(3)).toBe(true);
+    });
+
+    it('4人のプレイヤー数は有効', () => {
+      expect(GameStateValidator.validatePlayerCount(4)).toBe(true);
     });
 
     it('5人のプレイヤー数は有効', () => {
       expect(GameStateValidator.validatePlayerCount(5)).toBe(true);
     });
 
-    it('3人以下のプレイヤー数は無効', () => {
-      expect(GameStateValidator.validatePlayerCount(3)).toBe(false);
-      expect(GameStateValidator.validatePlayerCount(2)).toBe(false);
+    it('6人のプレイヤー数は有効', () => {
+      expect(GameStateValidator.validatePlayerCount(6)).toBe(true);
+    });
+
+    it('全ての有効な人数（2-6人）でバリデーションが成功する', () => {
+      expect(GameStateValidator.validatePlayerCount(2)).toBe(true);
+      expect(GameStateValidator.validatePlayerCount(3)).toBe(true);
+      expect(GameStateValidator.validatePlayerCount(4)).toBe(true);
+      expect(GameStateValidator.validatePlayerCount(5)).toBe(true);
+      expect(GameStateValidator.validatePlayerCount(6)).toBe(true);
+    });
+
+    it('1人以下のプレイヤー数は無効', () => {
+      expect(GameStateValidator.validatePlayerCount(1)).toBe(false);
       expect(GameStateValidator.validatePlayerCount(0)).toBe(false);
+      expect(GameStateValidator.validatePlayerCount(-1)).toBe(false);
     });
 
     it('7人以上のプレイヤー数は無効', () => {
@@ -114,8 +130,8 @@ describe('Constants', () => {
     expect(DEFAULT_INITIAL_TIME_SECONDS).toBe(600);
   });
 
-  it('プレイヤー数最小値は4', () => {
-    expect(PLAYER_COUNT_MIN).toBe(4);
+  it('プレイヤー数最小値は2', () => {
+    expect(PLAYER_COUNT_MIN).toBe(2);
   });
 
   it('プレイヤー数最大値は6', () => {

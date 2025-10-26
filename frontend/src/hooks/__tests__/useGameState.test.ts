@@ -97,14 +97,14 @@ describe('useGameState', () => {
       expect(result.current.gameState.players[0].elapsedTimeSeconds).toBe(firstPlayerTime);
     });
 
-    it('範囲外のプレイヤー数（3人）はエラーをスローする', () => {
+    it('範囲外のプレイヤー数（1人）はエラーをスローする', () => {
       const { result } = renderHook(() => useGameState());
 
       expect(() => {
         act(() => {
           result.current.setPlayerCount(PLAYER_COUNT_MIN - 1);
         });
-      }).toThrow('プレイヤー数は4〜6人の範囲でなければなりません');
+      }).toThrow('プレイヤー数は2〜6人の範囲でなければなりません');
     });
 
     it('範囲外のプレイヤー数（7人）はエラーをスローする', () => {
@@ -114,7 +114,7 @@ describe('useGameState', () => {
         act(() => {
           result.current.setPlayerCount(PLAYER_COUNT_MAX + 1);
         });
-      }).toThrow('プレイヤー数は4〜6人の範囲でなければなりません');
+      }).toThrow('プレイヤー数は2〜6人の範囲でなければなりません');
     });
   });
 

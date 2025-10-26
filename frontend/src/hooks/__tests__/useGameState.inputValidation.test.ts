@@ -12,6 +12,18 @@ import { useGameState } from '../useGameState';
  */
 describe('useGameState - プレイヤー数入力バリデーション（Task 12.4）', () => {
   describe('validatePlayerCount - プレイヤー数バリデーション', () => {
+    it('2人は有効な範囲である', () => {
+      const { result } = renderHook(() => useGameState());
+
+      expect(result.current.validatePlayerCount(2)).toBe(true);
+    });
+
+    it('3人は有効な範囲である', () => {
+      const { result } = renderHook(() => useGameState());
+
+      expect(result.current.validatePlayerCount(3)).toBe(true);
+    });
+
     it('4人は有効な範囲である', () => {
       const { result } = renderHook(() => useGameState());
 
@@ -30,10 +42,10 @@ describe('useGameState - プレイヤー数入力バリデーション（Task 12
       expect(result.current.validatePlayerCount(6)).toBe(true);
     });
 
-    it('3人は無効な範囲である（最小値未満）', () => {
+    it('1人は無効な範囲である（最小値未満）', () => {
       const { result } = renderHook(() => useGameState());
 
-      expect(result.current.validatePlayerCount(3)).toBe(false);
+      expect(result.current.validatePlayerCount(1)).toBe(false);
     });
 
     it('7人は無効な範囲である（最大値超過）', () => {
@@ -65,6 +77,8 @@ describe('useGameState - プレイヤー数入力バリデーション（Task 12
     it('有効な値の場合はnullを返す', () => {
       const { result } = renderHook(() => useGameState());
 
+      expect(result.current.getPlayerCountError(2)).toBeNull();
+      expect(result.current.getPlayerCountError(3)).toBeNull();
       expect(result.current.getPlayerCountError(4)).toBeNull();
       expect(result.current.getPlayerCountError(5)).toBeNull();
       expect(result.current.getPlayerCountError(6)).toBeNull();
@@ -73,8 +87,8 @@ describe('useGameState - プレイヤー数入力バリデーション（Task 12
     it('最小値未満の場合はエラーメッセージを返す', () => {
       const { result } = renderHook(() => useGameState());
 
-      const error = result.current.getPlayerCountError(3);
-      expect(error).toContain('4');
+      const error = result.current.getPlayerCountError(1);
+      expect(error).toContain('2');
       expect(error).toContain('6');
     });
 
@@ -82,7 +96,7 @@ describe('useGameState - プレイヤー数入力バリデーション（Task 12
       const { result } = renderHook(() => useGameState());
 
       const error = result.current.getPlayerCountError(7);
-      expect(error).toContain('4');
+      expect(error).toContain('2');
       expect(error).toContain('6');
     });
 
@@ -91,7 +105,7 @@ describe('useGameState - プレイヤー数入力バリデーション（Task 12
 
       const error = result.current.getPlayerCountError(0);
       expect(error).toBeTruthy();
-      expect(error).toContain('4');
+      expect(error).toContain('2');
       expect(error).toContain('6');
     });
   });
@@ -112,9 +126,9 @@ describe('useGameState - プレイヤー数入力バリデーション（Task 12
 
       expect(() => {
         act(() => {
-          result.current.setPlayerCount(3);
+          result.current.setPlayerCount(1);
         });
-      }).toThrow('プレイヤー数は4〜6人の範囲でなければなりません');
+      }).toThrow('プレイヤー数は2〜6人の範囲でなければなりません');
     });
   });
 });

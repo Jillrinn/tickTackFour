@@ -64,7 +64,7 @@ export function useGameState() {
    */
   const setPlayerCount = useCallback((count: number) => {
     if (!GameStateValidator.validatePlayerCount(count)) {
-      throw new Error('プレイヤー数は4〜6人の範囲でなければなりません');
+      throw new Error('プレイヤー数は2〜6人の範囲でなければなりません');
     }
 
     setGameState((prev) => {
@@ -402,7 +402,7 @@ export function useGameState() {
     if (validatePlayerCount(count)) {
       return null;
     }
-    return 'プレイヤー数は4〜6人の範囲で入力してください';
+    return 'プレイヤー数は2〜6人の範囲で入力してください';
   }, [validatePlayerCount]);
 
   /**
