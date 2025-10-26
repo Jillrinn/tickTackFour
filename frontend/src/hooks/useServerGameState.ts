@@ -172,7 +172,7 @@ export function useServerGameState() {
    * - 同点の場合は最初に見つかったプレイヤーを返す
    */
   const getLongestTimePlayer = useCallback(() => {
-    if (!serverState || serverState.timerMode !== 'count-up') return null;
+    if (!serverState) return null;
 
     const maxSeconds = Math.max(...serverState.players.map(p => p.elapsedSeconds));
     if (maxSeconds === 0) return null;
