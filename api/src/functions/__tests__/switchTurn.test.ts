@@ -682,6 +682,111 @@ describe('POST /api/switchTurn', () => {
     });
   });
 
+  describe('switchTurn カタンモード', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockRetryUpdateWithETag.mockImplementation(async (state) => ({ state, etag: 'new-etag' }));
+    });
+
+    it('カタン: 進行中の切替で turnNumber+1 し蛇腹順で次indexを決める（4人, t=3→index2）', async () => {
+      mockGetGameState.mockResolvedValue({
+        state: {
+          playerCount: 4,
+          players: [
+            { id: 1, name: 'P1', accumulatedSeconds: 0 },
+            { id: 2, name: 'P2', accumulatedSeconds: 0 },
+            { id: 3, name: 'P3', accumulatedSeconds: 0 },
+            { id: 4, name: 'P4', accumulatedSeconds: 0 }
+          ],
+          activePlayerIndex: 3, timerMode: 'countup', countdownSeconds: 60,
+          isPaused: false, turnStartedAt: new Date().toISOString(),
+          gameMode: 'catan', turnNumber: 3
+        },
+        etag: 'etag-1'
+      } as any);
+      mockCalculateElapsedTime.mockReturnValue(0);
+
+      const req = {
+        method: 'POST',
+        url: 'http://localhost:7071/api/switchTurn',
+        headers: {},
+        query: {},
+        params: {},
+        text: async () => JSON.stringify({ etag: 'etag-1' })
+      } as unknown as HttpRequest;
+
+      const res = await switchTurn(req, mockContext);
+      const saved = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(saved.turnNumber).toBe(4);
+      expect(saved.activePlayerIndex).toBe(2); // getCatanPlayerIndex(4,4)=2
+      expect(res.status).toBe(200);
+    });
+
+    it('カタン: targetPlayerIndex は無視される', async () => {
+      mockGetGameState.mockResolvedValue({
+        state: {
+          playerCount: 4,
+          players: [
+            { id: 1, name: 'P1', accumulatedSeconds: 0 },
+            { id: 2, name: 'P2', accumulatedSeconds: 0 },
+            { id: 3, name: 'P3', accumulatedSeconds: 0 },
+            { id: 4, name: 'P4', accumulatedSeconds: 0 }
+          ],
+          activePlayerIndex: 0, timerMode: 'countup', countdownSeconds: 60,
+          isPaused: false, turnStartedAt: new Date().toISOString(),
+          gameMode: 'catan', turnNumber: 0
+        },
+        etag: 'etag-1'
+      } as any);
+      mockCalculateElapsedTime.mockReturnValue(0);
+
+      const req = {
+        method: 'POST',
+        url: 'http://localhost:7071/api/switchTurn',
+        headers: {},
+        query: {},
+        params: {},
+        text: async () => JSON.stringify({ etag: 'etag-1', targetPlayerIndex: 3 })
+      } as unknown as HttpRequest;
+
+      await switchTurn(req, mockContext);
+      const saved = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(saved.turnNumber).toBe(1);
+      expect(saved.activePlayerIndex).toBe(1); // ジャンプ無視、蛇腹のt=1=index1
+    });
+
+    it('カタン: 初期状態からの開始は turnNumber=0, index=0', async () => {
+      mockGetGameState.mockResolvedValue({
+        state: {
+          playerCount: 4,
+          players: [
+            { id: 1, name: 'P1', accumulatedSeconds: 0 },
+            { id: 2, name: 'P2', accumulatedSeconds: 0 },
+            { id: 3, name: 'P3', accumulatedSeconds: 0 },
+            { id: 4, name: 'P4', accumulatedSeconds: 0 }
+          ],
+          activePlayerIndex: -1, timerMode: 'countup', countdownSeconds: 60,
+          isPaused: true, gameMode: 'catan', turnNumber: 0
+        },
+        etag: 'etag-1'
+      } as any);
+
+      const req = {
+        method: 'POST',
+        url: 'http://localhost:7071/api/switchTurn',
+        headers: {},
+        query: {},
+        params: {},
+        text: async () => JSON.stringify({ etag: 'etag-1' })
+      } as unknown as HttpRequest;
+
+      await switchTurn(req, mockContext);
+      const saved = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(saved.activePlayerIndex).toBe(0);
+      expect(saved.turnNumber).toBe(0);
+    });
+  });
+
   describe('Content-Type検証', () => {
     it('正常時のContent-Typeはapplication/json', async () => {
       // Arrange
