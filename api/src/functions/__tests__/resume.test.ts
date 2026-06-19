@@ -42,9 +42,7 @@ async function resume(
       ...currentState,
       isPaused: false,
       pausedAt: undefined,
-      turnStartedAt: new Date().toISOString(), // 新しいターン開始
-      gameMode: 'normal',
-      turnNumber: 0
+      turnStartedAt: new Date().toISOString() // 新しいターン開始
     };
 
     // ETag楽観的ロック更新（再試行メカニズム使用）

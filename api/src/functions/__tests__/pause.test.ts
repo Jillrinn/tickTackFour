@@ -55,9 +55,7 @@ async function pause(
       ...currentState,
       players: updatedPlayers,
       isPaused: true,
-      pausedAt: new Date().toISOString(),
-      gameMode: 'normal',
-      turnNumber: 0
+      pausedAt: new Date().toISOString()
     };
 
     // ETag楽観的ロック更新（再試行メカニズム使用）
