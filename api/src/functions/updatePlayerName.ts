@@ -1,6 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getGameState, updateGameState } from '../services/gameStateService';
 import { retryUpdateWithETag } from '../services/retryWithETag';
+import { toGameStateWithTime } from '../services/gameStateResponse';
 import { GameState } from '../models/gameState';
 import { hasStatusCodeValue } from '../utils/errorUtils';
 
@@ -140,15 +141,15 @@ async function updatePlayerName(
       3 // 最大3回再試行
     );
 
+    // 計算済み経過時間を含む形式でレスポンスを生成（GET /api/game と同じ形式に統一）
+    const responseBody = toGameStateWithTime(updatedResult.state, updatedResult.etag);
+
     return {
       status: 200,
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        ...updatedResult.state,
-        etag: updatedResult.etag
-      })
+      body: JSON.stringify(responseBody)
     };
   } catch (error: unknown) {
     // ETag競合エラー（412 Precondition Failed）

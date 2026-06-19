@@ -102,6 +102,76 @@ describe('updatePlayerName API', () => {
       expect(gameStateService.getGameState).toHaveBeenCalled();
       expect(retryService.retryUpdateWithETag).toHaveBeenCalled();
     });
+
+    test('レスポンスが計算済み形式（elapsedSeconds付き）で返る（プレイ中も時間表示が崩れない）', async () => {
+      // Arrange: アクティブプレイヤーありの進行中状態（accumulatedSeconds保持）
+      const initialState: GameState = {
+        playerCount: 4,
+        players: [
+          { id: 1, name: 'プレイヤー1', accumulatedSeconds: 30 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 45 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
+        ],
+        activePlayerIndex: 0,
+        timerMode: 'countup',
+        countdownSeconds: 60,
+        isPaused: true // 一時停止中にして計算を確定値にする
+      };
+
+      const expectedState: GameState = {
+        ...initialState,
+        players: [
+          { id: 1, name: 'Alice', accumulatedSeconds: 30 },
+          { id: 2, name: 'プレイヤー2', accumulatedSeconds: 45 },
+          { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
+          { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
+        ]
+      };
+
+      jest.spyOn(gameStateService, 'getGameState').mockResolvedValue({
+        state: initialState,
+        etag: 'test-etag-001'
+      });
+      jest.spyOn(retryService, 'retryUpdateWithETag').mockResolvedValue({
+        state: expectedState,
+        etag: 'test-etag-002'
+      });
+
+      const request = new HttpRequest({
+        method: 'PUT',
+        url: 'http://localhost:7071/api/updatePlayerName',
+        headers: {
+          'Content-Type': 'application/json',
+          'If-Match': 'test-etag-001'
+        },
+        body: {
+          string: JSON.stringify({ playerIndex: 0, name: 'Alice' })
+        }
+      });
+
+      // Act
+      const response = await updatePlayerName(request, mockContext);
+
+      // Assert: GET /api/game と同じ計算済み形式（name + elapsedSeconds）
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+
+      // 名前は更新されている
+      expect(body.players[0].name).toBe('Alice');
+
+      // 各プレイヤーは elapsedSeconds を持ち、accumulatedSeconds の生フィールドは含まない
+      expect(body.players[0]).toHaveProperty('elapsedSeconds');
+      expect(body.players[0]).not.toHaveProperty('accumulatedSeconds');
+
+      // 一時停止中なので elapsedSeconds = accumulatedSeconds（時間が0にリセットされない）
+      expect(body.players[0].elapsedSeconds).toBe(30);
+      expect(body.players[1].elapsedSeconds).toBe(45);
+
+      // ゲーム進行状態が保持されている
+      expect(body.activePlayerIndex).toBe(0);
+      expect(body.etag).toBe('test-etag-002');
+    });
   });
 
   describe('異常系: バリデーションエラー（400 Bad Request）', () => {

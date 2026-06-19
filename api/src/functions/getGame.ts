@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getGameState } from '../services/gameStateService';
-import { calculateAllPlayerTimes } from '../services/timeCalculation';
-import { GameStateWithTime, ApiErrorResponse } from '../models/apiTypes';
+import { toGameStateWithTime } from '../services/gameStateResponse';
+import { ApiErrorResponse } from '../models/apiTypes';
 
 /**
  * GET /api/game
@@ -21,29 +21,8 @@ async function getGame(
     // Cosmos DBからゲーム状態を取得（初回アクセス時は自動初期化）
     const result = await getGameState();
 
-    // 全プレイヤーの経過時間を計算
-    const calculatedTimes = calculateAllPlayerTimes(result.state);
-
-    // プレイヤー配列を統合（name + elapsedSeconds形式）
-    const playersWithTime = result.state.players.map((player, index) => {
-      const calculated = calculatedTimes.find(ct => ct.playerId === index + 1);
-      return {
-        name: player.name,
-        elapsedSeconds: calculated?.elapsedSeconds || 0
-      };
-    });
-
-    // レスポンスを生成（設計書準拠の形式）
-    const response: GameStateWithTime = {
-      players: playersWithTime,
-      activePlayerIndex: result.state.activePlayerIndex,
-      timerMode: result.state.timerMode,
-      countdownSeconds: result.state.countdownSeconds,
-      isPaused: result.state.isPaused,
-      etag: result.etag,
-      turnStartedAt: result.state.turnStartedAt || null,
-      pausedAt: result.state.pausedAt || null
-    };
+    // 計算済み経過時間を含むレスポンス形式に変換（更新エンドポイントと共通）
+    const response = toGameStateWithTime(result.state, result.etag);
 
     context.log('GET /api/game - ゲーム状態取得成功', {
       playerCount: response.players.length,

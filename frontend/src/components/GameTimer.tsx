@@ -11,6 +11,44 @@ import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
 import './GameTimer.css';
 
+// 設定カードの全プレイヤー名入力が共有する履歴 datalist の id
+const PLAYER_NAME_HISTORY_LIST_ID = 'player-name-history-shared';
+
+/**
+ * 設定カード「プレイヤー名変更」の1行（ラベル + 入力欄）。
+ * フォールバックモード/通常モードで共通利用し、モード差はハンドラ経由で吸収する。
+ */
+function PlayerNameEditInput({
+  index,
+  name,
+  onChange,
+  onFocus,
+  onBlur
+}: {
+  index: number;
+  name: string;
+  onChange: (value: string) => void;
+  onFocus: () => void;
+  onBlur?: () => void;
+}) {
+  return (
+    <div className="player-name-edit-row">
+      <span className="player-name-edit-label">P{index + 1}</span>
+      <input
+        type="text"
+        className="player-name-input"
+        value={name}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        list={PLAYER_NAME_HISTORY_LIST_ID}
+        aria-label="プレイヤー名"
+        data-testid={`player-name-edit-input-${index}`}
+      />
+    </div>
+  );
+}
+
 /**
  * GameTimerルートコンポーネント（Phase 1→2移行完了）
  * - Phase 1: useGameState() → フォールバックモード専用（インメモリー状態管理）
@@ -59,8 +97,8 @@ export function GameTimer() {
   // テスト環境では無効化（jsdomで相対URLが使えないため）
   usePollingSync((state: GameStateWithTime) => {
     console.log('[PollingSync] Server state updated:', state);
-    // 編集中のプレイヤー名を保持してサーバー状態を更新
-    serverGameState.updateFromServer(state, editingPlayerIndex);
+    // 名前編集はドラフト管理（サーバー状態と独立）のため、そのまま反映してよい
+    serverGameState.updateFromServer(state);
     updateEtag(state.etag);
 
     // Task 5.4: ポーリング同期時にゲーム全体時間も更新（通常モード）
@@ -176,9 +214,6 @@ export function GameTimer() {
   // Task 4.2: プレイヤー名変更のデバウンス処理用タイマー
   const debounceTimerRef = React.useRef<Record<number, number>>({});
 
-  // 編集中のプレイヤーインデックス（フォーカス中のプレイヤー）
-  const [editingPlayerIndex, setEditingPlayerIndex] = React.useState<number | null>(null);
-
   // Task 4.2: プレイヤー名変更ハンドラ（楽観的更新 + デバウンスAPI呼び出し）
   const handlePlayerNameChange = React.useCallback(
     (playerIndex: number, newName: string) => {
@@ -223,48 +258,51 @@ export function GameTimer() {
     [updatePlayerName, etag, serverGameState, updateEtag]
   );
 
-  // プレイヤー名input要素のフォーカスハンドラ
-  const handlePlayerNameInputFocus = React.useCallback((playerIndex: number) => {
-    setEditingPlayerIndex(playerIndex);
+  // 設定カード「プレイヤー名変更」のドラフト状態
+  // 入力中はここに保持し、「保存」ボタン押下で初めてゲーム状態へ反映する
+  const [draftNames, setDraftNames] = React.useState<string[]>([]);
+
+  // 名前編集の対象プレイヤー（モード非依存）と確定済みの名前
+  const nameEditPlayers = (import.meta.env.MODE === 'test' || isInFallbackMode)
+    ? (gameState?.players ?? [])
+    : (serverGameState.serverState?.players ?? []);
+  const committedNames = nameEditPlayers.map((player) => player.name);
+
+  // プレイヤー人数が変わったらドラフトを確定名で再初期化（人数不変なら編集中の値を保持）
+  React.useEffect(() => {
+    setDraftNames(nameEditPlayers.map((player) => player.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameEditPlayers.length, isInFallbackMode]);
+
+  // 未保存の名前変更があるか（保存ボタンの有効/無効に使用）
+  const hasUnsavedNameChanges =
+    draftNames.length === committedNames.length &&
+    draftNames.some((name, index) => name !== committedNames[index]);
+
+  // 1つのドラフト名を更新（入力中はゲーム状態へは反映しない）
+  const handleDraftNameChange = React.useCallback((playerIndex: number, value: string) => {
+    setDraftNames((prev) => {
+      const next = [...prev];
+      next[playerIndex] = value;
+      return next;
+    });
   }, []);
 
-  // プレイヤー名input要素のブラーハンドラ（フォーカスアウト時に即座にAPI呼び出し）
-  const handlePlayerNameBlur = React.useCallback(async (playerIndex: number) => {
-    // 編集中フラグをクリア
-    setEditingPlayerIndex(null);
-
-    // デバウンスタイマーをキャンセルして即座にAPI呼び出し
-    if (debounceTimerRef.current[playerIndex]) {
-      clearTimeout(debounceTimerRef.current[playerIndex]);
-      delete debounceTimerRef.current[playerIndex];
-
-      // 現在の値でAPI呼び出し
-      const currentName = serverGameState.serverState?.players[playerIndex]?.name;
-      if (currentName && etag) {
-        const result = await updatePlayerName(playerIndex, currentName, etag);
-
-        if (result === null) {
-          console.error('Failed to update player name via API');
-        } else if ('type' in result && result.type === 'conflict') {
-          console.warn('Conflict detected, rolling back to latest state');
-          const latestState = ('latestState' in result ? result.latestState : undefined) as GameStateWithTime | undefined;
-          if (latestState) {
-            serverGameState.updateFromServer(latestState);
-            if (latestState.etag) {
-              updateEtag(latestState.etag);
-            }
-          }
-        } else {
-          // 200 OK: 成功 (GameStateWithTime型)
-          const gameState = result as GameStateWithTime;
-          serverGameState.updateFromServer(gameState);
-          if (gameState.etag) {
-            updateEtag(gameState.etag);
-          }
+  // 保存: ドラフトのうち変更があったプレイヤーのみをゲーム状態へ反映する
+  const handleSavePlayerNames = React.useCallback(() => {
+    draftNames.forEach((name, index) => {
+      if (name === committedNames[index]) return; // 変更なしはスキップ
+      if (import.meta.env.MODE === 'test' || isInFallbackMode) {
+        const player = gameState?.players[index];
+        if (player) {
+          fallbackState.updatePlayerName(player.id, name);
         }
+      } else {
+        // 通常モード: 楽観的更新 + デバウンスAPI呼び出し
+        handlePlayerNameChange(index, name);
       }
-    }
-  }, [updatePlayerName, etag, serverGameState, updateEtag]);
+    });
+  }, [draftNames, committedNames, isInFallbackMode, gameState, fallbackState, handlePlayerNameChange]);
 
   // Task 8: ブラウザ閉じる前（beforeunload）にプレイヤー名を保存
   React.useEffect(() => {
@@ -506,20 +544,8 @@ export function GameTimer() {
                 return (
                   <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${isTimedOut ? 'timeout' : ''}`}>
                     <div className="player-info">
-                      <input
-                        type="text"
-                        className="player-name-input"
-                        value={player.name}
-                        onChange={(e) => fallbackState.updatePlayerName(player.id, e.target.value)}
-                        onFocus={handlePlayerNameFocus}
-                        list={`player-name-history-${player.id}`}
-                        aria-label="プレイヤー名"
-                      />
-                      <datalist id={`player-name-history-${player.id}`}>
-                        {playerNameHistory.names.map((name, index) => (
-                          <option key={index} value={name} />
-                        ))}
-                      </datalist>
+                      {/* プレイヤー名は表示のみ。変更は設定カードの「プレイヤー名変更」から行う */}
+                      <span className="player-name">{player.name}</span>
                     </div>
                     <div className="player-time">経過時間: {formatTime(player.elapsedTimeSeconds)}</div>
                     {player.isActive && player.turnStartedAt && (
@@ -548,37 +574,11 @@ export function GameTimer() {
               // 通常モード: Phase 2サーバー状態
               (serverGameState.serverState?.players || []).map((player, index) => {
                 const isActive = index === (serverGameState.serverState?.activePlayerIndex ?? -1);
-                const isGameActive = (serverGameState.serverState?.activePlayerIndex ?? -1) !== -1;
                 return (
                   <li key={index} className={`player-card ${isActive ? 'active' : ''}`}>
                     <div className="player-info">
-                      {!isGameActive ? (
-                        // ゲーム開始前: プレイヤー名編集可能
-                        <>
-                          <input
-                            type="text"
-                            className="player-name-input"
-                            value={player.name}
-                            onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                            onFocus={() => {
-                              handlePlayerNameFocus();
-                              handlePlayerNameInputFocus(index);
-                            }}
-                            onBlur={() => handlePlayerNameBlur(index)}
-                            list={`player-name-history-api-${index}`}
-                            aria-label="プレイヤー名"
-                            disabled={isGameActive}
-                          />
-                          <datalist id={`player-name-history-api-${index}`}>
-                            {playerNameHistory.names.map((name, historyIndex) => (
-                              <option key={historyIndex} value={name} />
-                            ))}
-                          </datalist>
-                        </>
-                      ) : (
-                        // ゲーム開始後: プレイヤー名表示のみ
-                        <span className="player-name">{player.name}</span>
-                      )}
+                      {/* プレイヤー名は表示のみ。変更は設定カードの「プレイヤー名変更」から行う */}
+                      <span className="player-name">{player.name}</span>
                     </div>
                     <div className="player-time">
                       経過時間: {formatTime(isActive ? serverGameState.displayTime : player.elapsedSeconds)}
@@ -619,6 +619,40 @@ export function GameTimer() {
                   <option value={5}>5人</option>
                   <option value={6}>6人</option>
                 </select>
+              </div>
+
+              {/* プレイヤー名変更セクション（プレイ中でも変更可能） */}
+              <div className="setting-item">
+                <label className="setting-label">プレイヤー名変更</label>
+                <div className="player-name-edit-list" data-testid="player-name-edit-list">
+                  {/* 全入力欄で共有する履歴候補（人数分の重複生成を避ける） */}
+                  <datalist id={PLAYER_NAME_HISTORY_LIST_ID}>
+                    {playerNameHistory.names.map((name, historyIndex) => (
+                      <option key={historyIndex} value={name} />
+                    ))}
+                  </datalist>
+                  {/* 入力中はドラフトに保持し、「保存」押下で初めて反映（フォールバック/通常モード共通） */}
+                  {nameEditPlayers.map((player, index) => (
+                    <PlayerNameEditInput
+                      key={index}
+                      index={index}
+                      name={draftNames[index] ?? player.name}
+                      onChange={(value) => handleDraftNameChange(index, value)}
+                      onFocus={handlePlayerNameFocus}
+                    />
+                  ))}
+                  <div className="player-name-edit-actions">
+                    <button
+                      type="button"
+                      className="save-names-btn"
+                      onClick={handleSavePlayerNames}
+                      disabled={!hasUnsavedNameChanges}
+                      data-testid="save-player-names"
+                    >
+                      保存
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Phase 0: 暫定対応 - タイマーモードUI非表示（カウントダウンモード修正完了までの暫定措置） */}

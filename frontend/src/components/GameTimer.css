@@ -559,6 +559,61 @@ select {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* 設定カード内「プレイヤー名変更」セクション */
+.player-name-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.player-name-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-name-edit-label {
+  flex: 0 0 2.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.player-name-edit-row .player-name-input {
+  flex: 1 1 auto;
+  border-color: #d0d0d0;
+  background-color: white;
+}
+
+.player-name-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.save-names-btn {
+  min-height: 40px;
+  padding: 0.4rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: white;
+  background-color: #667eea;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.save-names-btn:hover:not(:disabled) {
+  background-color: #5568d3;
+}
+
+.save-names-btn:disabled {
+  background-color: #c5c5c5;
+  cursor: not-allowed;
+}
+
 .player-id {
   font-size: 0.85rem;
   color: #424242;
