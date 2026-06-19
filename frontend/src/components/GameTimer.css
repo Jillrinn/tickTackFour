@@ -454,6 +454,22 @@ select {
   position: relative;
 }
 
+/* クリックでそのプレイヤーへ手番ジャンプできるカード */
+.player-card.clickable {
+  cursor: pointer;
+}
+
+.player-card.clickable:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.player-card.clickable:focus-visible {
+  outline: 3px solid #667eea;
+  outline-offset: 2px;
+}
+
 .player-card .player-name {
   color: #000000;
   font-size: 1.2rem;

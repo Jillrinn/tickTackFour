@@ -1,106 +1,18 @@
 import { HttpRequest, InvocationContext } from '@azure/functions';
-import { getGameState, updateGameState } from '../../services/gameStateService';
+import { getGameState } from '../../services/gameStateService';
 import { calculateElapsedTime } from '../../services/timeCalculation';
 import { retryUpdateWithETag } from '../../services/retryWithETag';
 import { GameState } from '../../models/gameState';
-import { hasStatusCodeValue } from "../../utils/errorUtils";
+import { switchTurn } from '../switchTurn';
 
-// switchTurn関数をテスト用にインポート
-// Note: app.httpで登録されているため、直接インポートできないので再実装
+// サービス層をモック化し、実ハンドラ（switchTurn）を直接テストする
 jest.mock('../../services/gameStateService');
 jest.mock('../../services/timeCalculation');
 jest.mock('../../services/retryWithETag');
 
 const mockGetGameState = getGameState as jest.MockedFunction<typeof getGameState>;
-const mockUpdateGameState = updateGameState as jest.MockedFunction<typeof updateGameState>;
 const mockCalculateElapsedTime = calculateElapsedTime as jest.MockedFunction<typeof calculateElapsedTime>;
 const mockRetryUpdateWithETag = retryUpdateWithETag as jest.MockedFunction<typeof retryUpdateWithETag>;
-
-// テスト対象の関数を再実装（app.httpでラップされているため）
-async function switchTurn(
-  request: HttpRequest,
-  context: InvocationContext
-): Promise<any> {
-  try {
-    const bodyText = await request.text();
-    const body = bodyText ? JSON.parse(bodyText) : {};
-    const clientETag = body.etag;
-
-    if (!clientETag) {
-      return {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'BadRequest',
-          message: 'ETagが指定されていません'
-        })
-      };
-    }
-
-    const result = await getGameState();
-    const currentState = result.state;
-
-    // 現在のアクティブプレイヤーの経過時間を計算
-    const elapsedSeconds = calculateElapsedTime(currentState, currentState.activePlayerIndex);
-
-    // 累積経過時間に加算
-    const updatedPlayers = [...currentState.players];
-    updatedPlayers[currentState.activePlayerIndex] = {
-      ...updatedPlayers[currentState.activePlayerIndex],
-      accumulatedSeconds: elapsedSeconds
-    };
-
-    // アクティブプレイヤーインデックスを循環
-    const nextPlayerIndex = (currentState.activePlayerIndex + 1) % currentState.playerCount;
-
-    // 新しいゲーム状態
-    const newState: GameState = {
-      ...currentState,
-      players: updatedPlayers,
-      activePlayerIndex: nextPlayerIndex,
-      turnStartedAt: new Date().toISOString()
-    };
-
-    // ETag楽観的ロック更新（再試行メカニズム使用）
-    const updatedResult = await retryUpdateWithETag(
-      newState,
-      clientETag,
-      async (state, etag) => await updateGameState(state, etag),
-      async () => await getGameState(),
-      3
-    );
-
-    return {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...updatedResult.state,
-        etag: updatedResult.etag
-      })
-    };
-  } catch (error) {
-    if (hasStatusCodeValue(error, 412)) {
-      return {
-        status: 409,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Conflict',
-          message: '他のユーザーによって更新されました。最新の状態を取得してください。'
-        })
-      };
-    }
-
-    return {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        error: 'InternalServerError',
-        message: 'ターン切り替えに失敗しました',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      })
-    };
-  }
-}
 
 describe('POST /api/switchTurn', () => {
   let mockContext: InvocationContext;
@@ -193,9 +105,9 @@ describe('POST /api/switchTurn', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.activePlayerIndex).toBe(1);
       expect(body.players[0].accumulatedSeconds).toBe(calculatedElapsedTime);
       expect(body.etag).toBe('W/"new-etag-456"');
@@ -265,7 +177,7 @@ describe('POST /api/switchTurn', () => {
       // Assert
       expect(response.status).toBe(200);
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.activePlayerIndex).toBe(0); // 最初のプレイヤーへ循環
       expect(body.players[3].accumulatedSeconds).toBe(calculatedElapsedTime);
     });
@@ -330,7 +242,7 @@ describe('POST /api/switchTurn', () => {
       // Assert
       expect(response.status).toBe(200);
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.activePlayerIndex).toBe(2);
       expect(body.isPaused).toBe(true);
     });
@@ -391,9 +303,9 @@ describe('POST /api/switchTurn', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.activePlayerIndex).toBe(0); // 最初のプレイヤーがアクティブ
       expect(body.isPaused).toBe(false); // ゲーム開始
       expect(body.turnStartedAt).toBeDefined(); // ターン開始時刻が設定される
@@ -405,6 +317,110 @@ describe('POST /api/switchTurn', () => {
       expect(mockGetGameState).toHaveBeenCalledTimes(1);
       // 初期状態なのでcalculateElapsedTimeは呼ばれない（または呼ばれても使われない）
       expect(mockRetryUpdateWithETag).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('正常系: targetPlayerIndex指定（カードクリックでの手番ジャンプ）', () => {
+    const baseState: GameState = {
+      playerCount: 4,
+      players: [
+        { id: 1, name: 'プレイヤー1', accumulatedSeconds: 120 },
+        { id: 2, name: 'プレイヤー2', accumulatedSeconds: 90 },
+        { id: 3, name: 'プレイヤー3', accumulatedSeconds: 30 },
+        { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
+      ],
+      activePlayerIndex: 0,
+      timerMode: 'countup',
+      countdownSeconds: 60,
+      isPaused: false,
+      turnStartedAt: '2025-01-01T00:00:00.000Z'
+    };
+
+    const makeRequest = (etag: string, targetPlayerIndex: number) => ({
+      method: 'POST',
+      url: 'http://localhost:7071/api/switchTurn',
+      headers: {},
+      query: {},
+      params: {},
+      text: async () => JSON.stringify({ etag, targetPlayerIndex })
+    } as unknown as HttpRequest);
+
+    it('任意のプレイヤーへジャンプし、直前アクティブの経過時間を確定する', async () => {
+      mockGetGameState.mockResolvedValue({ state: baseState, etag: 'etag-1' });
+      mockCalculateElapsedTime.mockReturnValue(125); // P1: 120 + 5秒経過
+      mockRetryUpdateWithETag.mockResolvedValue({ state: baseState, etag: 'etag-2' });
+
+      const response = await switchTurn(makeRequest('etag-1', 2), mockContext);
+
+      expect(response.status).toBe(200);
+      // ハンドラが組んだnewState（retryUpdateWithETagの第1引数）を検証
+      const newState = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(newState.activePlayerIndex).toBe(2); // 次(1)ではなくtarget(2)へジャンプ
+      expect(newState.players[0].accumulatedSeconds).toBe(125); // 直前(P1)の時間を確定
+      expect(mockCalculateElapsedTime).toHaveBeenCalledWith(baseState, 0);
+    });
+
+    it('一時停止中にジャンプしても一時停止状態を維持する', async () => {
+      const pausedState: GameState = {
+        ...baseState,
+        activePlayerIndex: 1,
+        isPaused: true,
+        pausedAt: '2025-01-01T00:05:00.000Z'
+      };
+      mockGetGameState.mockResolvedValue({ state: pausedState, etag: 'etag-1' });
+      mockCalculateElapsedTime.mockReturnValue(90); // 一時停止中は累積のまま（冪等）
+      mockRetryUpdateWithETag.mockResolvedValue({ state: pausedState, etag: 'etag-2' });
+
+      const response = await switchTurn(makeRequest('etag-1', 3), mockContext);
+
+      expect(response.status).toBe(200);
+      const newState = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(newState.activePlayerIndex).toBe(3);
+      expect(newState.isPaused).toBe(true); // 停止維持
+      expect(newState.pausedAt).toBe('2025-01-01T00:05:00.000Z'); // pausedAt維持
+    });
+
+    it('未開始(activePlayerIndex: -1)からtarget指定でその人を先頭に開始する', async () => {
+      const initialState: GameState = {
+        ...baseState,
+        activePlayerIndex: -1,
+        isPaused: true,
+        turnStartedAt: undefined
+      };
+      mockGetGameState.mockResolvedValue({ state: initialState, etag: 'etag-1' });
+      mockRetryUpdateWithETag.mockResolvedValue({ state: initialState, etag: 'etag-2' });
+
+      const response = await switchTurn(makeRequest('etag-1', 2), mockContext);
+
+      expect(response.status).toBe(200);
+      const newState = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(newState.activePlayerIndex).toBe(2); // targetを先頭に開始
+      expect(newState.isPaused).toBe(false); // ゲーム開始
+      expect(mockCalculateElapsedTime).not.toHaveBeenCalled(); // 直前プレイヤーなし
+    });
+
+    it('すでにアクティブなプレイヤーを指定した場合は何もしない（更新しない）', async () => {
+      mockGetGameState.mockResolvedValue({ state: baseState, etag: 'etag-1' });
+
+      const response = await switchTurn(makeRequest('etag-1', 0), mockContext); // active=0, target=0
+
+      expect(response.status).toBe(200);
+      const body = JSON.parse(response.body as string);
+      expect(body.activePlayerIndex).toBe(0);
+      expect(body.etag).toBe('etag-1');
+      expect(mockRetryUpdateWithETag).not.toHaveBeenCalled(); // 更新は走らない
+    });
+
+    it('targetPlayerIndexが範囲外の場合は400エラーを返す', async () => {
+      mockGetGameState.mockResolvedValue({ state: baseState, etag: 'etag-1' });
+
+      const responseHigh = await switchTurn(makeRequest('etag-1', 4), mockContext); // playerCount=4 → index4は範囲外
+      expect(responseHigh.status).toBe(400);
+
+      const responseNegative = await switchTurn(makeRequest('etag-1', -1), mockContext);
+      expect(responseNegative.status).toBe(400);
+
+      expect(mockRetryUpdateWithETag).not.toHaveBeenCalled();
     });
   });
 
@@ -425,9 +441,9 @@ describe('POST /api/switchTurn', () => {
 
       // Assert
       expect(response.status).toBe(400);
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.error).toBe('BadRequest');
       expect(body.message).toBe('ETagが指定されていません');
     });
@@ -476,9 +492,9 @@ describe('POST /api/switchTurn', () => {
 
       // Assert
       expect(response.status).toBe(409);
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.error).toBe('Conflict');
       expect(body.message).toBe('他のユーザーによって更新されました。最新の状態を取得してください。');
     });
@@ -504,9 +520,9 @@ describe('POST /api/switchTurn', () => {
 
       // Assert
       expect(response.status).toBe(500);
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.error).toBe('InternalServerError');
       expect(body.message).toBe('ターン切り替えに失敗しました');
       expect(body.details).toBe('Cosmos DB connection failed');
@@ -555,7 +571,7 @@ describe('POST /api/switchTurn', () => {
       // Assert
       expect(response.status).toBe(500);
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.error).toBe('InternalServerError');
       expect(body.details).toBe('Time calculation error');
     });
@@ -581,7 +597,7 @@ describe('POST /api/switchTurn', () => {
       // Assert
       expect(response.status).toBe(500);
 
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.error).toBe('InternalServerError');
       expect(body.details).toBe('Unknown error');
     });
@@ -633,7 +649,7 @@ describe('POST /api/switchTurn', () => {
       const response = await switchTurn(mockRequest, mockContext);
 
       // Assert
-      const body = JSON.parse(response.body);
+      const body = JSON.parse(response.body as string);
       expect(body.etag).toBe(expectedNewETag);
     });
   });
@@ -680,7 +696,7 @@ describe('POST /api/switchTurn', () => {
       const response = await switchTurn(mockRequest, mockContext);
 
       // Assert
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
     });
 
     it('エラー時のContent-Typeもapplication/json', async () => {
@@ -700,7 +716,7 @@ describe('POST /api/switchTurn', () => {
       const response = await switchTurn(mockRequest, mockContext);
 
       // Assert
-      expect(response.headers['Content-Type']).toBe('application/json');
+      expect((response.headers as Record<string, string>)['Content-Type']).toBe('application/json');
     });
   });
 });

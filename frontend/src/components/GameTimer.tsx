@@ -346,6 +346,42 @@ export function GameTimer() {
     }
   }, [isInFallbackMode, etag, switchTurn, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
 
+  // ネームカードクリック: そのプレイヤーへ手番をジャンプ（タイマー開始）。通常(API)モード専用
+  // - アクティブ本人は何もしない
+  // - 一時停止中はジャンプするが停止は維持（バックエンド側でisPaused維持）
+  const handleSelectActivePlayer = React.useCallback(async (playerIndex: number) => {
+    const activeIndex = serverGameState.serverState?.activePlayerIndex ?? -1;
+    if (playerIndex === activeIndex) return;
+    if (!etag) {
+      console.warn('ETag not available, cannot select active player');
+      return;
+    }
+    const result = await switchTurn(etag, playerIndex);
+    if (result && 'etag' in result) {
+      updateEtag(result.etag);
+      clearConflictMessage();
+      await serverGameState.syncWithServer();
+    }
+  }, [etag, switchTurn, serverGameState, updateEtag, clearConflictMessage]);
+
+  // ネームカードをクリック可能にするためのprops（アクティブ本人は非クリック）
+  const getCardClickProps = React.useCallback((playerIndex: number, isActive: boolean, playerName: string) => {
+    if (isActive) return {};
+    // 注: <li>のlistitemロールを保持するためrole="button"は付けない
+    // （tabIndex + onKeyDown + aria-labelでキーボード操作とラベルを担保）
+    return {
+      onClick: () => handleSelectActivePlayer(playerIndex),
+      onKeyDown: (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleSelectActivePlayer(playerIndex);
+        }
+      },
+      tabIndex: 0,
+      'aria-label': `${playerName}を手番にする`
+    };
+  }, [handleSelectActivePlayer]);
+
   const handlePauseResume = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
       fallbackState.setPaused(!isPaused);
@@ -575,7 +611,12 @@ export function GameTimer() {
               (serverGameState.serverState?.players || []).map((player, index) => {
                 const isActive = index === (serverGameState.serverState?.activePlayerIndex ?? -1);
                 return (
-                  <li key={index} className={`player-card ${isActive ? 'active' : ''}`}>
+                  <li
+                    key={index}
+                    className={`player-card ${isActive ? 'active' : 'clickable'}`}
+                    data-testid={`player-card-${index}`}
+                    {...getCardClickProps(index, isActive, player.name)}
+                  >
                     <div className="player-info">
                       {/* プレイヤー名は表示のみ。変更は設定カードの「プレイヤー名変更」から行う */}
                       <span className="player-name">{player.name}</span>

@@ -49,6 +49,40 @@ describe('useGameApi', () => {
       expect(response).toEqual(mockResponse);
     });
 
+    it('targetPlayerIndex指定時はボディに含めて送信する（カードクリックでの手番ジャンプ）', async () => {
+      const mockResponse: GameStateWithTime = {
+        players: [
+          { name: 'プレイヤー1', elapsedSeconds: 10 },
+          { name: 'プレイヤー2', elapsedSeconds: 20 },
+          { name: 'プレイヤー3', elapsedSeconds: 0 }
+        ],
+        activePlayerIndex: 2,
+        timerMode: 'countup',
+        countdownSeconds: 600,
+        isPaused: false,
+        etag: 'jump-etag'
+      };
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
+      const { result } = renderHook(() => useGameApi());
+
+      await act(async () => {
+        await result.current.switchTurn('current-etag', 2);
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith('/api/switchTurn', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ etag: 'current-etag', targetPlayerIndex: 2 })
+      });
+    });
+
     it('ネットワークエラー時にnullを返す', async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
 

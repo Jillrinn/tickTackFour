@@ -24,6 +24,8 @@ async function switchTurn(
     const bodyText = await request.text();
     const body = bodyText ? JSON.parse(bodyText) : {};
     const clientETag = body.etag;
+    // 任意: 指定時はそのプレイヤーへ手番をジャンプ（カードクリック機能）。未指定なら従来どおり次へ循環
+    const targetPlayerIndex = body.targetPlayerIndex;
 
     if (!clientETag) {
       return {
@@ -42,16 +44,48 @@ async function switchTurn(
     const result = await getGameState();
     const currentState = result.state;
 
+    // targetPlayerIndex指定時のバリデーションと「アクティブ本人なら何もしない」処理
+    const hasTarget = targetPlayerIndex !== undefined && targetPlayerIndex !== null;
+    if (hasTarget) {
+      if (
+        typeof targetPlayerIndex !== 'number' ||
+        !Number.isInteger(targetPlayerIndex) ||
+        targetPlayerIndex < 0 ||
+        targetPlayerIndex >= currentState.playerCount
+      ) {
+        return {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            error: 'BadRequest',
+            message: `targetPlayerIndexは0以上${currentState.playerCount}未満の整数である必要があります`
+          })
+        };
+      }
+
+      // すでにアクティブなプレイヤーを指定した場合は何もしない（現状をそのまま返す）
+      if (targetPlayerIndex === currentState.activePlayerIndex) {
+        return {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...currentState,
+            etag: result.etag
+          })
+        };
+      }
+    }
+
     // 初期状態（activePlayerIndex: -1）かどうかをチェック
     const isInitialState = currentState.activePlayerIndex === -1;
 
     let newState: GameState;
 
     if (isInitialState) {
-      // 初期状態からのゲーム開始処理
+      // 初期状態からのゲーム開始処理。target指定があればその人を、なければ先頭(0)を開始
       newState = {
         ...currentState,
-        activePlayerIndex: 0, // 最初のプレイヤーをアクティブに
+        activePlayerIndex: hasTarget ? targetPlayerIndex : 0,
         isPaused: false, // ゲーム開始
         turnStartedAt: new Date().toISOString(), // ターン開始時刻を設定
         // players配列は変更なし（前のプレイヤーが存在しないため時間加算不要）
@@ -69,10 +103,12 @@ async function switchTurn(
         accumulatedSeconds: elapsedSeconds
       };
 
-      // アクティブプレイヤーインデックスを循環（(current + 1) % playerCount）
-      const nextPlayerIndex = (currentState.activePlayerIndex + 1) % currentState.playerCount;
+      // 行き先: target指定があればその人へジャンプ、なければ次へ循環（(current + 1) % playerCount）
+      const nextPlayerIndex = hasTarget
+        ? targetPlayerIndex
+        : (currentState.activePlayerIndex + 1) % currentState.playerCount;
 
-      // 新しいゲーム状態を構築
+      // 新しいゲーム状態を構築（isPaused/pausedAtは維持＝一時停止中ジャンプは停止を保つ）
       newState = {
         ...currentState,
         players: updatedPlayers,
@@ -136,3 +172,6 @@ app.http('switchTurn', {
   authLevel: 'anonymous',
   handler: switchTurn
 });
+
+// テスト用エクスポート
+export { switchTurn };

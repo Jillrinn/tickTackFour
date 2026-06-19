@@ -51,14 +51,18 @@ export function useGameApi() {
    * @param etag - 現在のETag
    * @returns 更新されたゲーム状態、またはConflictError、またはエラー時null
    */
-  const switchTurn = useCallback(async (etag: string): Promise<ApiResult> => {
+  const switchTurn = useCallback(async (etag: string, targetPlayerIndex?: number): Promise<ApiResult> => {
     try {
+      // targetPlayerIndex指定時はそのプレイヤーへ手番をジャンプ（カードクリック）。未指定なら次へ循環
+      const requestBody = targetPlayerIndex !== undefined
+        ? { etag, targetPlayerIndex }
+        : { etag };
       const response = await fetch('/api/switchTurn', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ etag })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
