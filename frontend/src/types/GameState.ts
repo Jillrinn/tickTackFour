@@ -9,6 +9,8 @@ export interface GameState {
   createdAt: Date;
   lastUpdatedAt: Date;
   pausedAt: Date | null; // 一時停止開始時刻（一時停止中でない場合はnull）
+  gameMode: GameMode; // ゲーム順序モード
+  turnNumber: number; // 現在のアクティブ手番の通し番号（開始の最初の手番が0）
 }
 
 /**
@@ -17,6 +19,16 @@ export interface GameState {
  * - countdown: 初期時間から開始してカウントダウン
  */
 export type TimerMode = 'countup' | 'countdown';
+
+/**
+ * ゲーム順序モード
+ * - normal: 通常の循環順
+ * - catan: フェーズ1=蛇腹順、フェーズ2=通常順（カタンの初期配置風）
+ */
+export type GameMode = 'normal' | 'catan';
+
+/** デフォルトのゲームモード */
+export const DEFAULT_GAME_MODE: GameMode = 'normal';
 
 /**
  * デフォルトのタイマーモード
@@ -62,6 +74,8 @@ export interface GameStateWithTime {
   etag: string;
   turnStartedAt: string | null; // ISO8601タイムスタンプ（アクティブプレイヤーのターン開始時刻）
   pausedAt: string | null;      // ISO8601タイムスタンプ（一時停止開始時刻）
+  gameMode: string;  // 'normal' | 'catan'
+  phase: number;     // 0=通常, 1|2=カタンのフェーズ
 }
 
 /**
