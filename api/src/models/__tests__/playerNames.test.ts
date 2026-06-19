@@ -42,20 +42,26 @@ describe('playerNames models', () => {
       expect(rowKey1).not.toBe(rowKey3);
     });
 
-    it('生成されたRowKeyが降順ソート可能であることを確認', async () => {
-      // Act
-      const rowKeys: string[] = [];
-      for (let i = 0; i < 3; i++) {
-        rowKeys.push(generateRowKey());
-        // 異なるタイムスタンプを保証するため1ms待機
-        await new Promise(resolve => setTimeout(resolve, 1));
-      }
+    it('生成されたRowKeyが降順ソート可能であることを確認', () => {
+      // Date.now をモックして異なるタイムスタンプを確実に再現
+      // （実時間の setTimeout 依存は同一ms衝突でフレーキーになるため排除）
+      const nowSpy = jest.spyOn(Date, 'now')
+        .mockReturnValueOnce(1000)
+        .mockReturnValueOnce(2000)
+        .mockReturnValueOnce(3000);
 
-      // Assert - 逆順タイムスタンプなので、後で生成されたものほどRowKeyは小さい（文字列として）
-      // つまり、昇順ソートすると新しいものが先頭に来る
-      const timestamps = rowKeys.map(rk => parseInt(rk.split('_')[0], 10));
-      expect(timestamps[2]).toBeLessThan(timestamps[1]);
-      expect(timestamps[1]).toBeLessThan(timestamps[0]);
+      try {
+        // Act
+        const rowKeys = [generateRowKey(), generateRowKey(), generateRowKey()];
+
+        // Assert - 逆順タイムスタンプなので、後で生成（Date.nowが大きい）ほどRowKeyは小さい
+        // つまり、昇順ソートすると新しいものが先頭に来る
+        const timestamps = rowKeys.map(rk => parseInt(rk.split('_')[0], 10));
+        expect(timestamps[2]).toBeLessThan(timestamps[1]);
+        expect(timestamps[1]).toBeLessThan(timestamps[0]);
+      } finally {
+        nowSpy.mockRestore();
+      }
     });
   });
 
