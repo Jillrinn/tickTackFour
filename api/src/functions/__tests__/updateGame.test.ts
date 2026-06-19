@@ -36,11 +36,12 @@ async function updateGame(
     }
 
     // 更新内容の取得
-    const { playerCount, timerMode, countdownSeconds, playerNames } = body;
+    const { playerCount, timerMode, countdownSeconds, playerNames, gameMode } = body;
 
     // 何も更新内容が指定されていない場合
     if (playerCount === undefined && timerMode === undefined &&
-        countdownSeconds === undefined && playerNames === undefined) {
+        countdownSeconds === undefined && playerNames === undefined &&
+        gameMode === undefined) {
       return {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -133,6 +134,21 @@ async function updateGame(
         ...player,
         name: playerNames[index]
       }));
+    }
+
+    // ゲームモード変更のバリデーションと処理
+    if (gameMode !== undefined) {
+      if (gameMode !== 'normal' && gameMode !== 'catan') {
+        return {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            error: 'BadRequest',
+            message: 'ゲームモードはnormalまたはcatanを指定してください'
+          })
+        };
+      }
+      newState.gameMode = gameMode;
     }
 
     // ETag楽観的ロック更新（再試行メカニズム使用）
@@ -958,6 +974,53 @@ describe('POST /api/updateGame', () => {
       const response = await updateGame(request, context);
 
       expect(response.headers?.['Content-Type']).toBe('application/json');
+    });
+  });
+
+  describe('updateGame gameMode', () => {
+    it('gameMode=catan を保存する', async () => {
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'etag-1',
+          gameMode: 'catan'
+        })
+      } as HttpRequest;
+
+      const expectedState: GameState = {
+        ...mockGameState,
+        gameMode: 'catan'
+      };
+
+      mockRetryUpdateWithETag.mockResolvedValue({
+        state: expectedState,
+        etag: 'new-etag'
+      });
+
+      const response = await updateGame(request, context);
+
+      // retryUpdateWithETag の第1引数が newState
+      const savedState = mockRetryUpdateWithETag.mock.calls[0][0] as GameState;
+      expect(savedState.gameMode).toBe('catan');
+      expect(response.status).toBe(200);
+    });
+
+    it('不正な gameMode は400', async () => {
+      const request = {
+        method: 'POST',
+        url: 'http://localhost/api/updateGame',
+        text: async () => JSON.stringify({
+          etag: 'etag-1',
+          gameMode: 'invalid'
+        })
+      } as HttpRequest;
+
+      const response = await updateGame(request, context);
+
+      expect(response.status).toBe(400);
+      const body = JSON.parse(response.body as string);
+      expect(body.error).toBe('BadRequest');
     });
   });
 });

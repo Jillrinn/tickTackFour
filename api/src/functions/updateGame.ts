@@ -39,11 +39,12 @@ async function updateGame(
     }
 
     // 更新内容の取得
-    const { playerCount, timerMode, countdownSeconds, playerNames } = body;
+    const { playerCount, timerMode, countdownSeconds, playerNames, gameMode } = body;
 
     // 何も更新内容が指定されていない場合
     if (playerCount === undefined && timerMode === undefined &&
-        countdownSeconds === undefined && playerNames === undefined) {
+        countdownSeconds === undefined && playerNames === undefined &&
+        gameMode === undefined) {
       return {
         status: 400,
         headers: {
@@ -146,6 +147,23 @@ async function updateGame(
         ...player,
         name: playerNames[index]
       }));
+    }
+
+    // ゲームモード変更のバリデーションと処理
+    if (gameMode !== undefined) {
+      if (gameMode !== 'normal' && gameMode !== 'catan') {
+        return {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            error: 'BadRequest',
+            message: 'ゲームモードはnormalまたはcatanを指定してください'
+          })
+        };
+      }
+      newState.gameMode = gameMode;
     }
 
     // ETag楽観的ロック更新（再試行メカニズム使用）
