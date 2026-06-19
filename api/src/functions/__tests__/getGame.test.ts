@@ -34,7 +34,9 @@ async function getGame(
       isPaused: result.state.isPaused,
       turnStartedAt: result.state.turnStartedAt || null,
       pausedAt: result.state.pausedAt || null,
-      etag: result.etag
+      etag: result.etag,
+      gameMode: result.state.gameMode,
+      phase: 0
     };
 
     return {

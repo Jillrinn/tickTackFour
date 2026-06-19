@@ -1,6 +1,7 @@
 import { GameState } from '../models/gameState';
 import { GameStateWithTime } from '../models/apiTypes';
 import { calculateAllPlayerTimes } from './timeCalculation';
+import { getCatanPhase } from './turnSequence';
 
 /**
  * 保存形式の GameState を、計算済み経過時間を含む API レスポンス形式
@@ -22,6 +23,10 @@ export function toGameStateWithTime(state: GameState, etag: string): GameStateWi
     elapsedSeconds: calculatedTimes[index]?.elapsedSeconds || 0
   }));
 
+  const phase = state.gameMode === 'catan'
+    ? getCatanPhase(state.turnNumber, state.playerCount)
+    : 0;
+
   return {
     players,
     activePlayerIndex: state.activePlayerIndex,
@@ -30,6 +35,8 @@ export function toGameStateWithTime(state: GameState, etag: string): GameStateWi
     isPaused: state.isPaused,
     etag,
     turnStartedAt: state.turnStartedAt || null,
-    pausedAt: state.pausedAt || null
+    pausedAt: state.pausedAt || null,
+    gameMode: state.gameMode,
+    phase
   };
 }

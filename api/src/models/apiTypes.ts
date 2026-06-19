@@ -14,6 +14,8 @@ export interface GameStateWithTime {
   etag: string;
   turnStartedAt: string | null; // ISO8601タイムスタンプ（アクティブプレイヤーのターン開始時刻）
   pausedAt: string | null;      // ISO8601タイムスタンプ（一時停止開始時刻）
+  gameMode: string;       // 'normal' | 'catan'
+  phase: number;          // 0=通常モード, 1|2=カタンのフェーズ
 }
 
 /**
