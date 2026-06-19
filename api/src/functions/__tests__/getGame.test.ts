@@ -115,7 +115,9 @@ describe('GET /api/game', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const mockETag = 'W/"test-etag-123"';
@@ -167,7 +169,9 @@ describe('GET /api/game', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const mockCalculatedTimes = [
@@ -211,7 +215,9 @@ describe('GET /api/game', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:05:00.000Z'
+        pausedAt: '2025-01-01T00:05:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const mockCalculatedTimes = [
@@ -273,7 +279,9 @@ describe('GET /api/game', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockGetGameState.mockResolvedValue({
@@ -327,7 +335,9 @@ describe('GET /api/game', () => {
         activePlayerIndex: 0,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: false
+        isPaused: false,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockGetGameState.mockResolvedValue({
@@ -361,7 +371,9 @@ describe('GET /api/game', () => {
           activePlayerIndex: 0,
           timerMode: 'countup',
           countdownSeconds: 60,
-          isPaused: false
+          isPaused: false,
+          gameMode: 'normal' as const,
+          turnNumber: 0
         },
         etag: 'test'
       });

@@ -197,7 +197,9 @@ describe('POST /api/updateGame', () => {
       turnStartedAt: new Date().toISOString(),
       pausedAt: undefined,
       timerMode: 'countup',
-      countdownSeconds: 60
+      countdownSeconds: 60,
+      gameMode: 'normal',
+      turnNumber: 0
     };
 
     mockGetGameState.mockResolvedValue({
@@ -223,7 +225,9 @@ describe('POST /api/updateGame', () => {
         players: [
           ...mockGameState.players,
           { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -257,7 +261,9 @@ describe('POST /api/updateGame', () => {
           ...mockGameState.players,
           { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 },
           { id: 6, name: 'プレイヤー6', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -286,7 +292,9 @@ describe('POST /api/updateGame', () => {
       const expectedState: GameState = {
         ...mockGameState,
         playerCount: 2,
-        players: mockGameState.players.slice(0, 2)
+        players: mockGameState.players.slice(0, 2),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -317,7 +325,9 @@ describe('POST /api/updateGame', () => {
       const expectedState: GameState = {
         ...mockGameState,
         playerCount: 3,
-        players: mockGameState.players.slice(0, 3)
+        players: mockGameState.players.slice(0, 3),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -347,7 +357,9 @@ describe('POST /api/updateGame', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 40 },
           { id: 5, name: 'プレイヤー5', accumulatedSeconds: 50 },
           { id: 6, name: 'プレイヤー6', accumulatedSeconds: 60 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockGetGameState.mockResolvedValueOnce({
@@ -367,7 +379,9 @@ describe('POST /api/updateGame', () => {
       const expectedState: GameState = {
         ...mockState6Players,
         playerCount: 4,
-        players: mockState6Players.players.slice(0, 4)
+        players: mockState6Players.players.slice(0, 4),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -389,7 +403,9 @@ describe('POST /api/updateGame', () => {
         players: [
           { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
           { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockGetGameState.mockResolvedValueOnce({
@@ -414,7 +430,9 @@ describe('POST /api/updateGame', () => {
           { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
           { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -441,7 +459,9 @@ describe('POST /api/updateGame', () => {
           { id: 1, name: 'プレイヤー1', accumulatedSeconds: 0 },
           { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
           { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockGetGameState.mockResolvedValueOnce({
@@ -468,7 +488,9 @@ describe('POST /api/updateGame', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 },
           { id: 5, name: 'プレイヤー5', accumulatedSeconds: 0 },
           { id: 6, name: 'プレイヤー6', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -500,7 +522,9 @@ describe('POST /api/updateGame', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 40 },
           { id: 5, name: 'プレイヤー5', accumulatedSeconds: 50 },
           { id: 6, name: 'プレイヤー6', accumulatedSeconds: 60 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockGetGameState.mockResolvedValueOnce({
@@ -520,7 +544,9 @@ describe('POST /api/updateGame', () => {
       const expectedState: GameState = {
         ...mockState6Players,
         playerCount: 2,
-        players: mockState6Players.players.slice(0, 2)
+        players: mockState6Players.players.slice(0, 2),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -556,7 +582,9 @@ describe('POST /api/updateGame', () => {
 
       const expectedState: GameState = {
         ...mockGameState,
-        timerMode: 'countdown'
+        timerMode: 'countdown',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -584,7 +612,9 @@ describe('POST /api/updateGame', () => {
 
       const expectedState: GameState = {
         ...mockGameState,
-        countdownSeconds: 120
+        countdownSeconds: 120,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -617,7 +647,9 @@ describe('POST /api/updateGame', () => {
           { id: 2, name: 'Bob', accumulatedSeconds: 0 },
           { id: 3, name: 'Charlie', accumulatedSeconds: 0 },
           { id: 4, name: 'David', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -659,7 +691,9 @@ describe('POST /api/updateGame', () => {
           { id: 5, name: 'E', accumulatedSeconds: 0 }
         ],
         timerMode: 'countdown',
-        countdownSeconds: 180
+        countdownSeconds: 180,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -868,7 +902,9 @@ describe('POST /api/updateGame', () => {
         players: [
           ...mockGameState.players,
           { id: 5, name: 'Player 5', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({

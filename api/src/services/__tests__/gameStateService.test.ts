@@ -139,7 +139,9 @@ describe('GameStateService', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:01:00.000Z'
+        turnStartedAt: '2025-01-01T00:01:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       (mockTableClient.updateEntity as jest.Mock).mockResolvedValue({ etag: 'updated-etag' });
@@ -176,7 +178,9 @@ describe('GameStateService', () => {
         timerMode: 'countdown',
         countdownSeconds: 120,
         isPaused: true,
-        pausedAt: '2025-01-01T00:02:00.000Z'
+        pausedAt: '2025-01-01T00:02:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       (mockTableClient.updateEntity as jest.Mock).mockResolvedValue({ etag: 'json-etag' });

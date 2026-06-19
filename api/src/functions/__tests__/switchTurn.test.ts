@@ -61,7 +61,9 @@ describe('POST /api/switchTurn', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag-123"';
@@ -92,7 +94,9 @@ describe('POST /api/switchTurn', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ],
         activePlayerIndex: 1,
-        turnStartedAt: expect.any(String)
+        turnStartedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -132,7 +136,9 @@ describe('POST /api/switchTurn', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag-789"';
@@ -163,7 +169,9 @@ describe('POST /api/switchTurn', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: calculatedElapsedTime }
         ],
         activePlayerIndex: 0, // 最初のプレイヤーへ循環
-        turnStartedAt: expect.any(String)
+        turnStartedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -197,7 +205,9 @@ describe('POST /api/switchTurn', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:05:00.000Z'
+        pausedAt: '2025-01-01T00:05:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"paused-etag"';
@@ -228,7 +238,9 @@ describe('POST /api/switchTurn', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ],
         activePlayerIndex: 2,
-        turnStartedAt: expect.any(String)
+        turnStartedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -262,7 +274,9 @@ describe('POST /api/switchTurn', () => {
         countdownSeconds: 60,
         isPaused: true, // 初期状態：停止中
         turnStartedAt: undefined,
-        pausedAt: undefined
+        pausedAt: undefined,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"initial-etag"';
@@ -290,7 +304,9 @@ describe('POST /api/switchTurn', () => {
         isPaused: false, // ゲーム開始
         turnStartedAt: expect.any(String), // 現在時刻が設定される
         // players配列は変更なし（時間加算処理がスキップされる）
-        players: initialState.players
+        players: initialState.players,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -333,7 +349,9 @@ describe('POST /api/switchTurn', () => {
       timerMode: 'countup',
       countdownSeconds: 60,
       isPaused: false,
-      turnStartedAt: '2025-01-01T00:00:00.000Z'
+      turnStartedAt: '2025-01-01T00:00:00.000Z',
+      gameMode: 'normal',
+      turnNumber: 0
     };
 
     const makeRequest = (etag: string, targetPlayerIndex: number) => ({
@@ -365,7 +383,9 @@ describe('POST /api/switchTurn', () => {
         ...baseState,
         activePlayerIndex: 1,
         isPaused: true,
-        pausedAt: '2025-01-01T00:05:00.000Z'
+        pausedAt: '2025-01-01T00:05:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
       mockGetGameState.mockResolvedValue({ state: pausedState, etag: 'etag-1' });
       mockCalculateElapsedTime.mockReturnValue(90); // 一時停止中は累積のまま（冪等）
@@ -385,7 +405,9 @@ describe('POST /api/switchTurn', () => {
         ...baseState,
         activePlayerIndex: -1,
         isPaused: true,
-        turnStartedAt: undefined
+        turnStartedAt: undefined,
+        gameMode: 'normal',
+        turnNumber: 0
       };
       mockGetGameState.mockResolvedValue({ state: initialState, etag: 'etag-1' });
       mockRetryUpdateWithETag.mockResolvedValue({ state: initialState, etag: 'etag-2' });
@@ -462,7 +484,9 @@ describe('POST /api/switchTurn', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag"';
@@ -542,7 +566,9 @@ describe('POST /api/switchTurn', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag"';
@@ -618,7 +644,9 @@ describe('POST /api/switchTurn', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag-123"';
@@ -668,7 +696,9 @@ describe('POST /api/switchTurn', () => {
         activePlayerIndex: 0,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: false
+        isPaused: false,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRequest = {

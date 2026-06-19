@@ -130,7 +130,9 @@ describe('POST /api/reset', () => {
         countdownSeconds: 90,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:05:00.000Z'
+        pausedAt: '2025-01-01T00:05:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"current-etag"';
@@ -235,7 +237,9 @@ describe('POST /api/reset', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:02:00.000Z'
+        pausedAt: '2025-01-01T00:02:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"paused-etag"';
@@ -405,7 +409,9 @@ describe('POST /api/reset', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag-123"';
@@ -510,7 +516,9 @@ describe('POST /api/reset', () => {
         countdownSeconds: 120,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:03:00.000Z'
+        pausedAt: '2025-01-01T00:03:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag"';

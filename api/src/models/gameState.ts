@@ -19,6 +19,8 @@ export interface GameState {
   isPaused: boolean;
   turnStartedAt?: string; // ISO8601タイムスタンプ
   pausedAt?: string; // ISO8601タイムスタンプ
+  gameMode: 'normal' | 'catan'; // ゲーム順序モード（通常 / カタン）
+  turnNumber: number; // 現在のアクティブ手番の通し番号（ゲーム開始の最初の手番が0）
 }
 
 /**
@@ -37,6 +39,8 @@ export interface GameStateEntity {
   isPaused: boolean;
   turnStartedAt?: string;
   pausedAt?: string;
+  gameMode?: string; // 'normal' | 'catan'（旧データには存在しない）
+  turnNumber?: number; // 現在の手番通し番号（旧データには存在しない）
 }
 
 /**
@@ -65,7 +69,9 @@ export function createDefaultGameState(): GameState {
     countdownSeconds: 60,
     isPaused: true,
     turnStartedAt: undefined,
-    pausedAt: undefined
+    pausedAt: undefined,
+    gameMode: 'normal',
+    turnNumber: 0
   };
 }
 
@@ -83,7 +89,9 @@ export function toEntity(state: GameState): Omit<GameStateEntity, 'etag' | 'time
     countdownSeconds: state.countdownSeconds,
     isPaused: state.isPaused,
     turnStartedAt: state.turnStartedAt,
-    pausedAt: state.pausedAt
+    pausedAt: state.pausedAt,
+    gameMode: state.gameMode,
+    turnNumber: state.turnNumber
   };
 }
 
@@ -99,6 +107,8 @@ export function fromEntity(entity: GameStateEntity): GameState {
     countdownSeconds: entity.countdownSeconds,
     isPaused: entity.isPaused,
     turnStartedAt: entity.turnStartedAt,
-    pausedAt: entity.pausedAt
+    pausedAt: entity.pausedAt,
+    gameMode: (entity.gameMode as 'normal' | 'catan') ?? 'normal',
+    turnNumber: entity.turnNumber ?? 0
   };
 }
