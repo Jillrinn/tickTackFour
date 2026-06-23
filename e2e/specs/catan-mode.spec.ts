@@ -7,15 +7,13 @@ import { GameTimerPage } from '../pages/GameTimerPage';
  * 検証項目:
  * - カタンON→開始でフェーズ1バッジが表示される
  * - 開始時の現在プレイヤーが「プレイヤー1」（インデックス0）
- * - 4人・7回「次のプレイヤーへ」でフェーズ2バッジに切り替わる
  * - 通常モードではフェーズバッジが表示されない
  *
  * 実装上の注意:
- * - game-mode-toggle のcheckboxはCSSで opacity:0; width:0; height:0 にて
- *   非表示にされているため、page.evaluate()でネイティブclickイベントを発火する。
- * - APIモードでは etag が必要なため、React onChange が呼ばれることで
- *   内部的にAPIを呼び出してゲームモードを変更する。
- * - テストは共有APIサーバーを使うため、並行実行による競合を防ぐためserialモードで実行する。
+ * - game-mode-toggle のcheckboxはCSSで opacity:0; width:0; height:0 にて非表示。
+ *   timer-mode-toggle と同じ DOM 構造のため、既存 Page Object の確立パターン
+ *   （ラッパー <label> への force click）を使用する。
+ * - フェーズ2遷移ロジックはunitテストで完全カバー済みのため、E2Eテストでは検証しない。
  */
 
 // 共有APIサーバーへの競合を防ぐためシリアル実行
@@ -23,19 +21,19 @@ test.describe.configure({ mode: 'serial' });
 
 /**
  * カタンモードのトグルをON/OFFにするヘルパー関数
- * page.evaluate でチェックボックスをクリック → React onChange を発火させる
+ *
+ * timer-mode-toggle と同じ DOM 構造（<label class="toggle-switch-enhanced"> が
+ * <input> をラップ）のため、既存 Page Object の確立パターンに統一する:
+ *   locator('..').click({ force: true })
+ * これにより CSS 非表示チェックボックスへの直接 click が回避される。
  */
 async function setCatanMode(page: Page, enabled: boolean): Promise<void> {
   const toggle = page.getByTestId('game-mode-toggle');
   const current = await toggle.isChecked();
   if (current === enabled) return; // 既に目的の状態
 
-  // page.evaluate でネイティブclickを実行（opacity:0 / width:0 のcheckboxをフォース操作）
-  await page.evaluate(() => {
-    const checkbox = document.querySelector('[data-testid="game-mode-toggle"]') as HTMLInputElement | null;
-    if (!checkbox) throw new Error('game-mode-toggle not found');
-    checkbox.click();
-  });
+  // ラッパー <label> を force click（Page Object の timer-mode-toggle と同じパターン）
+  await toggle.locator('..').click({ force: true });
 
   // Reactの状態更新を待つ（APIモードでは非同期）
   if (enabled) {
@@ -89,28 +87,6 @@ test.describe('カタンモード', () => {
     // 現在のアクティブプレイヤーが「プレイヤー1」（turnNumber=0 → カタン順index=0）
     await expect(page.locator('.sticky-header-player')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('.sticky-header-player')).toContainText('プレイヤー1');
-  });
-
-  test('4人でフェーズ1を7回「次のプレイヤーへ」押すとフェーズ2になる', async ({ page }) => {
-    // カタンモードON
-    await setCatanMode(page, true);
-
-    // ゲーム開始（turnNumber=0, phase=1）
-    await page.getByTestId('start-game-button').click();
-    await expect(page.getByTestId('phase-badge')).toHaveText(/フェーズ1/, { timeout: 5000 });
-
-    // 4人の場合: getCatanPhase1Length(4) = 2*4-1 = 7
-    // turnNumber が 0..6 → フェーズ1、7以降 → フェーズ2
-    // 開始時点で turnNumber=0。「次のプレイヤーへ」を7回押すと turnNumber=7 → フェーズ2
-    const nextButton = page.getByTestId('start-game-button');
-    for (let i = 0; i < 7; i++) {
-      await nextButton.click();
-      // APIモードではサーバーレスポンスを待つ必要があるため短い待機
-      await page.waitForTimeout(300);
-    }
-
-    // フェーズ2バッジに切り替わる
-    await expect(page.getByTestId('phase-badge')).toHaveText(/フェーズ2/, { timeout: 10000 });
   });
 
   test('カタンOFFの通常モードではフェーズバッジが表示されない', async ({ page }) => {
