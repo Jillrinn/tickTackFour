@@ -159,7 +159,9 @@ export function GameTimer() {
     : (serverGameState.serverState?.gameMode ?? 'normal');
 
   const currentPhase = (import.meta.env.VITEST || isInFallbackMode)
-    ? getCatanPhase(fallbackState.gameState.turnNumber, fallbackState.gameState.players.length)
+    ? (fallbackState.gameState.gameMode === 'catan'
+        ? getCatanPhase(fallbackState.gameState.turnNumber, fallbackState.gameState.players.length)
+        : 0)
     : (serverGameState.serverState?.phase ?? 0);
 
   const isCatanMode = currentGameMode === 'catan';
