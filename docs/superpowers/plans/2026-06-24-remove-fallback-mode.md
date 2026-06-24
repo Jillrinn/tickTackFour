@@ -8,6 +8,21 @@
 
 **Tech Stack:** React 18 + TypeScript, Vitest + @testing-library/react, Playwright（E2E）
 
+## 実行順序（2026-06-24 修正）
+
+プレフライト点検で、`GameTimer.tsx` の `import.meta.env.VITEST` ハードコードにより、`renderGameTimer`（`useServerGameState` モック）は Task 12 の分岐撤去まで実効化しないことが判明。よって以下の順で実行する（タスク本体の内容は不変、順序のみ変更）:
+
+1. Task 1（モックファクトリ）
+2. Task 2（renderGameTimer ハーネス）
+3. Task 11（`useGameTimer` 参照精査）
+4. **Task 12（GameTimer 分岐・警告UI撤去）← 前倒し**
+5. Task 3 → 4 → 5 → 6（16テスト移行：この時点でモックが実効化、ファイル単位で緑）
+6. Task 7（全コンポーネントテスト緑確認）
+7. Task 13（フック削除）→ Task 14（専用テスト削除）
+8. Task 15（E2E）→ Task 16（最終検証）
+
+代償: Task 12 コミット〜Task 6 完了までの間、コンポーネントテスト全体は一時的にレッド。ファイル単位で順次緑にし、全体スイートはゲートにしない（Task 7 で初めて全体ゲート）。
+
 ## Global Constraints
 
 - パッケージ管理は `frontend/` 配下で `npm`。テストは `npm test`（Vitest, watchなしは `npm test -- --run`）。
