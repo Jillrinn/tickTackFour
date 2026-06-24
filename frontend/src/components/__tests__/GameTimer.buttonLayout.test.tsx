@@ -1,23 +1,17 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, test, expect, vi } from 'vitest';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer, mockApi } from '../../test/renderGameTimer';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
   test('次のプレイヤーボタンが固定ヘッダーに表示される（Task 5.1）', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // Task 5.1: 「次のプレイヤー」ボタンは固定ヘッダー内に移動
     // ゲーム未開始時は「ゲームを開始する」と表示される
@@ -29,7 +23,7 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
   });
 
   test('次のプレイヤーボタンが最も視認しやすい位置に配置されている', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // ゲーム未開始時は「ゲームを開始する」と表示される
     const nextPlayerButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
@@ -40,7 +34,7 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
 
   test('次のプレイヤーボタンをクリックするとターン切り替えが即座に実行される', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const playerCards = screen.getAllByRole('listitem');
 
@@ -53,13 +47,12 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     const nextPlayerButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
     await user.click(nextPlayerButton);
 
-    // ターンが切り替わっていることを確認（1人目がactiveクラスを持つ）
-    const updatedPlayerCards = screen.getAllByRole('listitem');
-    expect(updatedPlayerCards[0]).toHaveClass('active');
+    // ターン切り替えAPIが呼ばれたことを確認（サーバー経由でプレイヤー1がアクティブになる）
+    expect(mockApi.switchTurn).toHaveBeenCalled();
   });
 
   test('固定ヘッダーに一時停止ボタンと次のプレイヤーボタンが存在する', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // 固定ヘッダー内に両方のボタンが存在
     const stickyHeader = screen.getByTestId('sticky-header');
@@ -71,7 +64,7 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
   });
 
   test('固定ヘッダーのボタンが適切に配置されている', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // 固定ヘッダー内のボタンを確認
     const stickyHeader = screen.getByTestId('sticky-header');

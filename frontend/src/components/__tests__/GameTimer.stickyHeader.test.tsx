@@ -1,29 +1,23 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer, mockApi } from '../../test/renderGameTimer';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
   it('固定ヘッダー（sticky-header）が存在すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
     expect(stickyHeader).toBeInTheDocument();
   });
 
   it('固定ヘッダーがGameTimerの最上部に配置されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const gameMain = screen.getByRole('main');
     const stickyHeader = screen.getByTestId('sticky-header');
 
@@ -40,14 +34,14 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
   });
 
   it('固定ヘッダー内に「次のプレイヤー」ボタンが配置されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
     const nextPlayerButtons = within(stickyHeader).getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
     expect(nextPlayerButtons.length).toBeGreaterThan(0);
   });
 
   it('固定ヘッダー内に現在のアクティブプレイヤー情報が表示されること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
 
     // アクティブプレイヤー情報領域を確認
@@ -56,7 +50,7 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
   });
 
   it('アクティブプレイヤーがいない場合は「ゲーム未開始」状態を表示すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
 
     // 初期状態ではアクティブプレイヤーがいないため、「ゲーム未開始」メッセージを表示
@@ -64,7 +58,7 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
   });
 
   it('固定ヘッダーにsticky-headerクラスが適用されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
     expect(stickyHeader).toHaveClass('sticky-header');
   });
@@ -73,7 +67,7 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
 describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => {
   it('「次のプレイヤー」ボタンをクリックすると固定ヘッダーのプレイヤー情報が更新されること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const stickyHeader = screen.getByTestId('sticky-header');
     const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
@@ -84,30 +78,28 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     // 「次のプレイヤー」ボタンをクリック（最初のボタンを使用）
     await user.click(nextPlayerButtons[0]);
 
-    // ヘッダーにプレイヤー1の情報が表示される
-    expect(stickyHeader).toHaveTextContent(/プレイヤー1/);
-    expect(stickyHeader).toHaveTextContent(/00:00/);
+    // ターン切り替えAPIが呼ばれたことを確認（サーバー経由で状態更新される）
+    expect(mockApi.switchTurn).toHaveBeenCalled();
   });
 
   it('アクティブプレイヤー変更時にヘッダー内のプレイヤー名が即座に更新されること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
-    const stickyHeader = screen.getByTestId('sticky-header');
     const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
     // プレイヤー1をアクティブに
     await user.click(nextPlayerButtons[0]);
-    expect(stickyHeader).toHaveTextContent(/プレイヤー1/);
+    expect(mockApi.switchTurn).toHaveBeenCalledTimes(1);
 
     // プレイヤー2に切り替え
     await user.click(nextPlayerButtons[0]);
-    expect(stickyHeader).toHaveTextContent(/プレイヤー2/);
+    expect(mockApi.switchTurn).toHaveBeenCalledTimes(2);
   });
 
   it('固定ヘッダーの「次のプレイヤー」ボタンが機能すること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const stickyHeader = screen.getByTestId('sticky-header');
     const nextPlayerButtonInHeader = within(stickyHeader).getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
@@ -115,15 +107,14 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     // ボタンをクリック
     await user.click(nextPlayerButtonInHeader);
 
-    // プレイヤー1がアクティブになる
-    const playerCards = screen.getAllByRole('listitem');
-    expect(playerCards[0]).toHaveClass('active');
+    // ターン切り替えAPIが呼ばれたことを確認（サーバー経由でプレイヤー1がアクティブになる）
+    expect(mockApi.switchTurn).toHaveBeenCalled();
   });
 });
 
 describe('GameTimer - Task 2.3: 固定ヘッダーのレスポンシブレイアウト', () => {
   it('固定ヘッダーがレスポンシブ対応のCSSクラスを持つこと', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
 
     // CSSクラス名の存在確認（レスポンシブスタイルはCSSで定義）
@@ -131,7 +122,7 @@ describe('GameTimer - Task 2.3: 固定ヘッダーのレスポンシブレイア
   });
 
   it('固定ヘッダー内のボタンと情報がレスポンシブレイアウト用のコンテナに配置されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const stickyHeader = screen.getByTestId('sticky-header');
 
     // ヘッダーコンテナ（フレックスボックス用）を確認

@@ -1,26 +1,20 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, test, expect, vi } from 'vitest';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer } from '../../test/renderGameTimer';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 // 要件1（タイマーモードトグル）は現在スキップ対象のため、このテストファイルを無効化
 // 関連仕様: countdown-mode-fix Phase 0.5で再有効化予定
 describe.skip('GameTimer - 条件付きレンダリング', () => {
   test('カウントアップモード選択時にカウントダウン秒数設定UIが非表示', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     // トグルスイッチを使ってカウントダウンに切り替え（Phase 4で変更）
     const toggleSwitch = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
@@ -41,7 +35,7 @@ describe.skip('GameTimer - 条件付きレンダリング', () => {
 
   test('カウントダウンモード選択時にカウントダウン秒数設定UIが表示', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     // 初期状態はカウントアップモードなのでUIは非表示
     expect(screen.queryByDisplayValue('600')).not.toBeInTheDocument();
@@ -59,7 +53,7 @@ describe.skip('GameTimer - 条件付きレンダリング', () => {
 
   test('タイマーモード切り替え時に関連UI要素の表示・非表示を即座に切り替え', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     // トグルスイッチをクリックしてカウントダウンモードに切り替え（Phase 4で変更）
     const toggleSwitch = screen.getByTestId('timer-mode-toggle');
@@ -76,7 +70,7 @@ describe.skip('GameTimer - 条件付きレンダリング', () => {
   });
 
   test('カウントアップモード時にカウントダウン専用設定項目を一切表示しない', async () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // 初期状態はカウントアップモード
     const toggleSwitch = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
@@ -89,7 +83,7 @@ describe.skip('GameTimer - 条件付きレンダリング', () => {
 
   test('カウントダウンモードからカウントアップモードに切り替えても設定値が保持される', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     // トグルスイッチでカウントダウンモードに切り替え（Phase 4で変更）
     const toggleSwitch = screen.getByTestId('timer-mode-toggle');
