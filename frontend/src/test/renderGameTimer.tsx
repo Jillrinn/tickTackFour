@@ -18,12 +18,19 @@ export const mockApi = {
   updatePlayerName: vi.fn(async () => createMockServerState()),
 };
 
+export const mockNameHistory = {
+  fetchNames: vi.fn(async (): Promise<void> => {}),
+  saveNames: vi.fn(async (_names: string[]): Promise<void> => {}),
+};
+
 export function renderGameTimer(options: {
   serverState?: Partial<GameStateWithTime> | null;
   displayTime?: number;
   turnTime?: number;
+  nameHistory?: string[];
 } = {}): RenderResult {
   Object.values(mockApi).forEach((fn) => fn.mockClear());
+  Object.values(mockNameHistory).forEach((fn) => fn.mockClear());
 
   vi.mocked(useServerGameState).mockReturnValue(createMockServerGameState(options));
   vi.mocked(useGameApi).mockReturnValue(mockApi as unknown as ReturnType<typeof useGameApi>);
@@ -39,11 +46,11 @@ export function renderGameTimer(options: {
     setShowReloadPrompt: vi.fn(),
   });
   vi.mocked(usePlayerNameHistory).mockReturnValue({
-    names: [],
+    names: options.nameHistory ?? [],
     isLoading: false,
     error: null,
-    fetchNames: vi.fn(async () => {}),
-    saveNames: vi.fn(async () => {}),
+    fetchNames: mockNameHistory.fetchNames,
+    saveNames: mockNameHistory.saveNames,
   });
 
   return render(<GameTimer />);

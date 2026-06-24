@@ -1,58 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { renderGameTimer } from '../../test/renderGameTimer';
-import { useServerGameState } from '../../hooks/useServerGameState';
-import { useGameApi } from '../../hooks/useGameApi';
-import { usePollingSync } from '../../hooks/usePollingSync';
-import { useETagManager } from '../../hooks/useETagManager';
-import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
-import { GameTimer } from '../GameTimer';
-import { createMockServerGameState } from '../../test/createMockServerGameState';
+import { renderGameTimer, mockNameHistory } from '../../test/renderGameTimer';
 
 vi.mock('../../hooks/useServerGameState');
 vi.mock('../../hooks/useGameApi');
 vi.mock('../../hooks/usePollingSync');
 vi.mock('../../hooks/useETagManager');
 vi.mock('../../hooks/usePlayerNameHistory');
-
-/**
- * プレイヤー名履歴を特定の名前リストでレンダリングするヘルパー。
- * usePlayerNameHistoryは共有ハーネスが上書きするため、
- * 履歴固有テストでは直接renderを使用し、全5フックを手動設定する。
- */
-function renderWithNameHistory(names: string[]) {
-  vi.mocked(useServerGameState).mockReturnValue(createMockServerGameState({}));
-  vi.mocked(useGameApi).mockReturnValue({
-    switchTurn: vi.fn(async () => null),
-    pauseGame: vi.fn(async () => null),
-    resumeGame: vi.fn(async () => null),
-    resetGame: vi.fn(async () => null),
-    updateGame: vi.fn(async () => null),
-    updatePlayerName: vi.fn(async () => null),
-  } as ReturnType<typeof useGameApi>);
-  vi.mocked(usePollingSync).mockImplementation(() => undefined);
-  vi.mocked(useETagManager).mockReturnValue({
-    etag: 'mock-etag',
-    updateEtag: vi.fn(),
-    isConflict: vi.fn(() => false),
-    conflictMessage: null,
-    setConflictMessage: vi.fn(),
-    clearConflictMessage: vi.fn(),
-    showReloadPrompt: false,
-    setShowReloadPrompt: vi.fn(),
-  });
-  const fetchNamesMock = vi.fn(async () => {});
-  vi.mocked(usePlayerNameHistory).mockReturnValue({
-    names,
-    isLoading: false,
-    error: null,
-    fetchNames: fetchNamesMock,
-    saveNames: vi.fn(async () => {}),
-  });
-  const result = render(<GameTimer />);
-  return { result, fetchNamesMock };
-}
 
 describe('GameTimer - Task 7.1: プレイヤー名履歴<datalist>統合', () => {
   beforeEach(() => {
@@ -98,7 +53,7 @@ describe('GameTimer - Task 7.1: プレイヤー名履歴<datalist>統合', () =>
   it('履歴がある場合、<datalist>内に<option>要素が生成される', () => {
     // 3件の履歴を持つ状態でレンダリング
     const mockNames = ['Alice', 'Bob', 'Charlie'];
-    renderWithNameHistory(mockNames);
+    renderGameTimer({ nameHistory: mockNames });
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     const listId = nameInputs[0].getAttribute('list');
@@ -115,7 +70,7 @@ describe('GameTimer - Task 7.1: プレイヤー名履歴<datalist>統合', () =>
   it('全てのプレイヤー名入力フィールドが同じ履歴データを共有する（共有<datalist>）', () => {
     // 2件の履歴を持つ状態でレンダリング
     const mockNames = ['Alice', 'Bob'];
-    renderWithNameHistory(mockNames);
+    renderGameTimer({ nameHistory: mockNames });
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
 
@@ -136,7 +91,7 @@ describe('GameTimer - Task 7.1: プレイヤー名履歴<datalist>統合', () =>
 
   it('入力フィールドフォーカス時にfetchNamesが呼ばれる', async () => {
     const user = userEvent.setup();
-    const { fetchNamesMock } = renderWithNameHistory([]);
+    renderGameTimer({ nameHistory: [] });
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     const firstInput = nameInputs[0];
@@ -145,7 +100,7 @@ describe('GameTimer - Task 7.1: プレイヤー名履歴<datalist>統合', () =>
 
     // フォーカス時にfetchNamesが呼ばれることを確認
     await waitFor(() => {
-      expect(fetchNamesMock).toHaveBeenCalledTimes(1);
+      expect(mockNameHistory.fetchNames).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -154,7 +109,7 @@ describe('GameTimer - Task 7.1: プレイヤー名履歴<datalist>統合', () =>
 
     // 3件の履歴を持つ状態でレンダリング
     const mockNames = ['Alice', 'Bob', 'Charlie'];
-    renderWithNameHistory(mockNames);
+    renderGameTimer({ nameHistory: mockNames });
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     const firstInput = nameInputs[0];
