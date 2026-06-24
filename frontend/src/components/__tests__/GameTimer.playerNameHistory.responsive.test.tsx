@@ -1,27 +1,25 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer } from '../../test/renderGameTimer';
+import { useServerGameState } from '../../hooks/useServerGameState';
+import { useGameApi } from '../../hooks/useGameApi';
+import { usePollingSync } from '../../hooks/usePollingSync';
+import { useETagManager } from '../../hooks/useETagManager';
+import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 describe('GameTimer - Task 7.2: プレイヤー名履歴レスポンシブ対応', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
   });
 
   it('各プレイヤー名入力フィールドに<datalist>が接続されている（ブラウザネイティブレスポンシブ対応）', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
 
@@ -39,7 +37,7 @@ describe('GameTimer - Task 7.2: プレイヤー名履歴レスポンシブ対応
   });
 
   it('<datalist>要素はブラウザネイティブUIであり、各デバイスで最適化されたUIが表示される', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     const firstInput = nameInputs[0];
@@ -57,7 +55,7 @@ describe('GameTimer - Task 7.2: プレイヤー名履歴レスポンシブ対応
   });
 
   it('入力フィールドはaria-label属性を持ち、アクセシビリティ対応されている', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
 
@@ -68,7 +66,7 @@ describe('GameTimer - Task 7.2: プレイヤー名履歴レスポンシブ対応
   });
 
   it('comboboxロールを持つ入力フィールドはキーボード操作に対応している', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
 
@@ -87,7 +85,7 @@ describe('GameTimer - Task 7.2: プレイヤー名履歴レスポンシブ対応
   });
 
   it('<datalist>はCSSスタイリングが制限されるが、ブラウザが最適なUIを提供する', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
     const firstInput = nameInputs[0];

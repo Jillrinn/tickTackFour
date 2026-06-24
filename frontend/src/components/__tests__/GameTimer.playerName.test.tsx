@@ -1,23 +1,22 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { describe, test, expect, vi } from 'vitest';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer, mockApi } from '../../test/renderGameTimer';
+import { useServerGameState } from '../../hooks/useServerGameState';
+import { useGameApi } from '../../hooks/useGameApi';
+import { usePollingSync } from '../../hooks/usePollingSync';
+import { useETagManager } from '../../hooks/useETagManager';
+import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
   test('設定カードの「プレイヤー名変更」に各プレイヤーの入力フィールドが表示される', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // プレイヤー名入力フィールドは設定カードに集約される
     const nameInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
@@ -33,7 +32,7 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
 
   test('プレイヤー名入力フィールドをクリックするとテキスト入力が可能', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const input = screen.getByTestId('player-name-edit-input-0');
 
@@ -44,29 +43,28 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
     expect(input).toHaveFocus();
   });
 
-  test('入力中はドラフト保持、「保存」で初めて一覧表示に反映する', async () => {
+  test('保存ボタンクリックでupdatePlayerName APIが呼ばれる（ドラフト変更後に保存）', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const input = screen.getByTestId('player-name-edit-input-0');
 
-    // 名前を変更（入力欄＝ドラフトには即時反映）
+    // 名前を変更（ドラフトに即時反映）
     await user.clear(input);
     await user.type(input, 'アリス');
     expect(input).toHaveValue('アリス');
 
-    // 保存前: プレイヤー一覧カードにはまだ反映されない
-    const firstPlayerCard = screen.getAllByRole('listitem')[0];
-    expect(within(firstPlayerCard).queryByText('アリス')).not.toBeInTheDocument();
-
-    // 「保存」押下で初めて一覧に反映される
+    // 「保存」押下でupdatePlayerName APIが呼ばれる
     await user.click(screen.getByTestId('save-player-names'));
-    expect(within(firstPlayerCard).getByText('アリス')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(mockApi.updatePlayerName).toHaveBeenCalledTimes(1);
+      expect(mockApi.updatePlayerName).toHaveBeenCalledWith(0, 'アリス', 'mock-etag');
+    });
   });
 
-  test('保存ボタンは未変更時は無効、変更があると有効になる', async () => {
+  test('保存ボタンは未変更時は無効、変更があると有効になり、保存でupdatePlayerName APIが呼ばれる', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const saveButton = screen.getByTestId('save-player-names');
     // 初期状態（変更なし）: 無効
@@ -77,13 +75,16 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
     await user.type(input, 'X');
     expect(saveButton).toBeEnabled();
 
-    // 保存すると再び無効（未保存変更なし）
+    // 保存でupdatePlayerName APIが呼ばれる
     await user.click(saveButton);
-    expect(saveButton).toBeDisabled();
+    await vi.waitFor(() => {
+      expect(mockApi.updatePlayerName).toHaveBeenCalledTimes(1);
+      expect(mockApi.updatePlayerName.mock.calls[0][2]).toBe('mock-etag');
+    });
   });
 
   test('プレイヤー名が未設定の場合はデフォルト名を表示', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     // 設定カードの入力欄にデフォルト名が表示されていることを確認
     expect(screen.getByTestId('player-name-edit-input-0')).toHaveValue('プレイヤー1');
@@ -94,7 +95,7 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
 
   test('複数のプレイヤー名を個別に変更できる', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     // 1人目の名前を変更
     const input1 = screen.getByTestId('player-name-edit-input-0');
@@ -112,31 +113,23 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
     expect(screen.getByTestId('player-name-edit-input-2')).toHaveValue('プレイヤー3');
   });
 
-  test('プレイヤー数を変更しても名前が保持される', async () => {
+  test('名前変更後に保存するとupdatePlayerName APIが正しい引数で呼ばれる', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
-    // 1人目の名前を変更して保存（保存しないとゲーム状態に反映されない）
+    // 1人目の名前を変更して保存
     const input0 = screen.getByTestId('player-name-edit-input-0');
     await user.clear(input0);
     await user.type(input0, 'アリス');
     await user.click(screen.getByTestId('save-player-names'));
 
-    // プレイヤー数を5人に変更
-    const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    await user.selectOptions(dropdown, '5');
-
-    // 1人目の名前が保持されていることを確認
-    const updatedInputs = screen.getAllByRole('combobox', { name: /プレイヤー名/i });
-    expect(updatedInputs).toHaveLength(5);
-    expect(screen.getByTestId('player-name-edit-input-0')).toHaveValue('アリス');
-
-    // 5人目はデフォルト名
-    expect(screen.getByTestId('player-name-edit-input-4')).toHaveValue('プレイヤー5');
+    await vi.waitFor(() => {
+      expect(mockApi.updatePlayerName).toHaveBeenCalledWith(0, 'アリス', 'mock-etag');
+    });
   });
 
   test('入力フィールドに適切なスタイリングが適用される', () => {
-    render(<GameTimer />);
+    renderGameTimer();
 
     const input = screen.getByTestId('player-name-edit-input-0');
 
@@ -144,13 +137,12 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
     expect(input).toHaveClass('player-name-input');
   });
 
-  test('ゲーム開始中（アクティブプレイヤーあり）でもプレイヤー名を変更できる', async () => {
+  test('ゲーム開始中でも入力フィールドはdisabledにならない（入力可能）', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
-
-    // 1人目をアクティブにしてゲームを開始状態にする
-    const firstPlayerCard = screen.getAllByRole('listitem')[0];
-    await user.click(within(firstPlayerCard).getByText('アクティブに設定'));
+    // アクティブプレイヤーあり（ゲーム開始済み）の状態でレンダリング
+    renderGameTimer({
+      serverState: { activePlayerIndex: 0, isPaused: false },
+    });
 
     // 設定カードの入力欄はプレイ中でも編集可能（disabledではない）
     const input = screen.getByTestId('player-name-edit-input-0');
@@ -160,8 +152,10 @@ describe('GameTimer - プレイヤー名変更UI（設定カード）', () => {
     await user.type(input, 'プレイ中変更');
     expect(input).toHaveValue('プレイ中変更');
 
-    // 「保存」で一覧カードの表示に反映される
+    // 「保存」でupdatePlayerName APIが呼ばれる
     await user.click(screen.getByTestId('save-player-names'));
-    expect(within(firstPlayerCard).getByText('プレイ中変更')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(mockApi.updatePlayerName).toHaveBeenCalledTimes(1);
+    });
   });
 });

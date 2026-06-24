@@ -1,30 +1,29 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer, mockApi } from '../../test/renderGameTimer';
+import { useServerGameState } from '../../hooks/useServerGameState';
+import { useGameApi } from '../../hooks/useGameApi';
+import { usePollingSync } from '../../hooks/usePollingSync';
+import { useETagManager } from '../../hooks/useETagManager';
+import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', () => {
   it('プレイヤー人数ドロップダウンが存在すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown');
     expect(dropdown).toBeInTheDocument();
   });
 
   // Task 2.1: 2人と3人の選択肢を追加
   it('ドロップダウンが2人、3人、4人、5人、6人の選択肢を表示すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     const options = Array.from(dropdown.options).map(option => option.value);
@@ -32,7 +31,7 @@ describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', (
   });
 
   it('ドロップダウンに2人の選択肢が存在すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     const option2 = Array.from(dropdown.options).find(opt => opt.value === '2');
@@ -41,7 +40,7 @@ describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', (
   });
 
   it('ドロップダウンに3人の選択肢が存在すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     const option3 = Array.from(dropdown.options).find(opt => opt.value === '3');
@@ -50,21 +49,21 @@ describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', (
   });
 
   it('ドロップダウンのデフォルト値が4人であること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
 
     expect(dropdown.value).toBe('4');
   });
 
   it('ドロップダウンに適切なaria-labelが設定されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown');
 
     expect(dropdown).toHaveAttribute('aria-label');
   });
 
   it('ドロップダウンがキーボード操作に対応していること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const dropdown = screen.getByTestId('player-count-dropdown');
 
     // フォーカス可能であることを確認
@@ -73,7 +72,7 @@ describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', (
   });
 
   it('ドロップダウンが設定・その他セクション内に配置されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const settingsSection = screen.getByTestId('settings-controls');
     const dropdown = screen.getByTestId('player-count-dropdown');
 
@@ -82,76 +81,54 @@ describe('GameTimer - Task 3.1: プレイヤー人数ドロップダウンUI', (
 });
 
 describe('GameTimer - Task 3.2: プレイヤー人数変更機能', () => {
-  it('ドロップダウンから5人を選択するとプレイヤー数が5人に変更されること', async () => {
+  it('ドロップダウンから5人を選択するとupdateGame APIが5人のplayerCountで呼ばれること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-
-    // 初期状態: 4人
-    const initialPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(initialPlayerCards).toHaveLength(4);
 
     // 5人を選択
     await user.selectOptions(dropdown, '5');
 
-    // プレイヤー数が5人に変更される
-    const updatedPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(updatedPlayerCards).toHaveLength(5);
-    expect(dropdown.value).toBe('5');
+    // updateGame APIがplayerCount: 5で呼ばれることを確認
+    expect(mockApi.updateGame).toHaveBeenCalledTimes(1);
+    expect(mockApi.updateGame).toHaveBeenCalledWith('mock-etag', { playerCount: 5 });
   });
 
-  it('ドロップダウンから6人を選択するとプレイヤー数が6人に変更されること', async () => {
+  it('ドロップダウンから6人を選択するとupdateGame APIが6人のplayerCountで呼ばれること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer();
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-
-    // 初期状態: 4人
-    const initialPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(initialPlayerCards).toHaveLength(4);
 
     // 6人を選択
     await user.selectOptions(dropdown, '6');
 
-    // プレイヤー数が6人に変更される
-    const updatedPlayerCards = screen.getAllByRole('combobox', { name: /プレイヤー名/ });
-    expect(updatedPlayerCards).toHaveLength(6);
-    expect(dropdown.value).toBe('6');
+    // updateGame APIがplayerCount: 6で呼ばれることを確認
+    expect(mockApi.updateGame).toHaveBeenCalledTimes(1);
+    expect(mockApi.updateGame).toHaveBeenCalledWith('mock-etag', { playerCount: 6 });
   });
 
-  // フォールバックモード専用テストのため削除（将来的にフォールバックモード削除予定）
-  // it('プレイヤー数を変更すると全プレイヤーの時間が0にリセットされること（要件3.5）', async () => {
-
-  it('ゲーム進行中（タイマー動作中）はプレイヤー人数変更が無効化されること', async () => {
-    const user = userEvent.setup();
-    render(<GameTimer />);
+  it('ゲーム進行中（アクティブプレイヤーあり）はプレイヤー人数変更が無効化されること', () => {
+    // アクティブプレイヤーあり（isGameStarted = true）の状態でレンダリング
+    renderGameTimer({
+      serverState: { activePlayerIndex: 0, isPaused: false },
+    });
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
-
-    // ゲームを開始（プレイヤー1をアクティブに）
-    await user.click(nextPlayerButtons[0]);
 
     // タイマー動作中はドロップダウンが無効化される
     expect(dropdown).toBeDisabled();
   });
 
   // 要件変更: 一時停止中も設定変更不可
-  it('ゲームを一時停止してもプレイヤー人数変更は無効化されたままであること', async () => {
-    const user = userEvent.setup();
-    render(<GameTimer />);
+  it('ゲームを一時停止してもプレイヤー人数変更は無効化されたままであること', () => {
+    // アクティブプレイヤーあり・一時停止中の状態でレンダリング
+    renderGameTimer({
+      serverState: { activePlayerIndex: 0, isPaused: true },
+    });
 
     const dropdown = screen.getByTestId('player-count-dropdown') as HTMLSelectElement;
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
-    const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
-
-    // ゲームを開始
-    await user.click(nextPlayerButtons[0]);
-    expect(dropdown).toBeDisabled();
-
-    // 一時停止
-    await user.click(pauseButton);
 
     // 一時停止中もドロップダウンは無効化されたまま（要件変更）
     expect(dropdown).toBeDisabled();
