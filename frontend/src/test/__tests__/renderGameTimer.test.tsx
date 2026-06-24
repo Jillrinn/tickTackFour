@@ -5,6 +5,8 @@ import { renderGameTimer, mockApi } from '../renderGameTimer';
 vi.mock('../../hooks/useServerGameState');
 vi.mock('../../hooks/useGameApi');
 vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 describe('renderGameTimer', () => {
   test('既定状態でGameTimerを描画できる', () => {
