@@ -1,11 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderGameTimer } from '../../test/renderGameTimer';
-import { useServerGameState } from '../../hooks/useServerGameState';
-import { useGameApi } from '../../hooks/useGameApi';
-import { usePollingSync } from '../../hooks/usePollingSync';
-import { useETagManager } from '../../hooks/useETagManager';
-import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
 
 vi.mock('../../hooks/useServerGameState');
 vi.mock('../../hooks/useGameApi');

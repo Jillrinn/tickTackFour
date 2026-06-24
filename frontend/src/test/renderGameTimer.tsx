@@ -20,7 +20,7 @@ export const mockApi = {
 
 export const mockNameHistory = {
   fetchNames: vi.fn(async (): Promise<void> => {}),
-  saveNames: vi.fn(async (_names: string[]): Promise<void> => {}),
+  saveNames: vi.fn(async (): Promise<void> => {}),
 };
 
 export function renderGameTimer(options: {
