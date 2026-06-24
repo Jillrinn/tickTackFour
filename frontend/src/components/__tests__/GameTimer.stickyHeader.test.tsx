@@ -65,7 +65,7 @@ describe('GameTimer - Task 2.1: 固定ヘッダー領域', () => {
 });
 
 describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => {
-  it('「次のプレイヤー」ボタンをクリックすると固定ヘッダーのプレイヤー情報が更新されること', async () => {
+  it('「次のプレイヤー」ボタンをクリックするとswitchTurn APIが呼ばれること', async () => {
     const user = userEvent.setup();
     renderGameTimer();
 
@@ -78,23 +78,26 @@ describe('GameTimer - Task 2.2: 固定ヘッダーの動的更新機能', () => 
     // 「次のプレイヤー」ボタンをクリック（最初のボタンを使用）
     await user.click(nextPlayerButtons[0]);
 
-    // ターン切り替えAPIが呼ばれたことを確認（サーバー経由で状態更新される）
-    expect(mockApi.switchTurn).toHaveBeenCalled();
+    // ターン切り替えAPIが呼ばれ、etagが正しく渡されたことを確認
+    expect(mockApi.switchTurn).toHaveBeenCalledTimes(1);
+    expect(mockApi.switchTurn.mock.calls[0][0]).toBe('mock-etag');
   });
 
-  it('アクティブプレイヤー変更時にヘッダー内のプレイヤー名が即座に更新されること', async () => {
+  it('「次のプレイヤー」ボタンを連続クリックするとswitchTurnが都度呼ばれること', async () => {
     const user = userEvent.setup();
     renderGameTimer();
 
     const nextPlayerButtons = screen.getAllByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
 
-    // プレイヤー1をアクティブに
+    // 1回目クリック
     await user.click(nextPlayerButtons[0]);
     expect(mockApi.switchTurn).toHaveBeenCalledTimes(1);
+    expect(mockApi.switchTurn.mock.calls[0][0]).toBe('mock-etag');
 
-    // プレイヤー2に切り替え
+    // 2回目クリック
     await user.click(nextPlayerButtons[0]);
     expect(mockApi.switchTurn).toHaveBeenCalledTimes(2);
+    expect(mockApi.switchTurn.mock.calls[1][0]).toBe('mock-etag');
   });
 
   it('固定ヘッダーの「次のプレイヤー」ボタンが機能すること', async () => {

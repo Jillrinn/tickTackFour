@@ -32,7 +32,7 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     expect(nextPlayerButton).toHaveClass('next-player-btn');
   });
 
-  test('次のプレイヤーボタンをクリックするとターン切り替えが即座に実行される', async () => {
+  test('次のプレイヤーボタンをクリックするとswitchTurn APIが正しいetagで呼ばれること', async () => {
     const user = userEvent.setup();
     renderGameTimer();
 
@@ -47,8 +47,9 @@ describe('GameTimer - 次のプレイヤーボタンの配置最適化', () => {
     const nextPlayerButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
     await user.click(nextPlayerButton);
 
-    // ターン切り替えAPIが呼ばれたことを確認（サーバー経由でプレイヤー1がアクティブになる）
-    expect(mockApi.switchTurn).toHaveBeenCalled();
+    // ターン切り替えAPIが呼ばれ、etagが正しく渡されたことを確認
+    expect(mockApi.switchTurn).toHaveBeenCalledTimes(1);
+    expect(mockApi.switchTurn.mock.calls[0][0]).toBe('mock-etag');
   });
 
   test('固定ヘッダーに一時停止ボタンと次のプレイヤーボタンが存在する', () => {
