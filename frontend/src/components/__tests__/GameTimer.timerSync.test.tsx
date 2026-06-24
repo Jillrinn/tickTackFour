@@ -1,18 +1,27 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
-import { GameTimer } from '../GameTimer';
+import { screen, act } from '@testing-library/react';
+import { renderGameTimer } from '../../test/renderGameTimer';
+import { useServerGameState } from '../../hooks/useServerGameState';
+import { useGameApi } from '../../hooks/useGameApi';
+import { usePollingSync } from '../../hooks/usePollingSync';
+import { useETagManager } from '../../hooks/useETagManager';
+import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
+
+// Reframe note (timerSync):
+// The original tests asserted that vi.getTimerCount() changes after button clicks
+// that triggered local state updates in fallback mode (useFallbackMode hook).
+// Under the server-state harness, button clicks dispatch API calls (mockApi) but do
+// NOT mutate the static mock's serverState — so the component's useEffect that drives
+// the setInterval remains governed by the injected serverState.
+// Each test is reframed to verify the component's timer scheduling based on the
+// injected serverState (activePlayerIndex / isPaused), which is the real intent:
+// "a single setInterval runs iff an active player exists and game is not paused."
 
 describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
   beforeEach(() => {
@@ -24,163 +33,74 @@ describe('GameTimer - タイマー表示同期（Task 4.2）', () => {
   });
 
   describe('単一タイマー更新メカニズム', () => {
-    it('全タイマー表示が1秒間隔で同期して更新される', () => {
-      // 現在時刻を固定
-      const baseTime = new Date('2025-01-01T00:00:00Z');
-      vi.setSystemTime(baseTime);
+    it('ゲーム開始前（activePlayerIndex=-1）はタイマーが動作しない', () => {
+      // Default state: activePlayerIndex=-1, isPaused=true → no setInterval
+      const initialTimerCount = vi.getTimerCount();
 
-      // レンダリング
-      render(<GameTimer />);
+      renderGameTimer();
 
-      // ゲーム開始前: タイマーは動いていない
+      // ゲーム開始前: elapsed-time / turn-time は未表示
       expect(screen.queryByTestId('elapsed-time')).toBeNull();
       expect(screen.queryByTestId('turn-time')).toBeNull();
 
-      // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
-      act(() => {
-        startButton.click();
-      });
-
-      // 初期状態の確認
-      // フォールバックモードでは表示が異なるため、APIモードの場合のみテスト
-      // ここではフォールバックモードを想定
-
-      // 1秒経過
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-
-      // 全タイマー表示が更新されることを確認
-      // （実際の表示確認は後でE2Eテストで実施）
-      // ここでは、setIntervalが1秒間隔で動作していることを確認
-
-      // タイマーが1秒間隔で動作していることを確認
-      expect(vi.getTimerCount()).toBeGreaterThan(0);
-    });
-
-    it('一時停止中はタイマー更新が停止する', () => {
-      const baseTime = new Date('2025-01-01T00:00:00Z');
-      vi.setSystemTime(baseTime);
-
-      render(<GameTimer />);
-
-      // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
-      act(() => {
-        startButton.click();
-      });
-
-      // 1秒経過
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-
-      // 一時停止
-      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
-      act(() => {
-        pauseButton.click();
-      });
-
-      // タイマー数を記録
-      const timerCountBeforePause = vi.getTimerCount();
-
-      // 一時停止中に5秒経過
       act(() => {
         vi.advanceTimersByTime(5000);
       });
 
-      // タイマーが増えていないことを確認（停止している）
-      expect(vi.getTimerCount()).toBeLessThanOrEqual(timerCountBeforePause);
-    });
-
-    it('ゲーム開始前はタイマーが動作しない', () => {
-      const baseTime = new Date('2025-01-01T00:00:00Z');
-      vi.setSystemTime(baseTime);
-
-      render(<GameTimer />);
-
-      // タイマー数を記録
-      const initialTimerCount = vi.getTimerCount();
-
-      // 5秒経過
-      act(() => {
-        vi.advanceTimersByTime(5000);
-      });
-
-      // タイマーが増えていないことを確認
-      // （アクティブプレイヤーがいないため、タイマーは動作しない）
+      // タイマーが増加していないことを確認（アクティブプレイヤー不在のため）
       expect(vi.getTimerCount()).toBeLessThanOrEqual(initialTimerCount);
     });
 
-    it('再開後にタイマー更新が再開される', () => {
-      const baseTime = new Date('2025-01-01T00:00:00Z');
-      vi.setSystemTime(baseTime);
-
-      render(<GameTimer />);
-
-      // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
-      act(() => {
-        startButton.click();
+    it('アクティブプレイヤーあり・非停止状態では1秒タイマーが動作する', () => {
+      // Inject: game is running with player 0 active, not paused
+      renderGameTimer({
+        serverState: { activePlayerIndex: 0, isPaused: false },
+        displayTime: 5,
       });
 
-      // 1秒経過
-      act(() => {
-        vi.advanceTimersByTime(1000);
+      // setIntervalが登録されていることを確認
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+    });
+
+    it('一時停止中（isPaused=true）はタイマーが動作しない', () => {
+      renderGameTimer({
+        serverState: { activePlayerIndex: 0, isPaused: true },
+        displayTime: 3,
       });
 
-      // 一時停止
-      const pauseButton = screen.getByRole('button', { name: /停止|再開/i });
-      act(() => {
-        pauseButton.click();
-      });
+      const timerCountAtPause = vi.getTimerCount();
 
-      // 一時停止中に5秒経過
       act(() => {
         vi.advanceTimersByTime(5000);
       });
 
-      // 再開（一時停止ボタンを再度クリック → トグル動作で再開）
-      const resumeButton = screen.getByRole('button', { name: /停止|再開/i });
-      act(() => {
-        resumeButton.click();
+      // 一時停止中はタイマーが増加しないことを確認
+      expect(vi.getTimerCount()).toBeLessThanOrEqual(timerCountAtPause);
+    });
+
+    it('アクティブプレイヤーあり・非停止状態では複数のsetIntervalが過剰に登録されない', () => {
+      renderGameTimer({
+        serverState: { activePlayerIndex: 0, isPaused: false },
+        displayTime: 10,
       });
 
-      // タイマー数を記録
-      const timerCountAfterResume = vi.getTimerCount();
+      const timerCount = vi.getTimerCount();
 
-      // 1秒経過
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-
-      // タイマーが再開されていることを確認
-      expect(vi.getTimerCount()).toBeGreaterThanOrEqual(timerCountAfterResume);
+      // 複数のタイマーが過剰登録されていないことを確認（1秒ループ1本が想定）
+      expect(timerCount).toBeLessThan(5);
     });
   });
 
   describe('複数タイマーの統合', () => {
-    it('複数のsetIntervalが存在しないことを確認', () => {
-      const baseTime = new Date('2025-01-01T00:00:00Z');
-      vi.setSystemTime(baseTime);
-
-      render(<GameTimer />);
-
-      // プレイヤー1をアクティブに設定
-      const startButton = screen.getByRole('button', { name: /ゲームを開始|次のプレイヤー/i });
-      act(() => {
-        startButton.click();
+    it('注入されたdisplayTimeが正しくMM:SS形式でレンダリングされる（表示同期の意図検証）', () => {
+      // 65 seconds → "01:05"
+      renderGameTimer({
+        serverState: { activePlayerIndex: 0, isPaused: false },
+        displayTime: 65,
       });
 
-      // タイマー数を確認
-      const timerCount = vi.getTimerCount();
-
-      // 単一のタイマーのみが動作していることを確認
-      // （複数のsetIntervalが存在しないことを確認）
-      // 実際には、React 19のuseEffectが複数回実行される可能性があるため、
-      // 正確な数は確定できないが、タイマー数が異常に多くないことを確認
-      expect(timerCount).toBeLessThan(5); // 妥当なタイマー数の範囲内
+      // ヘッダーに表示時間が表示されることを確認
+      expect(screen.getByTestId('sticky-header')).toHaveTextContent('01:05');
     });
   });
 });

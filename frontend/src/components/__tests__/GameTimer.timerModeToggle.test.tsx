@@ -1,65 +1,64 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { GameTimer } from '../GameTimer';
+import { renderGameTimer, mockApi } from '../../test/renderGameTimer';
+import { useServerGameState } from '../../hooks/useServerGameState';
+import { useGameApi } from '../../hooks/useGameApi';
+import { usePollingSync } from '../../hooks/usePollingSync';
+import { useETagManager } from '../../hooks/useETagManager';
+import { usePlayerNameHistory } from '../../hooks/usePlayerNameHistory';
 
-// フォールバックモードを強制（テスト用）
-vi.mock('../../hooks/useFallbackMode', () => ({
-  useFallbackMode: () => ({
-    isInFallbackMode: true,
-    lastError: null,
-    retryCount: 0,
-    activateFallbackMode: vi.fn(),
-    deactivateFallbackMode: vi.fn(),
-    incrementRetryCount: vi.fn()
-  })
-}));
+vi.mock('../../hooks/useServerGameState');
+vi.mock('../../hooks/useGameApi');
+vi.mock('../../hooks/usePollingSync');
+vi.mock('../../hooks/useETagManager');
+vi.mock('../../hooks/usePlayerNameHistory');
 
 // 要件1（タイマーモードトグル）は現在スキップ対象のため、このテストファイルを無効化
 // タイマーモードトグルUIは {false &&} で非表示中
 // 関連仕様: countdown-mode-fix Phase 0.5で再有効化予定
 describe.skip('GameTimer - Task 4.1: カウントモードトグルスイッチUI', () => {
   it('カウントモードトグルスイッチが存在すること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const toggle = screen.getByTestId('timer-mode-toggle');
     expect(toggle).toBeInTheDocument();
   });
 
   it('トグルスイッチがcheckboxタイプのinput要素であること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
     expect(toggle.type).toBe('checkbox');
   });
 
   it('トグルスイッチに適切なaria-labelが設定されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const toggle = screen.getByTestId('timer-mode-toggle');
     expect(toggle).toHaveAttribute('aria-label');
   });
 
   it('トグルスイッチがキーボード操作に対応していること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const toggle = screen.getByTestId('timer-mode-toggle');
     toggle.focus();
     expect(document.activeElement).toBe(toggle);
   });
 
   it('トグルスイッチが設定・その他セクション内に配置されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const settingsSection = screen.getByTestId('settings-controls');
     const toggle = screen.getByTestId('timer-mode-toggle');
     expect(settingsSection).toContainElement(toggle);
   });
 
   it('カウントアップモード時、トグルスイッチがunchecked状態であること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
     // デフォルトはカウントアップモード
     expect(toggle.checked).toBe(false);
   });
 
   it('トグルスイッチにホバー時の視覚的フィードバック用のクラスが設定されていること', () => {
-    render(<GameTimer />);
+    renderGameTimer();
     const toggle = screen.getByTestId('timer-mode-toggle');
     const label = toggle.closest('label');
     expect(label).toHaveClass('toggle-switch-enhanced');
@@ -68,36 +67,31 @@ describe.skip('GameTimer - Task 4.1: カウントモードトグルスイッチU
 
 // 要件1（タイマーモードトグル）は現在スキップ対象のため、このテストファイルを無効化
 describe.skip('GameTimer - Task 4.2: カウントモード切替機能', () => {
-  it('トグルスイッチをクリックするとカウントアップからカウントダウンに切り替わること', async () => {
+  it('トグルスイッチをクリックするとupdateGame APIがcountdownモードで呼ばれること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer({ serverState: { timerMode: 'countup' } });
 
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
-    expect(toggle.checked).toBe(false); // 初期状態: カウントアップ
-
     await user.click(toggle);
 
-    expect(toggle.checked).toBe(true); // カウントダウンモードに変更
+    expect(mockApi.updateGame).toHaveBeenCalledTimes(1);
+    expect(mockApi.updateGame.mock.calls[0][1]).toMatchObject({ timerMode: 'countdown' });
   });
 
-  it('トグルスイッチをクリックするとカウントダウンからカウントアップに切り替わること', async () => {
+  it('トグルスイッチをクリックするとupdateGame APIがcountupモードで呼ばれること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer({ serverState: { timerMode: 'countdown' } });
 
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
-
-    // カウントダウンモードに変更
     await user.click(toggle);
-    expect(toggle.checked).toBe(true);
 
-    // カウントアップモードに戻す
-    await user.click(toggle);
-    expect(toggle.checked).toBe(false);
+    expect(mockApi.updateGame).toHaveBeenCalledTimes(1);
+    expect(mockApi.updateGame.mock.calls[0][1]).toMatchObject({ timerMode: 'countup' });
   });
 
   it('カウントダウンモード時、カウントダウン設定UIが表示されること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer({ serverState: { timerMode: 'countup' } });
 
     const toggle = screen.getByTestId('timer-mode-toggle');
 
@@ -113,7 +107,7 @@ describe.skip('GameTimer - Task 4.2: カウントモード切替機能', () => {
 
   it('カウントアップモード時、カウントダウン設定UIが非表示になること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer({ serverState: { timerMode: 'countdown' } });
 
     const toggle = screen.getByTestId('timer-mode-toggle');
 
@@ -126,57 +120,33 @@ describe.skip('GameTimer - Task 4.2: カウントモード切替機能', () => {
     expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
   });
 
-  it('ゲーム進行中（タイマー動作中）はトグルスイッチが無効化されること', async () => {
-    const user = userEvent.setup();
-    render(<GameTimer />);
-
-    const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
-
-    // 初期状態は有効
-    expect(toggle.disabled).toBe(false);
-
-    // ゲームを開始（次のプレイヤーボタンをクリック）
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
-    await user.click(nextPlayerButtons[0]);
-
-    // ゲーム進行中はトグルスイッチが無効化される
-    expect(toggle.disabled).toBe(true);
-  });
-
-  it('一時停止中はトグルスイッチが有効化されること', async () => {
-    const user = userEvent.setup();
-    render(<GameTimer />);
-
-    // ゲームを開始
-    const nextPlayerButtons = screen.getAllByRole('button', { name: /次のプレイヤー/ });
-    await user.click(nextPlayerButtons[0]);
+  it('ゲーム進行中（activePlayerIndex>=0, isPaused=false）はトグルスイッチが無効化されること', async () => {
+    renderGameTimer({
+      serverState: { activePlayerIndex: 0, isPaused: false },
+    });
 
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
     expect(toggle.disabled).toBe(true);
+  });
 
-    // 一時停止ボタンをクリック
-    const pauseButton = screen.getByRole('button', { name: /一時停止/ });
-    await user.click(pauseButton);
+  it('未開始状態（activePlayerIndex=-1）はトグルスイッチが有効化されること', () => {
+    renderGameTimer({
+      serverState: { activePlayerIndex: -1, isPaused: true },
+    });
 
-    // 一時停止中はトグルスイッチが有効化される
+    const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
     expect(toggle.disabled).toBe(false);
   });
 
-  it('キーボード操作でトグルスイッチを切り替えられること', async () => {
+  it('キーボード操作でupdateGame APIが呼ばれること', async () => {
     const user = userEvent.setup();
-    render(<GameTimer />);
+    renderGameTimer({ serverState: { timerMode: 'countup' } });
 
     const toggle = screen.getByTestId('timer-mode-toggle') as HTMLInputElement;
     toggle.focus();
 
-    expect(toggle.checked).toBe(false);
-
     // Spaceキーで切り替え
     await user.keyboard(' ');
-    expect(toggle.checked).toBe(true);
-
-    // もう一度Spaceキーで切り替え
-    await user.keyboard(' ');
-    expect(toggle.checked).toBe(false);
+    expect(mockApi.updateGame).toHaveBeenCalledTimes(1);
   });
 });
