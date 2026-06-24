@@ -4,16 +4,49 @@ import { GameTimerPage } from '../pages/GameTimerPage';
 /**
  * プレイヤー名永続化機能のE2Eテスト
  * Requirements: 1.1, 1.2, 4.1, 4.3, 8.1, 8.3, 11.2
+ *
+ * 注: フォールバックモードは削除済み。
+ * GET /api/game をモックして通常モード（APIモード）でテストを実行する。
+ *
+ * UI構造の注意:
+ * - プレイヤー名入力欄(.player-name-input)は設定エリア内の
+ *   [data-testid="player-name-edit-list"] 配下にある。
+ *   .player-card 内には存在しない。
+ * - 履歴 datalist は全入力欄で共有（id: "player-name-history-shared"）。
  */
+
+/** 通常モード用のゲーム状態モック */
+const NORMAL_MODE_GAME_STATE = {
+  players: [
+    { name: 'プレイヤー1', elapsedSeconds: 0 },
+    { name: 'プレイヤー2', elapsedSeconds: 0 },
+    { name: 'プレイヤー3', elapsedSeconds: 0 },
+    { name: 'プレイヤー4', elapsedSeconds: 0 },
+  ],
+  activePlayerIndex: -1,
+  timerMode: 'countup',
+  countdownSeconds: 600,
+  isPaused: true,
+  etag: 'e2e-etag',
+  turnStartedAt: null,
+  pausedAt: null,
+  gameMode: 'normal',
+  phase: 0,
+};
+
 test.describe('プレイヤー名永続化機能', () => {
   let gameTimerPage: GameTimerPage;
 
   test.beforeEach(async ({ page }) => {
-    // Phase 1フォールバックモードを強制的にアクティブにするため、
-    // ポーリング用のGET /api/gameを失敗させる
+    // 通常モード（APIモード）: GET /api/game をモックして有効なゲーム状態を返す
     await page.route('**/api/game', async (route) => {
       if (route.request().method() === 'GET') {
-        await route.abort('failed');
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: { ETag: 'e2e-etag' },
+          body: JSON.stringify(NORMAL_MODE_GAME_STATE),
+        });
       } else {
         await route.continue();
       }
@@ -45,12 +78,11 @@ test.describe('プレイヤー名永続化機能', () => {
 
       await gameTimerPage.navigate();
 
-      // フォールバックモード警告が表示されるまで待機
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
+      // 通常モードのUIが表示されるまで待機（名前編集入力欄が存在することを確認）
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
 
-      // プレイヤー0の名前入力フィールドを取得
-      const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-      const nameInput = playerCard.locator('.player-name-input');
+      // プレイヤー0の名前入力フィールドを取得（設定エリアの編集欄）
+      const nameInput = page.locator('[data-testid="player-name-edit-input-0"]');
 
       // フォーカス（履歴取得トリガー）
       await nameInput.focus();
@@ -93,10 +125,11 @@ test.describe('プレイヤー名永続化機能', () => {
       });
 
       await gameTimerPage.navigate();
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
 
-      const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-      const nameInput = playerCard.locator('.player-name-input');
+      // 通常モードのUIが表示されるまで待機
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
+
+      const nameInput = page.locator('[data-testid="player-name-edit-input-0"]');
 
       // フォーカスして履歴を取得
       await nameInput.focus();
@@ -114,11 +147,38 @@ test.describe('プレイヤー名永続化機能', () => {
   test.describe('Task 11.2: プレイヤー名保存フロー', () => {
     test('プレイヤー名変更後のゲームリセット時に名前が保存される', async ({ page }) => {
       // Requirements: 1.1
+      // フロー: サーバー状態に非デフォルト名("David")があるゲームを用意 → リセット実行 →
+      //   handleResetGame が playerNameHistory.saveNames(["David"]) を呼ぶ →
+      //   saveNames内の3秒デバウンス後に POST /api/player-names が送信される
 
       let postRequestReceived = false;
       let savedNames: string[] = [];
 
-      // モックAPI: GET /api/player-names（初回空）
+      // GET /api/game: プレイヤー0を"David"（非デフォルト名）に設定
+      // beforeEach で設定済みの route を上書き
+      await page.unroute('**/api/game');
+      await page.route('**/api/game', async (route) => {
+        if (route.request().method() === 'GET') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            headers: { ETag: 'e2e-etag' },
+            body: JSON.stringify({
+              ...NORMAL_MODE_GAME_STATE,
+              players: [
+                { name: 'David', elapsedSeconds: 0 },
+                { name: 'プレイヤー2', elapsedSeconds: 0 },
+                { name: 'プレイヤー3', elapsedSeconds: 0 },
+                { name: 'プレイヤー4', elapsedSeconds: 0 },
+              ],
+            }),
+          });
+        } else {
+          await route.continue();
+        }
+      });
+
+      // モックAPI: GET /api/player-names（初回空）、POST /api/player-names（保存確認）
       await page.route('**/api/player-names', async (route) => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
@@ -140,18 +200,27 @@ test.describe('プレイヤー名永続化機能', () => {
         }
       });
 
+      // POST /api/reset のモック（リセット操作）
+      await page.route('**/api/reset', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          headers: { ETag: 'e2e-etag-reset' },
+          body: JSON.stringify({ ...NORMAL_MODE_GAME_STATE, etag: 'e2e-etag-reset' }),
+        });
+      });
+
       await gameTimerPage.navigate();
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
 
-      // プレイヤー1の名前を"David"に変更
-      await gameTimerPage.setPlayerName(0, 'David');
+      // 通常モードのUIが表示されるまで待機（"David"がサーバー状態に反映される）
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
 
-      // ゲームリセットボタンをクリック
+      // ゲームリセットボタンをクリック（handleResetGame が saveNames(["David"]) を呼ぶ）
       await gameTimerPage.resetGame();
 
       // POST /api/player-namesが呼び出されることを確認
-      // デバウンス3秒待機が必要
-      await page.waitForTimeout(3500); // デバウンス3秒 + マージン
+      // saveNames内部に3秒デバウンスがあるため、3.5秒待機が必要
+      await page.waitForTimeout(3500);
       expect(postRequestReceived).toBe(true);
 
       // "David"が保存されることを確認
@@ -178,11 +247,12 @@ test.describe('プレイヤー名永続化機能', () => {
       });
 
       await gameTimerPage.navigate();
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
 
-      // プレイヤー0の名前入力フィールドをフォーカス
-      const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-      const nameInput = playerCard.locator('.player-name-input');
+      // 通常モードのUIが表示されるまで待機
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
+
+      // プレイヤー0の名前入力フィールドをフォーカス（設定エリア）
+      const nameInput = page.locator('[data-testid="player-name-edit-input-0"]');
       await nameInput.focus();
       await page.waitForTimeout(500); // API呼び出し待機
 
@@ -218,10 +288,11 @@ test.describe('プレイヤー名永続化機能', () => {
       });
 
       await gameTimerPage.navigate();
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
 
-      const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-      const nameInput = playerCard.locator('.player-name-input');
+      // 通常モードのUIが表示されるまで待機
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
+
+      const nameInput = page.locator('[data-testid="player-name-edit-input-0"]');
 
       // フォーカス（履歴取得を試みる）
       await nameInput.focus();
@@ -250,10 +321,11 @@ test.describe('プレイヤー名永続化機能', () => {
       });
 
       await gameTimerPage.navigate();
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
 
-      const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-      const nameInput = playerCard.locator('.player-name-input');
+      // 通常モードのUIが表示されるまで待機
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
+
+      const nameInput = page.locator('[data-testid="player-name-edit-input-0"]');
 
       // フォーカス（履歴取得失敗）
       await nameInput.focus();
@@ -282,18 +354,18 @@ test.describe('プレイヤー名永続化機能', () => {
       });
 
       await gameTimerPage.navigate();
-      await page.waitForSelector('[data-testid="fallback-warning"]', { timeout: 10000 });
 
-      const playerCard = gameTimerPage.getPlayerCardByIndex(0);
-      const nameInput = playerCard.locator('.player-name-input');
+      // 通常モードのUIが表示されるまで待機
+      await page.waitForSelector('[data-testid="player-name-edit-list"]', { timeout: 10000 });
+
+      const nameInput = page.locator('[data-testid="player-name-edit-input-0"]');
 
       // フォーカス（履歴取得失敗）
       await nameInput.focus();
       await page.waitForTimeout(500);
 
       // エラーメッセージが表示されないことを確認
-      // フォールバック警告（data-testid="fallback-warning"）は除外
-      const errorMessages = page.locator('.error-message, .error-notification, .alert-error').filter({ hasNot: page.getByTestId('fallback-warning') });
+      const errorMessages = page.locator('.error-message, .error-notification, .alert-error');
       await expect(errorMessages).toHaveCount(0);
 
       // ページは正常に動作し続ける
