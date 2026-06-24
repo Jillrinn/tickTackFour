@@ -22,4 +22,20 @@ describe('GameTimer カタンモードUI', () => {
     fireEvent.click(screen.getByTestId('game-mode-toggle'));
     expect(screen.queryByTestId('phase-badge')).not.toBeInTheDocument();
   });
+
+  it('フェーズ1ではバッジに phase-1 クラスが付き、通常モードと色を区別できる', () => {
+    render(<GameTimer />);
+    fireEvent.click(screen.getByTestId('game-mode-toggle')); // カタンON
+    fireEvent.click(screen.getByTestId('start-game-button')); // 開始（フェーズ1）
+    expect(screen.getByTestId('phase-badge')).toHaveClass('phase-1');
+  });
+
+  it('カタン フェーズ1ではアクティブプレイヤーカードに catan-phase1 クラスが付く', () => {
+    const { container } = render(<GameTimer />);
+    fireEvent.click(screen.getByTestId('game-mode-toggle')); // カタンON
+    fireEvent.click(screen.getByTestId('start-game-button')); // 開始（フェーズ1, アクティブ=プレイヤー1）
+    const activeCard = container.querySelector('.player-card.active');
+    expect(activeCard).not.toBeNull();
+    expect(activeCard).toHaveClass('catan-phase1');
+  });
 });

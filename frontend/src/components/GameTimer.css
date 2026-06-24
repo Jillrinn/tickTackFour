@@ -525,6 +525,18 @@ select {
   white-space: nowrap;
 }
 
+/* カタンモード フェーズ1: アクティブカードを通常モードの青と区別するためオレンジ系に */
+.player-card.active.catan-phase1 {
+  background: #e65100;
+  border-color: #bf360c;
+  box-shadow: 0 0 20px rgba(230, 81, 0, 0.5);
+}
+
+.player-card.active.catan-phase1::before {
+  content: "▶ フェーズ1（カタン）";
+  background: #bf360c;
+}
+
 /* Task 12.2: カウントダウン時間切れの視覚通知 */
 .player-card.timeout {
   background: #ffebee;
@@ -1245,4 +1257,14 @@ select {
   color: #ffffff;
   font-size: 0.85rem;
   font-weight: 700;
+}
+
+/* フェーズ1: アクティブカードと同じオレンジ系で蛇腹順フェーズを明示 */
+.phase-badge.phase-1 {
+  background-color: #e65100;
+}
+
+/* フェーズ2: 通常順フェーズ。フェーズ1と区別できる青緑系 */
+.phase-badge.phase-2 {
+  background-color: #00838f;
 }

@@ -501,8 +501,11 @@ export function GameTimer() {
     const result = await updateGame(etag, { gameMode: mode });
     if (result && 'etag' in result) {
       updateEtag(result.etag);
-      serverGameState.updateFromServer(result);
       clearConflictMessage();
+      // updateGameのレスポンスは生のGameState形式（players[].elapsedSeconds を持たない）。
+      // これをupdateFromServerに渡すとゲーム全体時間がNaNになるため、
+      // handleSwitchTurnと同様にGET /api/game経由で正しいGameStateWithTimeを取得して反映する。
+      await serverGameState.syncWithServer();
     }
   }, [isInFallbackMode, etag, updateGame, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
 
@@ -520,7 +523,7 @@ export function GameTimer() {
         <div className="sticky-header" data-testid="sticky-header">
           <div className="sticky-header-content" data-testid="sticky-header-content">
             {isCatanMode && isGameActive && (
-              <span className="phase-badge" data-testid="phase-badge">
+              <span className={`phase-badge phase-${currentPhase}`} data-testid="phase-badge">
                 フェーズ{currentPhase}
               </span>
             )}
@@ -616,7 +619,7 @@ export function GameTimer() {
                 const isTimedOut = player.id === timedOutPlayerId;
                 const isDisabled = fallbackState.isPlayerControlDisabled(player.id);
                 return (
-                  <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${isTimedOut ? 'timeout' : ''}`}>
+                  <li key={player.id} className={`player-card ${player.isActive ? 'active' : ''} ${player.isActive && isCatanMode && currentPhase === 1 ? 'catan-phase1' : ''} ${isTimedOut ? 'timeout' : ''}`}>
                     <div className="player-info">
                       {/* プレイヤー名は表示のみ。変更は設定カードの「プレイヤー名変更」から行う */}
                       <span className="player-name">{player.name}</span>
@@ -651,7 +654,7 @@ export function GameTimer() {
                 return (
                   <li
                     key={index}
-                    className={`player-card ${isActive ? 'active' : 'clickable'}`}
+                    className={`player-card ${isActive ? 'active' : 'clickable'} ${isActive && isCatanMode && currentPhase === 1 ? 'catan-phase1' : ''}`}
                     data-testid={`player-card-${index}`}
                     {...getCardClickProps(index, isActive, player.name)}
                   >
