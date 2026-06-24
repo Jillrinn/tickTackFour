@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { GameState, Player, TimerMode } from '../types/GameState';
+import type { GameState, Player, TimerMode, GameMode } from '../types/GameState';
 import {
   DEFAULT_PLAYER_COUNT,
   DEFAULT_TIMER_MODE,
   DEFAULT_INITIAL_TIME_SECONDS,
+  DEFAULT_GAME_MODE,
   GameStateValidator
 } from '../types/GameState';
+import { getCatanPlayerIndex } from '../utils/turnSequence';
 
 /**
  * ユニークなIDを生成（簡易版UUID v4）
@@ -43,7 +45,9 @@ function createDefaultGameState(playerCount: number = DEFAULT_PLAYER_COUNT): Gam
     timerMode: DEFAULT_TIMER_MODE,
     createdAt: new Date(),
     lastUpdatedAt: new Date(),
-    pausedAt: null // Phase 2で追加: 一時停止開始時刻
+    pausedAt: null, // Phase 2で追加: 一時停止開始時刻
+    gameMode: DEFAULT_GAME_MODE,
+    turnNumber: 0
   };
 }
 
@@ -104,6 +108,7 @@ export function useGameState() {
         activePlayerId: null,
         isPaused: false,
         pausedAt: null,
+        turnNumber: 0,
         lastUpdatedAt: new Date()
       };
     });
@@ -216,6 +221,18 @@ export function useGameState() {
   }, []);
 
   /**
+   * ゲームモードを設定（カタン/通常）。ゲーム開始前のみ呼ばれる想定。
+   */
+  const setGameMode = useCallback((mode: GameMode) => {
+    setGameState((prev) => ({
+      ...prev,
+      gameMode: mode,
+      turnNumber: 0,
+      lastUpdatedAt: new Date()
+    }));
+  }, []);
+
+  /**
    * 次のプレイヤーへターン切り替え（timer-display-sync-fix: totalPausedDurationリセット追加）
    * - 現在のアクティブプレイヤーから次のプレイヤーへターンを切り替える
    * - 最後のプレイヤーから最初のプレイヤーへ循環
@@ -224,23 +241,29 @@ export function useGameState() {
    */
   const switchToNextPlayer = useCallback(() => {
     setGameState((prev) => {
+      const len = prev.players.length;
       const currentIndex = prev.activePlayerId
         ? prev.players.findIndex(p => p.id === prev.activePlayerId)
         : -1;
 
-      // 次のプレイヤーのインデックスを計算（循環ロジック）
-      const nextIndex = (currentIndex + 1) % prev.players.length;
-      const nextPlayerId = prev.players[nextIndex].id;
+      // 開始（アクティブ未設定）なら最初の手番 t=0、それ以外は turnNumber+1
+      const starting = currentIndex === -1;
+      const nextTurnNumber = starting ? 0 : prev.turnNumber + 1;
 
-      // setActivePlayerと同じロジックでturnStartedAtとtotalPausedDurationを設定
+      // カタン: 蛇腹/通常順を純粋関数で算出。通常: 従来の循環
+      const nextIndex = prev.gameMode === 'catan'
+        ? getCatanPlayerIndex(nextTurnNumber, len)
+        : (starting ? 0 : (currentIndex + 1) % len);
+
+      const nextPlayerId = prev.players[nextIndex].id;
       const now = new Date();
       return {
         ...prev,
         activePlayerId: nextPlayerId,
+        turnNumber: nextTurnNumber,
         players: prev.players.map(p => ({
           ...p,
           isActive: p.id === nextPlayerId,
-          // 新しいアクティブプレイヤーにはturnStartedAtを設定、totalPausedDurationを0にリセット
           turnStartedAt: p.id === nextPlayerId ? now : null,
           totalPausedDuration: p.id === nextPlayerId ? 0 : (p.totalPausedDuration ?? 0)
         })),
@@ -265,6 +288,7 @@ export function useGameState() {
       activePlayerId: null,
       isPaused: true,  // reset-button-fix: タイマー停止状態にする
       pausedAt: null,  // Task 3.6: pausedAtをnullにリセット
+      turnNumber: 0,
       lastUpdatedAt: new Date()
     }));
   }, []);
@@ -551,6 +575,7 @@ export function useGameState() {
     switchToNextPlayer,
     setPaused,
     setTimerMode,
+    setGameMode,
     resetGame,
     updatePlayerName,
     formatTime,

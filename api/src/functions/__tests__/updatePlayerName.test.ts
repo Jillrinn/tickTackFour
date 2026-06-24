@@ -49,7 +49,9 @@ describe('updatePlayerName API', () => {
         activePlayerIndex: -1,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: true
+        isPaused: true,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const expectedState: GameState = {
@@ -59,7 +61,9 @@ describe('updatePlayerName API', () => {
           { id: 2, name: 'プレイヤー2', accumulatedSeconds: 0 },
           { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // サービス層のモック
@@ -116,7 +120,9 @@ describe('updatePlayerName API', () => {
         activePlayerIndex: 0,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: true // 一時停止中にして計算を確定値にする
+        isPaused: true, // 一時停止中にして計算を確定値にする
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const expectedState: GameState = {
@@ -126,7 +132,9 @@ describe('updatePlayerName API', () => {
           { id: 2, name: 'プレイヤー2', accumulatedSeconds: 45 },
           { id: 3, name: 'プレイヤー3', accumulatedSeconds: 0 },
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
-        ]
+        ],
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       jest.spyOn(gameStateService, 'getGameState').mockResolvedValue({
@@ -203,7 +211,9 @@ describe('updatePlayerName API', () => {
         activePlayerIndex: -1,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: true
+        isPaused: true,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       jest.spyOn(gameStateService, 'getGameState').mockResolvedValue({
@@ -247,7 +257,9 @@ describe('updatePlayerName API', () => {
         activePlayerIndex: -1,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: true
+        isPaused: true,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       jest.spyOn(gameStateService, 'getGameState').mockResolvedValue({
@@ -361,7 +373,9 @@ describe('updatePlayerName API', () => {
         activePlayerIndex: -1,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: true
+        isPaused: true,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       jest.spyOn(gameStateService, 'getGameState').mockResolvedValue({

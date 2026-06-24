@@ -30,7 +30,9 @@ describe('Time Calculation Service', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: new Date(baseTime.getTime() - 5000).toISOString(), // 5秒前
-        pausedAt: baseTime.toISOString()
+        pausedAt: baseTime.toISOString(),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act
@@ -55,7 +57,9 @@ describe('Time Calculation Service', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: turnStartTime.toISOString()
+        turnStartedAt: turnStartTime.toISOString(),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act
@@ -79,7 +83,9 @@ describe('Time Calculation Service', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: new Date(baseTime.getTime() - 10000).toISOString()
+        turnStartedAt: new Date(baseTime.getTime() - 10000).toISOString(),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act
@@ -104,7 +110,9 @@ describe('Time Calculation Service', () => {
         activePlayerIndex: 0,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: false
+        isPaused: false,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act
@@ -129,7 +137,9 @@ describe('Time Calculation Service', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: turnStartTime.toISOString()
+        turnStartedAt: turnStartTime.toISOString(),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act
@@ -154,7 +164,9 @@ describe('Time Calculation Service', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: turnStartTime.toISOString()
+        turnStartedAt: turnStartTime.toISOString(),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act
@@ -184,7 +196,9 @@ describe('Time Calculation Service', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: new Date(baseTime.getTime() - 5000).toISOString(),
-        pausedAt: baseTime.toISOString()
+        pausedAt: baseTime.toISOString(),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       // Act

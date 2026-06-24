@@ -14,7 +14,9 @@ describe('ETag Retry Mechanism', () => {
     timerMode: 'countup',
     countdownSeconds: 60,
     isPaused: false,
-    turnStartedAt: '2025-01-01T00:00:00.000Z'
+    turnStartedAt: '2025-01-01T00:00:00.000Z',
+    gameMode: 'normal',
+    turnNumber: 0
   };
 
   beforeEach(() => {

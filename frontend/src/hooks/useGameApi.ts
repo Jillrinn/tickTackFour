@@ -9,6 +9,7 @@ export interface UpdateGameParams {
   timerMode?: 'countup' | 'countdown';
   countdownSeconds?: number;
   players?: Array<{ name: string; elapsedSeconds: number }>;
+  gameMode?: 'normal' | 'catan';
 }
 
 /**

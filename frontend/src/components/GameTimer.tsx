@@ -9,6 +9,7 @@ import { usePlayerNameHistory } from '../hooks/usePlayerNameHistory';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { TopTimePlayerIndicator } from './TopTimePlayerIndicator';
 import type { GameStateWithTime } from '../types/GameState';
+import { getCatanPhase } from '../utils/turnSequence';
 import './GameTimer.css';
 
 // 設定カードの全プレイヤー名入力が共有する履歴 datalist の id
@@ -151,6 +152,19 @@ export function GameTimer() {
           }))
         : false // serverGameState.serverStateがnullの場合、未開始と判定
       );
+
+  // カタンモード関連の表示用算出（フォールバック/通常モード両対応）
+  const currentGameMode = (import.meta.env.VITEST || isInFallbackMode)
+    ? fallbackState.gameState.gameMode
+    : (serverGameState.serverState?.gameMode ?? 'normal');
+
+  const currentPhase = (import.meta.env.VITEST || isInFallbackMode)
+    ? (fallbackState.gameState.gameMode === 'catan'
+        ? getCatanPhase(fallbackState.gameState.turnNumber, fallbackState.gameState.players.length)
+        : 0)
+    : (serverGameState.serverState?.phase ?? 0);
+
+  const isCatanMode = currentGameMode === 'catan';
 
   // タイムアウトしたプレイヤーID（Task 12.2） - フォールバックモード時のみ
   const timedOutPlayerId = isInFallbackMode ? fallbackState.getTimedOutPlayerId() : null;
@@ -350,6 +364,7 @@ export function GameTimer() {
   // - アクティブ本人は何もしない
   // - 一時停止中はジャンプするが停止は維持（バックエンド側でisPaused維持）
   const handleSelectActivePlayer = React.useCallback(async (playerIndex: number) => {
+    if (isCatanMode) return; // カタンモードでは手番ジャンプ不可
     const activeIndex = serverGameState.serverState?.activePlayerIndex ?? -1;
     if (playerIndex === activeIndex) return;
     if (!etag) {
@@ -362,11 +377,11 @@ export function GameTimer() {
       clearConflictMessage();
       await serverGameState.syncWithServer();
     }
-  }, [etag, switchTurn, serverGameState, updateEtag, clearConflictMessage]);
+  }, [isCatanMode, etag, switchTurn, serverGameState, updateEtag, clearConflictMessage]);
 
   // ネームカードをクリック可能にするためのprops（アクティブ本人は非クリック）
   const getCardClickProps = React.useCallback((playerIndex: number, isActive: boolean, playerName: string) => {
-    if (isActive) return {};
+    if (isActive || isCatanMode) return {};
     // 注: <li>のlistitemロールを保持するためrole="button"は付けない
     // （tabIndex + onKeyDown + aria-labelでキーボード操作とラベルを担保）
     return {
@@ -380,7 +395,7 @@ export function GameTimer() {
       tabIndex: 0,
       'aria-label': `${playerName}を手番にする`
     };
-  }, [handleSelectActivePlayer]);
+  }, [isCatanMode, handleSelectActivePlayer]);
 
   const handlePauseResume = React.useCallback(async () => {
     if (import.meta.env.MODE === 'test' || isInFallbackMode) {
@@ -473,6 +488,24 @@ export function GameTimer() {
     }
   }, [isInFallbackMode, etag, countdownSeconds, updateGame, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
 
+  const handleGameModeChange = React.useCallback(async (checked: boolean) => {
+    const mode = checked ? 'catan' : 'normal';
+    if (import.meta.env.MODE === 'test' || isInFallbackMode) {
+      fallbackState.setGameMode(mode);
+      return;
+    }
+    if (!etag) {
+      console.warn('ETag not available, cannot change game mode');
+      return;
+    }
+    const result = await updateGame(etag, { gameMode: mode });
+    if (result && 'etag' in result) {
+      updateEtag(result.etag);
+      serverGameState.updateFromServer(result);
+      clearConflictMessage();
+    }
+  }, [isInFallbackMode, etag, updateGame, fallbackState, updateEtag, clearConflictMessage, serverGameState]);
+
   return (
     <div className="game-timer">
       <main className="game-main">
@@ -486,6 +519,11 @@ export function GameTimer() {
         {/* Task 2.1-2.3: 固定ヘッダー */}
         <div className="sticky-header" data-testid="sticky-header">
           <div className="sticky-header-content" data-testid="sticky-header-content">
+            {isCatanMode && isGameActive && (
+              <span className="phase-badge" data-testid="phase-badge">
+                フェーズ{currentPhase}
+              </span>
+            )}
             <div className="sticky-header-info" data-testid="active-player-info">
               {isInFallbackMode ? (
                 // フォールバックモード: Phase 1ローカル状態
@@ -598,7 +636,7 @@ export function GameTimer() {
                       </button>
                       <button
                         onClick={() => fallbackState.setActivePlayer(player.id)}
-                        disabled={isDisabled}
+                        disabled={isDisabled || isCatanMode}
                       >
                         アクティブに設定
                       </button>
@@ -660,6 +698,26 @@ export function GameTimer() {
                   <option value={5}>5人</option>
                   <option value={6}>6人</option>
                 </select>
+              </div>
+
+              {/* カタンモード切替（ゲーム開始前のみ） */}
+              <div className="setting-item">
+                <label className="setting-label">カタンモード</label>
+                <label className="toggle-switch-enhanced">
+                  <input
+                    type="checkbox"
+                    checked={isCatanMode}
+                    onChange={(e) => handleGameModeChange(e.target.checked)}
+                    disabled={isGameStarted}
+                    title={isGameStarted ? 'ゲーム開始後はカタンモードを変更できません' : ''}
+                    data-testid="game-mode-toggle"
+                    aria-label="カタンモード切替"
+                  />
+                  <span className="toggle-slider">
+                    <span className="toggle-label-left">通常</span>
+                    <span className="toggle-label-right">カタン</span>
+                  </span>
+                </label>
               </div>
 
               {/* プレイヤー名変更セクション（プレイ中でも変更可能） */}

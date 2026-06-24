@@ -134,7 +134,9 @@ describe('POST /api/resume', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:05:00.000Z'
+        pausedAt: '2025-01-01T00:05:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"paused-etag"';
@@ -157,7 +159,9 @@ describe('POST /api/resume', () => {
         ...pausedState,
         isPaused: false,
         pausedAt: undefined,
-        turnStartedAt: expect.any(String) // 新しいターン開始時刻
+        turnStartedAt: expect.any(String), // 新しいターン開始時刻
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -197,7 +201,9 @@ describe('POST /api/resume', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"running-etag"';
@@ -220,7 +226,9 @@ describe('POST /api/resume', () => {
         ...runningState,
         isPaused: false,
         pausedAt: undefined,
-        turnStartedAt: expect.any(String)
+        turnStartedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -254,7 +262,9 @@ describe('POST /api/resume', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:00:30.000Z'
+        pausedAt: '2025-01-01T00:00:30.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"paused-countdown-etag"';
@@ -277,7 +287,9 @@ describe('POST /api/resume', () => {
         ...pausedCountdownState,
         isPaused: false,
         pausedAt: undefined,
-        turnStartedAt: expect.any(String)
+        turnStartedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -337,7 +349,9 @@ describe('POST /api/resume', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:02:00.000Z'
+        pausedAt: '2025-01-01T00:02:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag"';
@@ -444,7 +458,9 @@ describe('POST /api/resume', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:01:40.000Z'
+        pausedAt: '2025-01-01T00:01:40.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag-123"';
@@ -493,7 +509,9 @@ describe('POST /api/resume', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: true,
-        pausedAt: '2025-01-01T00:00:00.000Z'
+        pausedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRequest = {
@@ -559,7 +577,9 @@ describe('POST /api/resume', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:01:40.000Z'
+        pausedAt: '2025-01-01T00:01:40.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag"';
@@ -583,7 +603,9 @@ describe('POST /api/resume', () => {
         ...pausedState,
         isPaused: false,
         pausedAt: undefined,
-        turnStartedAt: newTurnStartedAt
+        turnStartedAt: newTurnStartedAt,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({

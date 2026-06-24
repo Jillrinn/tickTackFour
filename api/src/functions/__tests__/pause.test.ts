@@ -146,7 +146,9 @@ describe('POST /api/pause', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag-123"';
@@ -177,7 +179,9 @@ describe('POST /api/pause', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ],
         isPaused: true,
-        pausedAt: expect.any(String)
+        pausedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -219,7 +223,9 @@ describe('POST /api/pause', () => {
         countdownSeconds: 60,
         isPaused: true,
         turnStartedAt: '2025-01-01T00:00:00.000Z',
-        pausedAt: '2025-01-01T00:05:00.000Z'
+        pausedAt: '2025-01-01T00:05:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"paused-etag"';
@@ -250,7 +256,9 @@ describe('POST /api/pause', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ],
         isPaused: true,
-        pausedAt: expect.any(String)
+        pausedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -283,7 +291,9 @@ describe('POST /api/pause', () => {
         timerMode: 'countdown',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"countdown-etag"';
@@ -314,7 +324,9 @@ describe('POST /api/pause', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ],
         isPaused: true,
-        pausedAt: expect.any(String)
+        pausedAt: expect.any(String),
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({
@@ -373,7 +385,9 @@ describe('POST /api/pause', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag"';
@@ -453,7 +467,9 @@ describe('POST /api/pause', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag"';
@@ -529,7 +545,9 @@ describe('POST /api/pause', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"old-etag-123"';
@@ -579,7 +597,9 @@ describe('POST /api/pause', () => {
         activePlayerIndex: 0,
         timerMode: 'countup',
         countdownSeconds: 60,
-        isPaused: false
+        isPaused: false,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRequest = {
@@ -646,7 +666,9 @@ describe('POST /api/pause', () => {
         timerMode: 'countup',
         countdownSeconds: 60,
         isPaused: false,
-        turnStartedAt: '2025-01-01T00:00:00.000Z'
+        turnStartedAt: '2025-01-01T00:00:00.000Z',
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       const clientETag = 'W/"test-etag"';
@@ -677,7 +699,9 @@ describe('POST /api/pause', () => {
           { id: 4, name: 'プレイヤー4', accumulatedSeconds: 0 }
         ],
         isPaused: true,
-        pausedAt
+        pausedAt,
+        gameMode: 'normal',
+        turnNumber: 0
       };
 
       mockRetryUpdateWithETag.mockResolvedValue({

@@ -4,6 +4,7 @@ import { calculateElapsedTime } from '../services/timeCalculation';
 import { retryUpdateWithETag } from '../services/retryWithETag';
 import { GameState } from '../models/gameState';
 import { hasStatusCodeValue } from '../utils/errorUtils';
+import { getCatanPlayerIndex } from '../services/turnSequence';
 
 /**
  * ターン切り替えエンドポイント（POST /api/switchTurn）
@@ -45,7 +46,11 @@ async function switchTurn(
     const currentState = result.state;
 
     // targetPlayerIndex指定時のバリデーションと「アクティブ本人なら何もしない」処理
-    const hasTarget = targetPlayerIndex !== undefined && targetPlayerIndex !== null;
+    // カタンモードでは手番ジャンプを許可しない（蛇腹順を厳密に保つ）ためtargetを無視
+    const hasTarget =
+      targetPlayerIndex !== undefined &&
+      targetPlayerIndex !== null &&
+      currentState.gameMode !== 'catan';
     if (hasTarget) {
       if (
         typeof targetPlayerIndex !== 'number' ||
@@ -82,13 +87,21 @@ async function switchTurn(
     let newState: GameState;
 
     if (isInitialState) {
-      // 初期状態からのゲーム開始処理。target指定があればその人を、なければ先頭(0)を開始
+      // 初期状態からのゲーム開始処理。
+      // カタン: turnNumber=0, index=getCatanPlayerIndex(0,N)=0
+      // 通常: target指定があればその人、なければ先頭(0)
+      const startIndex =
+        currentState.gameMode === 'catan'
+          ? getCatanPlayerIndex(0, currentState.playerCount)
+          : hasTarget
+          ? targetPlayerIndex
+          : 0;
       newState = {
         ...currentState,
-        activePlayerIndex: hasTarget ? targetPlayerIndex : 0,
-        isPaused: false, // ゲーム開始
-        turnStartedAt: new Date().toISOString(), // ターン開始時刻を設定
-        // players配列は変更なし（前のプレイヤーが存在しないため時間加算不要）
+        activePlayerIndex: startIndex,
+        isPaused: false,
+        turnStartedAt: new Date().toISOString(),
+        turnNumber: 0,
         players: currentState.players
       };
     } else {
@@ -103,16 +116,23 @@ async function switchTurn(
         accumulatedSeconds: elapsedSeconds
       };
 
-      // 行き先: target指定があればその人へジャンプ、なければ次へ循環（(current + 1) % playerCount）
-      const nextPlayerIndex = hasTarget
-        ? targetPlayerIndex
-        : (currentState.activePlayerIndex + 1) % currentState.playerCount;
+      // 行き先の決定
+      // カタン: turnNumber+1 → 蛇腹/通常順を純粋関数で算出（target無視）
+      // 通常: target指定があればジャンプ、なければ次へ循環
+      const nextTurnNumber = currentState.turnNumber + 1;
+      const nextPlayerIndex =
+        currentState.gameMode === 'catan'
+          ? getCatanPlayerIndex(nextTurnNumber, currentState.playerCount)
+          : hasTarget
+          ? targetPlayerIndex
+          : (currentState.activePlayerIndex + 1) % currentState.playerCount;
 
       // 新しいゲーム状態を構築（isPaused/pausedAtは維持＝一時停止中ジャンプは停止を保つ）
       newState = {
         ...currentState,
         players: updatedPlayers,
         activePlayerIndex: nextPlayerIndex,
+        turnNumber: nextTurnNumber,
         turnStartedAt: new Date().toISOString() // 新しいターンの開始時刻
       };
     }
