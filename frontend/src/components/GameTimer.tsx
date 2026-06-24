@@ -94,7 +94,7 @@ export function GameTimer() {
   }, [activateFallbackMode]);
 
   // Task 3.1: ポーリング同期サービスの実装
-  // 5秒ごとにバックエンドからゲーム状態を取得し、serverGameStateを更新
+  // 1秒ごとにバックエンドからゲーム状態を取得し、serverGameStateを更新
   // テスト環境では無効化（jsdomで相対URLが使えないため）
   usePollingSync((state: GameStateWithTime) => {
     console.log('[PollingSync] Server state updated:', state);
@@ -112,6 +112,7 @@ export function GameTimer() {
     }
   }, {
     enabled: import.meta.env.MODE !== 'test',
+    interval: 1000,
     onError: handlePollingError
   });
 
