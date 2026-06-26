@@ -82,6 +82,76 @@ describe('useServerGameState - APIモード状態管理', () => {
     });
   });
 
+  describe('preserveLocalNames: ポーリングによるプレイヤー名上書き防止', () => {
+    const buildState = (names: string[], elapsed: number[]): GameStateWithTime => ({
+      players: names.map((name, i) => ({ name, elapsedSeconds: elapsed[i] ?? 0 })),
+      activePlayerIndex: 0,
+      timerMode: 'countup',
+      countdownSeconds: 600,
+      isPaused: false,
+      etag: 'test-etag'
+    });
+
+    it('preserveLocalNames=trueのとき既存ローカル名を保持し、サーバーの名前で上書きしないこと', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      // 初回: サーバー名を採用（ローカル名「マイク」「リサ」を確立）
+      act(() => {
+        result.current.updateFromServer(buildState(['マイク', 'リサ'], [10, 20]));
+      });
+
+      // ポーリングで古いサーバー名「プレイヤー1」「プレイヤー2」が来ても保持されること
+      act(() => {
+        result.current.updateFromServer(buildState(['プレイヤー1', 'プレイヤー2'], [11, 21]), null, true);
+      });
+
+      expect(result.current.serverState?.players[0].name).toBe('マイク');
+      expect(result.current.serverState?.players[1].name).toBe('リサ');
+    });
+
+    it('preserveLocalNames=trueでも名前以外（elapsedSeconds等）はサーバー値で更新されること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      act(() => {
+        result.current.updateFromServer(buildState(['マイク', 'リサ'], [10, 20]));
+      });
+
+      act(() => {
+        result.current.updateFromServer(buildState(['プレイヤー1', 'プレイヤー2'], [11, 21]), null, true);
+      });
+
+      expect(result.current.serverState?.players[0].elapsedSeconds).toBe(11);
+      expect(result.current.serverState?.players[1].elapsedSeconds).toBe(21);
+    });
+
+    it('初回（serverStateがnull）でpreserveLocalNames=trueの場合はサーバー名を採用すること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      act(() => {
+        result.current.updateFromServer(buildState(['マイク', 'リサ'], [10, 20]), null, true);
+      });
+
+      expect(result.current.serverState?.players[0].name).toBe('マイク');
+      expect(result.current.serverState?.players[1].name).toBe('リサ');
+    });
+
+    it('デフォルト（引数なし）は従来通りサーバー名を採用すること', () => {
+      const { result } = renderHook(() => useServerGameState());
+
+      act(() => {
+        result.current.updateFromServer(buildState(['マイク', 'リサ'], [10, 20]));
+      });
+
+      // 引数なし呼び出しはサーバー名で上書きされる
+      act(() => {
+        result.current.updateFromServer(buildState(['プレイヤー1', 'プレイヤー2'], [11, 21]));
+      });
+
+      expect(result.current.serverState?.players[0].name).toBe('プレイヤー1');
+      expect(result.current.serverState?.players[1].name).toBe('プレイヤー2');
+    });
+  });
+
   describe('滑らかなタイマー表示（design.md lines 424-436）', () => {
     it('100msごとにdisplayTimeが増加すること（非一時停止時）', async () => {
       const mockState: GameStateWithTime = {

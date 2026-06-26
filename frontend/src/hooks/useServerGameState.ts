@@ -62,8 +62,25 @@ export function useServerGameState() {
    *
    * @param state - サーバーから取得した最新のゲーム状態
    * @param editingPlayerIndex - 現在編集中のプレイヤーのインデックス（編集中でない場合はnull）
+   * @param preserveLocalNames - ポーリング由来の更新時にプレイヤー名をローカル値で保持するか
+   *   （true: 全プレイヤー名をローカル値で保持。保存反映前の古いサーバー名による上書きを防ぐ）
    */
-  const updateFromServer = useCallback((state: GameStateWithTime, editingPlayerIndex: number | null = null) => {
+  const updateFromServer = useCallback((
+    state: GameStateWithTime,
+    editingPlayerIndex: number | null = null,
+    preserveLocalNames: boolean = false
+  ) => {
+    // ポーリング由来時: 全プレイヤー名をローカルの現在値で保持し、サーバー値で上書きしない
+    // 初回（serverStateがnull）はサーバー名をそのまま採用する
+    if (preserveLocalNames && serverState) {
+      const updatedPlayers = state.players.map((player, index) => {
+        const localName = serverState.players[index]?.name;
+        // 同一indexにローカル名がある場合のみ保持（人数差で範囲外ならサーバー名を採用）
+        return localName !== undefined ? { ...player, name: localName } : player;
+      });
+      state = { ...state, players: updatedPlayers };
+    }
+
     // 編集中のプレイヤー名を保持する
     if (editingPlayerIndex !== null && serverState) {
       const editingPlayerName = serverState.players[editingPlayerIndex]?.name;

@@ -76,7 +76,8 @@ export function GameTimer() {
   // 1秒ごとにバックエンドからゲーム状態を取得し、serverGameStateを更新
   usePollingSync((state: GameStateWithTime) => {
     console.log('[PollingSync] Server state updated:', state);
-    serverGameState.updateFromServer(state);
+    // ポーリング由来の更新ではプレイヤー名をローカル保持し、保存反映前の古いサーバー名で上書きしない
+    serverGameState.updateFromServer(state, null, true);
     updateEtag(state.etag);
 
     // Task 5.4: ポーリング同期時にゲーム全体時間も更新（通常モード）
